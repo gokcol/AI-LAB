@@ -660,10 +660,35 @@ loss converges for $\eta < 2/L$, where $L$ is the curvature (largest Hessian eig
 
 ## 14. Constrained optimization & Lagrange multipliers
 
-Many problems minimize subject to constraints. **Lagrange multipliers** turn "minimize
-$f$ s.t. $g=0$" into the stationarity condition $\nabla f=\lambda\nabla g$; inequality
-constraints give the **KKT conditions**. This is exactly how the **SVM** (M4) is
-derived — and why only the *active* constraints (the **support vectors**) matter.
+Real problems often **minimize subject to constraints** ("minimize risk *but keep the budget
+within $B$*"). Two cases.
+
+**Equality constraint.** To minimize $f(\mathbf x)$ subject to $g(\mathbf x)=0$, the optimum
+sits where you can't lower $f$ without leaving the constraint — geometrically, where a level
+set of $f$ is **tangent** to the constraint, so $\nabla f$ is **parallel** to $\nabla g$:
+$\nabla f=\lambda\nabla g$ for a **Lagrange multiplier** $\lambda$. Equivalently, make the
+**Lagrangian** $\mathcal L=f-\lambda g$ stationary in both $\mathbf x$ and $\lambda$.
+
+*Worked:* minimize $x^2+y^2$ s.t. $x+y=1$. Then $\nabla f=(2x,2y)$ and $\nabla g=(1,1)$, so
+$2x=2y=\lambda$ with $x+y=1$ give $x=y=\tfrac12$ — the closest point on the line to the origin:
+
+<div style="text-align:center;margin:0.6rem 0"><svg viewBox="0 0 300 250" style="width:100%;max-width:300px;height:auto" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Minimizing x squared plus y squared subject to x plus y equals 1: concentric level circles centered at the origin are tangent to the constraint line at (0.5, 0.5), where the gradient of f is parallel to the gradient of g."><defs><marker id="la14" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#0E5E45"/></marker></defs><rect x="1" y="1" width="298" height="248" rx="14" fill="#FAFAF7" stroke="#E2E2DA"/><circle cx="70" cy="210" r="60" fill="none" stroke="#E2E2DA" stroke-width="1.3"/><circle cx="70" cy="210" r="92" fill="none" stroke="#1D9E75" stroke-width="1.8"/><circle cx="70" cy="210" r="120" fill="none" stroke="#E2E2DA" stroke-width="1.3"/><line x1="205" y1="210" x2="70" y2="75" stroke="#185FA5" stroke-width="2"/><circle cx="135" cy="145" r="4" fill="#0E5E45"/><line x1="135" y1="145" x2="156" y2="124" stroke="#0E5E45" stroke-width="2" marker-end="url(#la14)"/><circle cx="70" cy="210" r="3" fill="#33312E"/><g font-family="sans-serif" font-size="11"><text x="150" y="86" fill="#185FA5">x + y = 1</text><text x="160" y="118" fill="#0E5E45">∇f ∥ ∇g</text><text x="84" y="164" fill="#0E5E45">optimum</text></g></svg></div>
+
+**Inequality constraints** ($g_i(\mathbf x)\le0$) add the **KKT conditions**, the workhorse of
+constrained ML:
+
+- **stationarity** $\nabla f+\sum_i\lambda_i\nabla g_i=\mathbf 0$,
+- **primal feasibility** $g_i\le0$,
+- **dual feasibility** $\lambda_i\ge0$,
+- **complementary slackness** $\lambda_i\,g_i=0$ — each constraint is either *inactive*
+  ($g_i<0,\ \lambda_i=0$) or *active* ($g_i=0,\ \lambda_i>0$).
+
+This is exactly how the **SVM** (M4) is derived: the points whose margin constraint is
+*active* are the **support vectors** ($\lambda_i>0$); every other point has $\lambda_i=0$ and
+could be deleted without moving the boundary. The same duality links **penalties and
+constraints**: adding $\lambda\lVert\mathbf w\rVert^2$ to a loss is the Lagrangian of "minimize
+the loss s.t. $\lVert\mathbf w\rVert^2\le C$" — so a ridge/lasso $\lambda$ *is* a Lagrange
+multiplier (X1 §11, M6).
 
 ## 15. Subgradients — optimizing non-smooth losses
 

@@ -91,7 +91,19 @@ usually done this way.
 They compose: a typical assistant is **pretrained → SFT → preference-tuned**, and then uses
 **RAG + tools** at inference for up-to-date facts.
 
-## 8. The honest caveats
+## 8. Distillation — "dark knowledge" (Hinton, Vinyals & Dean, 2015)
+
+Once you have a big, accurate **teacher** model, you can train a small, cheap **student** to
+mimic it. The trick: don't train the student on the hard labels alone — train it on the
+teacher's **full softmax distribution**, softened with a **temperature** $T$. Those soft
+probabilities carry **"dark knowledge"** — the teacher's uncertainty says a *3* looks a bit
+like an *8*, or that "delighted" sits near "happy" — information one-hot labels throw away.
+The student matches the softened distribution (a cross-entropy / **KL** objective, Math
+**X5**), and learns far faster and smaller than training from scratch. It's how giant models
+are compressed to run on a phone, and conceptually the same bargain as LoRA: **keep the
+knowledge, shrink the cost.**
+
+## 9. The honest caveats
 
 Post-training is mostly about **data quality** (good demos and clean preferences beat clever
 losses), alignment is **ongoing** (jailbreaks, reward hacking, sycophancy are open problems),
@@ -146,6 +158,9 @@ _REFS = r"""
 - Ouyang et al. (2022) — *InstructGPT* (SFT + RLHF, the ChatGPT recipe).
 - Rafailov et al. (2023) — *Direct Preference Optimization (DPO)*.
 - Hu et al. (2021) — *LoRA*; Dettmers et al. (2023) — *QLoRA*.
+- Hinton, Vinyals & Dean (2015) — *Distilling the Knowledge in a Neural Network* ("dark knowledge").
+- **Geoffrey Hinton** — *Neural Networks for Machine Learning* (his lectures on YouTube): the two
+  paradigms of intelligence, the family-tree net, and much of this lab's framing come from here.
 - Hugging Face — *TRL* (SFT/DPO/PPO) and *PEFT* libraries.
 - In this lab: **Tiny GPT** / **e21 nanoGPT** (pretraining), **Embeddings & RAG**
   (facts vs behaviour), Math **X5** (cross-entropy / KL).
