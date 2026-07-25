@@ -110,6 +110,23 @@ with st.container(border=True):
                "And like a brain it's **robust**: no single weight is critical, because every "
                "decision rests on a sum of many.")
 
+# --- Two paradigms of intelligence (Hinton) -------------------------------- #
+with st.container(border=True):
+    st.markdown("#### 🧠 Two paradigms of intelligence — Geoffrey Hinton")
+    st.caption("Hinton frames the history of AI as two bets on what intelligence *is*.")
+    st.markdown(
+        """<div style="text-align:center;margin:0.3rem 0"><svg viewBox="0 0 760 250" style="width:100%;max-width:760px;height:auto" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The two paradigms of intelligence (Geoffrey Hinton). The logic-inspired approach: intelligence is reasoning via symbolic rules, and learning can wait. The biologically-inspired approach: intelligence is learning the connection strengths in a neural network, and reasoning can wait. This lab follows the biologically-inspired approach."><rect x="1" y="1" width="758" height="248" rx="14" fill="#FAFAF7" stroke="#E2E2DA"/><text x="380" y="30" text-anchor="middle" font-family="sans-serif" font-size="16" font-weight="700" fill="#33312E">Two paradigms of intelligence</text><rect x="24" y="48" width="344" height="188" rx="10" fill="#EAF0FB" stroke="#C7D6EE"/><rect x="392" y="48" width="344" height="188" rx="10" fill="#E7F3EC" stroke="#BFE0CC"/><g font-family="sans-serif"><text x="44" y="80" font-size="15" font-weight="700" fill="#2C5CBF">The logic-inspired approach</text><text x="44" y="106" font-size="12.5" fill="#33312E">The essence of intelligence is reasoning —</text><text x="44" y="124" font-size="12.5" fill="#33312E">symbolic rules manipulating symbolic expressions.</text><text x="44" y="156" font-size="12" font-style="italic" fill="#178A4C">“Learning can wait. First understand how</text><text x="44" y="174" font-size="12" font-style="italic" fill="#178A4C">knowledge is represented.”</text><text x="44" y="214" font-size="10.5" fill="#6B6A66">symbolic AI · logic · expert systems</text><text x="412" y="80" font-size="15" font-weight="700" fill="#2C5CBF">The biologically-inspired approach</text><text x="412" y="106" font-size="12.5" fill="#33312E">The essence of intelligence is learning the</text><text x="412" y="124" font-size="12.5" fill="#33312E">strengths of the connections in a neural network.</text><text x="412" y="156" font-size="12" font-style="italic" fill="#178A4C">“Reasoning can wait. First understand how</text><text x="412" y="174" font-size="12" font-style="italic" fill="#178A4C">learning works.”</text><text x="412" y="214" font-size="10.5" font-weight="700" fill="#178A4C">connectionism · deep learning · ← this lab</text></g></svg></div>""",
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        "For decades the **logic-inspired** paradigm led — hand-built symbolic rules "
+        "(expert systems, logic, search). This lab takes the **biologically-inspired** bet: "
+        "intelligence as **learning the connection strengths (the weights)** of a network. "
+        "Every weight you train here — single neuron → GPT — *is* one of those connections. "
+        "The modern twist: **reasoning is emerging *from* learning** (chain-of-thought in LLMs), "
+        "so the two paradigms are converging — which is exactly the *two views* below."
+    )
+
 # --- Two views ------------------------------------------------------------- #
 with st.container(border=True):
     st.markdown("#### 🔭 Two views that meet")

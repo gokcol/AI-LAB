@@ -166,6 +166,50 @@ lessons.predict(
     "The top similarity will be **low** — nothing is close. A good RAG system notices that and says *'I don't know'* instead of grounding an answer in irrelevant text (which is how hallucinations sneak in).",
 )
 
+with st.expander("🧠 Hinton: two theories of word meaning — and how LLMs unify them"):
+    st.markdown(
+        "There are two classic theories of what a word **means**:\n\n"
+        "- **Symbolic AI:** meaning comes from a word's **relationships to other words** — capture "
+        "it in a *relational graph* (a knowledge graph of propositions).\n"
+        "- **Psychology:** a word's meaning is just a **big set of semantic features**, so words "
+        "with similar meaning have similar features — i.e. **nearby vectors** (exactly the "
+        "embeddings on this page).\n\n"
+        "Hinton's tiny **1985 language model** unified them: **learn a feature vector for each "
+        "word**, and **learn to predict the next word's features from the previous words'** — then "
+        "*generate* text by repeatedly predicting the next word. The punchline: **relational "
+        "knowledge lives in how the features interact, not in stored propositions.** That is "
+        "precisely a modern **LLM** — learned embeddings (here) + next-token prediction (**Tiny "
+        "GPT**) — the idea was ~40 years early."
+    )
+
+with st.expander("🌳 Hinton's family-tree network (1986) — where embeddings were born"):
+    st.markdown(
+        "Two family trees encode facts as **triples** — *(colin has-father james)*, "
+        "*(charlotte has-uncle arthur)* — using 12 relationships (father/mother/uncle/…). Some "
+        "triples logically **follow** from others.\n\n"
+        "**The task:** from many such triples, *implicitly* learn the regularities. The symbolic "
+        "route — search for rules like *(x has-mother y) & (y has-husband z) ⇒ (x has-father z)* — "
+        "is a hard **discrete search**, and brittle when rules have exceptions. Hinton asked: **can "
+        "a neural net capture the same knowledge in a continuous space of weights?**\n\n"
+        "**The net (below):** feed a **person** symbol + a **relationship** symbol; each is squeezed "
+        "into a **learned feature vector**; a hidden layer predicts the **output person's features**; "
+        "out comes the answer."
+    )
+    st.markdown(
+        """<div style="text-align:center;margin:0.2rem 0"><svg viewBox="0 0 720 356" style="width:100%;max-width:720px;height:auto" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Hinton family-tree network: a symbol for person 1 and a symbol for the relationship each map to a learned feature vector; a hidden layer of neurons predicts the output features from the input features; those become the learned features of person 2, which produce the output symbol for person 2."><defs><marker id="ftA" markerWidth="9" markerHeight="9" refX="4" refY="7" orient="auto"><path d="M0,7 L4,0 L8,7 z" fill="#178A4C"/></marker></defs><rect x="1" y="1" width="718" height="354" rx="14" fill="#FAFAF7" stroke="#E2E2DA"/><g font-family="sans-serif" font-size="12.5" text-anchor="middle"><rect x="235" y="40" width="250" height="44" rx="8" fill="#EAF0FB" stroke="#C7D6EE"/><text x="360" y="67" fill="#2C5CBF">symbol: person 2  (output)</text><rect x="250" y="112" width="220" height="42" rx="8" fill="#FFFFFF" stroke="#C9C8C1"/><text x="360" y="138" fill="#33312E">learned features: person 2</text><rect x="60" y="180" width="600" height="42" rx="8" fill="#FBEAD6" stroke="#E0B98A"/><text x="360" y="206" fill="#5A3E14">neurons: predict output features from input features</text><rect x="70" y="248" width="214" height="42" rx="8" fill="#FFFFFF" stroke="#C9C8C1"/><text x="177" y="274" fill="#33312E">learned features: person 1</text><rect x="436" y="248" width="214" height="42" rx="8" fill="#FFFFFF" stroke="#C9C8C1"/><text x="543" y="274" fill="#33312E">learned features: relationship</text><rect x="70" y="308" width="214" height="40" rx="8" fill="#EAF0FB" stroke="#C7D6EE"/><text x="177" y="333" fill="#2C5CBF">symbol: person 1</text><rect x="436" y="308" width="214" height="40" rx="8" fill="#EAF0FB" stroke="#C7D6EE"/><text x="543" y="333" fill="#2C5CBF">symbol: relationship</text></g><g stroke="#178A4C" stroke-width="3.4"><line x1="177" y1="307" x2="177" y2="292" marker-end="url(#ftA)"/><line x1="543" y1="307" x2="543" y2="292" marker-end="url(#ftA)"/><line x1="177" y1="247" x2="177" y2="224" marker-end="url(#ftA)"/><line x1="543" y1="247" x2="543" y2="224" marker-end="url(#ftA)"/><line x1="360" y1="179" x2="360" y2="156" marker-end="url(#ftA)"/><line x1="360" y1="111" x2="360" y2="86" marker-end="url(#ftA)"/></g></svg></div>""",
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        "**The payoff:** the tiny **6-feature bottleneck** spontaneously learned interpretable "
+        "properties — **nationality, generation, branch of the family** — the first **distributed "
+        "representations**. And the central layer learned to **reason with them**: *input is "
+        "generation 3* **and** *the relationship needs the answer one generation up* ⇒ *output is "
+        "generation 2*. The symbolic rule was never programmed — it was **rediscovered inside "
+        "continuous weights** by gradient descent (exactly the question the task posed). That net "
+        "is the direct ancestor of word2vec and the **embeddings on this page**: symbolic relations "
+        "re-expressed as **geometry in a vector space**."
+    )
+
 tab_live, tab_theory, tab_quiz, tab_tasks, tab_ref = st.tabs(
     ["🔎 Retrieve", "📖 Theory", "❓ Self-check", "🛠 Tasks", "📚 References"]
 )

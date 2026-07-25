@@ -443,13 +443,36 @@ So "single neuron" isn't a toy — it's logistic regression with a learnable thr
   too big saturates $\varphi$, too small starves the signal; initialization (e10)
   controls this.
 
-## 12. Biological inspiration (and the honest caveat)
+## 12. Actual neuron vs. artificial neuron — a "gross idealization"
 
-Dendrites ≈ inputs, synaptic strengths ≈ weights, the soma sums them, the axon
-"fires" past threshold ≈ activation (rate coding). But real neurons **spike** in
-time, are stochastic, and have rich dendritic dynamics. The artificial neuron is a
-deliberate, useful *caricature* — good enough to build intelligence from, not a
-faithful biological model.
+An **actual (biological) neuron** receives electrochemical signals through its
+**dendrites**, sums them in the **soma**, and — if the total crosses a threshold —
+**fires** a spike down its **axon** to other neurons across **synapses** whose strengths
+it can change. That last part is the whole game: *learning is changing synaptic strengths.*
+
+An **artificial neuron** keeps exactly that skeleton and discards everything else — a
+**gross idealization** of a brain cell, in Geoffrey Hinton's words, made *"so that we can
+investigate how neurons can collaborate to do computations that we do not know how to
+program."* We idealize **on purpose**: not to copy biology, but to get a unit simple enough
+to analyze, differentiate, and stack by the billion.
+
+| actual neuron | artificial neuron |
+|---|---|
+| dendrites (incoming signals) | inputs $x_i$ (from other neurons or sensors) |
+| **synaptic strengths** | **weights** $w_i$ — what learning changes |
+| soma sums the inputs | weighted sum $z=\sum_i w_i x_i + b$ |
+| fires past a threshold | activation $\varphi(z)$ |
+| axon spike to others | output $a$ — an input to the next layer |
+
+Two things you'll use all lab long. A **ReLU** unit, $\varphi(z)=\max(0,z)$, is what Hinton
+calls a **rectified linear neuron** — silent below threshold, linearly on above it (§5). And
+**arranging these neurons in layers** — input → one or more *intermediate (hidden)* layers →
+output — is "a common type of artificial neural network"; that stack is the MLP you train two
+pages on, and each connection in it is one artificial "synapse" (a weight).
+
+**The honest caveat:** real neurons **spike in time**, are stochastic, and have rich
+dendritic dynamics the artificial unit ignores. The artificial neuron is a deliberate,
+useful *caricature* — good enough to build intelligence from, not a faithful biological model.
 
 ## 13. Worked examples — one neuron in the wild
 

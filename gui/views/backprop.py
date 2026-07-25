@@ -215,6 +215,16 @@ lessons.predict(
     "The gradient **∂L/∂w**. Its sign says which way L moves as w increases (positive → L rises, so gradient descent steps the *other* way); its size is the slope. `backward()` fills in every such gradient in one reverse pass — that's the whole trick.",
 )
 
+st.info(
+    "**Why not just wiggle the weights?** Hinton's naive recipe: measure how well the net does, "
+    "**pick one weight**, nudge it, measure again — *if it helped, keep the change.* It works, but "
+    "it needs a full pass over the data **per weight**, so for a million weights it is a million "
+    "times too slow. **Backprop** instead *computes* the effect of changing **every** weight at "
+    "once — one forward pass, one backward pass — by sending the **error signal back** through the "
+    "network. That efficiency is the whole reason deep learning is practical.",
+    icon=":material/bolt:",
+)
+
 tab_live, tab_theory, tab_quiz, tab_tasks, tab_ref = st.tabs(
     ["🔁 Live walkthrough", "📖 Theory", "❓ Self-check", "🛠 Tasks", "📚 References"]
 )
