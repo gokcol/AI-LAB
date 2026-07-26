@@ -9,6 +9,36 @@ def inject_theme() -> None:
     st.markdown(
         """
         <style>
+        /* ---- framework chrome ------------------------------------------------
+           This is the lab's own site, so nothing should advertise the toolkit it
+           happens to be built with. Hides the hamburger menu (whose items link out
+           to streamlit.io), the Deploy button, the "running man" status widget and
+           the toolbar strip that holds them. Class names verified against the
+           installed build; the [data-testid] twins are belt-and-braces for future
+           versions that rename one or the other. The sidebar collapse control is
+           deliberately NOT hidden — that is navigation, not branding. */
+        #MainMenu, .stMainMenu, [data-testid="stMainMenu"],
+        .stAppDeployButton, [data-testid="stAppDeployButton"],
+        .stStatusWidget, [data-testid="stStatusWidget"],
+        .stToolbar, [data-testid="stToolbar"],
+        .stAppToolbar, [data-testid="stAppToolbar"],
+        .stToolbarActions, [data-testid="stToolbarActions"],
+        .stDecoration, [data-testid="stDecoration"],
+        .stAppViewerBadge, [data-testid="stAppViewerBadge"],
+        footer, .stAppFooter, [data-testid="stAppFooter"] {
+            display: none !important;
+            visibility: hidden !important;
+        }
+        /* The header keeps its layout role (it reserves the top offset and holds the
+           sidebar toggle) — make it invisible rather than removing it, or the page
+           jumps up under the sidebar button. */
+        .stAppHeader, [data-testid="stHeader"] {
+            background: transparent !important;
+            box-shadow: none !important;
+            border: 0 !important;
+            height: 2.6rem !important;
+        }
+
         :root {
             --ailab-ink: #172033;
             --ailab-muted: #607086;

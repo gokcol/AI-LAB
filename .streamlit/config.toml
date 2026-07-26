@@ -8,3 +8,15 @@ primaryColor = "#2563eb"
 backgroundColor = "#ffffff"
 secondaryBackgroundColor = "#eef2f7"
 textColor = "#172033"
+
+# The lab is presented as its own site, not as a demo of the toolkit behind it.
+# "minimal" drops the developer entries from the app menu (Rerun, Clear cache,
+# Record a screencast, Developer options) and the links out to streamlit.io that
+# come with them. gui/ui.py then hides the remaining chrome outright; this setting
+# means the menu is empty even before the CSS applies.
+[client]
+toolbarMode = "minimal"
+showErrorDetails = "none"
+
+[browser]
+gatherUsageStats = false

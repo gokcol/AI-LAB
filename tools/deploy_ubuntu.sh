@@ -143,7 +143,26 @@ server {
     add_header X-Content-Type-Options nosniff always;
     add_header Referrer-Policy strict-origin-when-cross-origin always;
 
+    # The lab is presented as its own site. The framework's HTML shell ships a
+    # placeholder <title> and icon that would flash in the browser tab before the app
+    # boots and replaces them; rewrite the title and serve our own icon at the path the
+    # shell asks for, so the very first paint is already the lab's.
+    sub_filter '<title>Streamlit</title>' '<title>AI Lab</title>';
+    sub_filter_once on;
+    gzip on;
+    gzip_min_length 1024;
+    gzip_types text/html text/css application/javascript application/json image/svg+xml;
+
+    location = /favicon.png {
+        alias $APP_DIR/gui/assets/favicon.png;
+        access_log off;
+        expires 7d;
+    }
+
     location / {
+        # sub_filter cannot rewrite a compressed upstream response, so ask the app for
+        # plain text and let nginx do the compressing instead (gzip on, above).
+        proxy_set_header Accept-Encoding "";
         proxy_pass http://127.0.0.1:$PORT;
         proxy_http_version 1.1;
         proxy_set_header Upgrade    \$http_upgrade;     # websockets: required
@@ -176,7 +195,7 @@ if [ "${SETUP_FIREWALL:-0}" = "1" ]; then
 else
     warn "skipped (this server may run other services). To enable later:"
     warn "  ufw allow OpenSSH && ufw allow 'Nginx Full' && ufw enable"
-    ok "Streamlit stays private regardless — it binds 127.0.0.1 only"
+    ok "the app stays private regardless — it binds 127.0.0.1 only"
 fi
 
 # --------------------------------------------------------------------------- #

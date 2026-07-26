@@ -131,7 +131,24 @@ server {
     add_header X-Content-Type-Options nosniff always;
     add_header Referrer-Policy strict-origin-when-cross-origin always;
 
+    # Present the lab as its own site: rewrite the HTML shell's placeholder tab title
+    # and serve our own icon at the path it requests, so neither flashes on first paint.
+    sub_filter '<title>Streamlit</title>' '<title>AI Lab</title>';
+    sub_filter_once on;
+    gzip on;
+    gzip_min_length 1024;
+    gzip_types text/html text/css application/javascript application/json image/svg+xml;
+
+    location = /favicon.png {
+        alias /opt/ai-lab/app/gui/assets/favicon.png;
+        access_log off;
+        expires 7d;
+    }
+
     location / {
+        # sub_filter cannot rewrite a compressed upstream response, so take it plain
+        # and let nginx compress instead.
+        proxy_set_header Accept-Encoding "";
         proxy_pass http://127.0.0.1:8501;
         proxy_http_version 1.1;
         proxy_set_header Upgrade    $http_upgrade;      # websockets: required
