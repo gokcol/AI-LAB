@@ -236,6 +236,64 @@ def _draw_captcha(text: str) -> bytes:
     return buf.getvalue()
 
 
+# Start Turkish browsers on the Turkish notice (option B). Set to False for a pure
+# manual switch (option A): everyone starts in English and chooses for themselves.
+AUTODETECT_LANGUAGE = True
+
+
+def reader_lang() -> str:
+    """'tr' or 'en', from the browser's own language (navigator.language).
+
+    Browser language, not IP geolocation: it is right for Turks abroad and for people
+    in Turkey running an English browser, needs no geo database, and collects nothing
+    extra -- which matters, because these very notices promise no profiling. The Terms
+    panel writes the same key, so switching there switches the consent text too.
+    """
+    if "reader_lang" not in st.session_state:
+        loc = (getattr(st.context, "locale", None) or "en").lower() \
+            if AUTODETECT_LANGUAGE else "en"
+        st.session_state["reader_lang"] = "tr" if loc.startswith("tr") else "en"
+    return st.session_state["reader_lang"]
+
+
+# Consent must be *informed* to be valid (KVKK m. 5/1; GDPR Art. 4(11)), which means it
+# has to be in a language the reader actually understands. These three strings are the
+# legally operative ones, so they are translated even though the lessons are English.
+CONSENT_TEXT = {
+    "en": {
+        "why": ("**Why this is asked.** If you fill any box above, that name and address "
+                "are stored on this site's own server (in {region}), used **only** to reply "
+                "to you, never shown on the site, never shared, sold or used for any "
+                "mailing, and deleted on request or after {days} days at the latest. Leave "
+                "them empty and nothing identifying you is kept — the note is stored "
+                "anonymously."),
+        "tick": ("I agree that the name and email I entered above may be stored so the "
+                 "author can reply to me."),
+        "missing": ("You entered a name or email — please tick the consent box under those "
+                    "fields so they may be stored, or clear them to send the message "
+                    "anonymously. Your text is kept either way."),
+    },
+    "tr": {
+        "why": ("**Bu neden soruluyor?** Yukarıdaki kutulardan herhangi birini doldurursanız, "
+                "girdiğiniz ad ve e-posta bu sitenin kendi sunucusunda ({region}) saklanır; "
+                "**yalnızca** size yanıt vermek için kullanılır, sitede hiçbir zaman "
+                "gösterilmez, paylaşılmaz, satılmaz, hiçbir e-posta listesinde kullanılmaz "
+                "ve talebiniz üzerine ya da en geç {days} gün sonra silinir. Boş bırakırsanız "
+                "sizi tanımlayan hiçbir bilgi tutulmaz — notunuz anonim olarak saklanır."),
+        "tick": ("Yukarıya girdiğim ad ve e-postanın, yazarın bana yanıt verebilmesi için "
+                 "saklanmasına açık rıza gösteriyorum."),
+        "missing": ("Ad veya e-posta girdiniz — bu bilgilerin saklanabilmesi için alanların "
+                    "altındaki onay kutusunu işaretleyin ya da mesajı anonim göndermek için "
+                    "alanları boşaltın. Yazdığınız metin her hâlükârda korunur."),
+    },
+}
+
+
+def consent_text(part: str) -> str:
+    t = CONSENT_TEXT[reader_lang()][part]
+    return t.replace("{region}", DATA_LOCATION).replace("{days}", str(RETENTION_DAYS))
+
+
 def new_captcha() -> None:
     """Create a fresh challenge and remember only its hash in the session."""
     text = "".join(random.choice(CAPTCHA_CHARS) for _ in range(CAPTCHA_LEN))
@@ -382,9 +440,7 @@ def submit(name: str, surname: str, email: str, message: str,
     # 6 · consent — required only when personal data was actually entered. An anonymous
     #     note carries nothing to consent to, so it is never blocked by a tick box.
     if (nm or sn or em) and not consent:
-        return "error", ("You entered a name or email — please tick the consent box under "
-                         "those fields so they may be stored, or clear them to send the "
-                         "message anonymously. Your text is kept either way.")
+        return "error", consent_text("missing")
 
     # 7 · store (escaped; client key hashed; no raw IP anywhere)
     ok, err = _append({
@@ -462,19 +518,9 @@ def render_form() -> None:
             # these three boxes empty and no personal data is processed at all, so no
             # tick is required. GDPR Art. 4(11)/7 and KVKK Art. 5 both want a specific,
             # informed, unambiguous, affirmative act — never a pre-ticked box.
-            st.caption(
-                f"**Why this is asked.** If you fill any box above, that name and address "
-                f"are stored on this site's own server (in {DATA_LOCATION}), used **only** "
-                "to reply to you, never shown on the site, never shared, sold or used for "
-                "any mailing, and deleted on request or after "
-                f"{RETENTION_DAYS} days at the latest. Leave them empty and nothing "
-                "identifying you is kept — the note is stored anonymously."
-            )
-            consent = st.checkbox(
-                "I agree that the name and email I entered above may be stored so the "
-                "author can reply to me.",
-                key="fb_consent",
-            )
+            st.caption(consent_text("why"))
+            consent = st.checkbox(consent_text("tick"), key="fb_consent")
+
         # Honeypot — hidden by CSS (.st-key-fb_hp). Humans never see it; anything typed
         # here marks the submission as automated.
         honeypot = st.text_input("Leave this field empty", key="fb_hp",

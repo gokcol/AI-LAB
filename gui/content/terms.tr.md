@@ -1,0 +1,32 @@
+### 📜 Kullanım koşulları ve gizlilik — kısa özet
+
+- **Ücretsizdir**; kişisel öğrenme ve öğretme amacıyla kullanılabilir. Ticari olmayan bir projedir; reklam yoktur, üyelik yoktur.
+- **Garanti verilmez.** İçerik yapay zekâ desteğiyle hazırlanmıştır ve hata içerebilir — güvenmeden önce doğrulayın. Burası bir eğitim ortamıdır, profesyonel danışmanlık değildir.
+- **Gizlilik:** çerez yok, üçüncü taraf analiz aracı yok, reklam ağı yok, üyelik yok. Web sunucusu, güvenlik ve basit ziyaretçi sayımı için incelenen standart erişim kayıtları (access log) tutar. Geri bildirim isteğe bağlıdır; **ad ve e-posta da onun içinde isteğe bağlıdır**, yalnızca açık rızanızla istenir, sadece size yanıt vermek için kullanılır ve talebiniz üzerine silinir.
+- Geri bildirim kutusuna **nazik davranın** — hız sınırı uygulanır ve yalnızca düz metin kabul edilir.
+
+<!--FULL-->
+
+**1 · Bu site nedir — ve ne değildir.** AI Lab (ai-lab.gokcol.online), Orhan Gökçöl'ün yapay sinir ağlarının, klasik makine öğrenmesinin ve bunların matematiğinin nasıl çalıştığını yeniden öğrenirken tuttuğu **kişisel çalışma notlarıdır**. Yayımlanmış olması dışında tamamen özel, ticari olmayan bir öğrenme defteridir; yazımında Claude (Anthropic) yapay zekâ asistanından yoğun biçimde yararlanılmıştır. Bir **ders kitabı, kurs, sertifika programı, hakem denetiminden geçmiş bir yayın ya da profesyonel öğretim materyali değildir** ve hiçbir kurumun onayını taşımaz. Tek bir öğrencinin, belirli bir andaki notlarını yansıtır.
+
+**2 · Kullanım.** Siteyi kişisel öğrenme, öğretme ve kaynak göstererek paylaşma amacıyla serbestçe kullanabilirsiniz. Kaynak kodu okuma ve kişisel çalışma için [GitHub](https://github.com/gokcol/AI-LAB) üzerinde herkese açıktır; henüz bir açık kaynak lisansı verilmemiştir, bu nedenle ticari kullanım veya yeniden dağıtım öncesinde lütfen izin isteyin.
+
+**3 · Doğruluk ve garanti.** Bunlar denetlenmiş yayınlar değil çalışma notları olduğundan, içerik **olduğu gibi** sunulmaktadır; doğruluğu, eksiksizliği veya erişilebilirliği konusunda **hiçbir garanti verilmez**. İçeriğin büyük bölümü yapay zekâ ile üretilmiştir ve gözden geçirilip mümkün olan yerlerde sayısal olarak doğrulanmış olsa da **hatalar ve aşırı basitleştirmeler içerebilir**. Kaynak olarak göstermeyin; herhangi bir şeye dayanmadan önce her sayfada belirtilen birincil kaynaklardan doğrulayın. Buradaki hiçbir içerik profesyonel, finansal, tıbbi veya hukuki danışmanlık niteliği taşımaz.
+
+**Garanti yoktur. Sorumluluk kabul edilmez.** Yürürlükteki hukukun izin verdiği azami ölçüde, bu materyal **olduğu gibi** ve **mevcut haliyle**, açık, zımni veya kanuni hiçbir garanti ya da koşul olmaksızın sunulmaktadır — bunlara doğruluk, kesinlik, eksiksizlik, güncellik, satılabilirlik, belirli bir amaca uygunluk veya ihlal etmeme garantileri dâhil ancak bunlarla sınırlı değildir. **İçeriğin hatasız olduğuna dair hiçbir beyanda bulunulmaz** ve içeriği düzeltme ya da güncelleme yükümlülüğü kabul edilmez. **Yazar, hiçbir hâlde, herhangi bir talep, zarar veya kayıptan sorumlu tutulamaz** — doğrudan, dolaylı, arızi, netice kabilinden, cezai veya başka türlü; kâr kaybı, veri kaybı, boşa harcanan çalışma süresi ya da bu materyale güvenilerek alınan kararlar dâhil olmak üzere — bu site, içeriği veya kullanımı ile bağlantılı olarak doğan hiçbir zarardan, **böyle bir zarar olasılığı bildirilmiş olsa dahi**. Dayanmayı düşündüğünüz her bilgiyi doğrulamak yalnızca sizin sorumluluğunuzdadır. Bunu kabul etmiyorsanız lütfen siteyi kullanmayın.
+
+**4 · Gizlilik ve kişisel verileriniz (Aydınlatma Metni).** Site **çerez kullanmaz**, **üçüncü taraf betik, yazı tipi veya analiz aracı yüklemez**, reklam yayınlamaz ve üyelik gerektirmez.
+
+*Sunucu kayıtları.* Her web sunucusu gibi **standart erişim kayıtları** tutulur — IP adresi, zaman, istenen sayfa, tarayıcı bilgisi (user-agent), yönlendiren sayfa. Bu kayıtlar yalnızca güvenlik ve **temel ziyaretçi sayımı** (kaç kişi geldi, ne sıklıkta, yaklaşık nereden) için incelenir. Hukuki sebep: sitenin ayakta ve güvende tutulmasına yönelik meşru menfaat (KVKK m. 5/2-f). Hiçbir veri paylaşılmaz, **profil oluşturulmaz** ve kayıtlar otomatik olarak dönüşümlü şekilde silinir.
+
+*Geri bildirim formu.* **Mesaj**, sizi tanımlayan hiçbir bilgi olmadan saklanır; yanında yalnızca hız sınırlarını uygulamak için kullanılan, bağlantınızın tek yönlü **özet (hash)** değeri bulunur — ham IP adresi hiçbir zaman yazılmaz. **Ad, soyad ve e-posta tamamen isteğe bağlıdır.** Bunları doldurursanız önce bir onay kutusunu işaretlemeniz istenir: bu işaret hukuki sebebi oluşturur (KVKK m. 5/1 açık rıza; GDPR m. 6(1)(a)), kutu asla önceden işaretli gelmez ve alanları boş bırakırsanız not anonim olarak gönderilir, hiçbir rızaya gerek kalmaz. Bu bilgiler **yalnızca** size yanıt vermek için kullanılır — hiçbir zaman yayımlanmaz, paylaşılmaz, satılmaz ya da bir e-posta listesine eklenmez — ve talebiniz üzerine veya en geç **{retention} gün** sonra silinir.
+
+*Verinin bulunduğu yer.* Veriler yazarın kendi sunucusunda, **{region}** konumunda tutulur; hiçbir veri işleyen, bulut form hizmeti veya analiz sağlayıcısı bu verileri görmez.
+
+*Haklarınız.* KVKK m. 11 ve GDPR uyarınca; kişisel verilerinizin işlenip işlenmediğini öğrenme, bilgi talep etme, erişme, düzeltilmesini, silinmesini veya yok edilmesini isteme, işlenmesini kısıtlama, işlenmesine itiraz etme ve **açık rızanızı dilediğiniz an geri çekme** haklarına sahipsiniz. Rızayı geri çekmek, vermek kadar kolaydır ve geri çekmeden önce gerçekleştirilmiş işlemeyi etkilemez. Talebinizi [GitHub](https://github.com/gokcol/AI-LAB/issues) üzerinden veya formun kendisiyle iletmeniz yeterlidir. **Veri sorumlusu:** Orhan Gökçöl (kişisel, ticari olmayan proje). Lütfen özel nitelikli kişisel veri göndermeyin. Kötüye kullanım niteliğindeki, otomatik veya konu dışı gönderimler filtrelenir ve silinir.
+
+**5 · Dış bağlantılar**, bu sitenin denetiminde olmayan üçüncü taraf kaynaklara (makaleler, videolar, kitaplar) yönlendirir ve bir tavsiye ya da onay anlamına gelmez.
+
+**6 · Erişilebilirlik.** Burası, elden geldiğince ayakta tutulan kişisel bir sunucudur — kapalı olabilir, yavaşlayabilir veya önceden haber verilmeksizin değişebilir.
+
+**7 · İletişim.** Sorular, düzeltmeler ve silme talepleri için: [GitHub](https://github.com/gokcol/AI-LAB/issues) üzerinden bir konu açın ya da aşağıdaki geri bildirim formunu kullanın.
