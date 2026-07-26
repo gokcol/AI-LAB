@@ -68,21 +68,27 @@ def _goto(mod: str, page: str):
     st.session_state["_goto_page"] = page
 
 
+def _request_terms(lang: str):
+    """Queue a footer Terms dialog without sending the multipage router a URL."""
+    st.session_state["_terms_request"] = lang
+
+
 # --------------------------------------------------------------------------- #
 # Page
 # --------------------------------------------------------------------------- #
-# A ?terms=en|tr link (footer) asks for the terms dialog. Handle it HERE, before any
-# widget is created: Streamlit refuses to let session_state write a widget's key once that
-# widget has been instantiated, and the language switch inside the Terms tab is one. The
-# parameter is consumed immediately so a refresh does not reopen the dialog and the address
-# bar stays clean.
-_want = st.query_params.get("terms")
+# Footer buttons queue the requested language in a callback, which Streamlit runs before
+# this rerun. Handle it HERE, before any widget is created: Streamlit refuses to let
+# session_state write a widget's key once that widget has been instantiated, and the
+# language switch inside the Terms tab is one. Keep accepting the old query parameter for
+# bookmarked links, but the UI no longer navigates through it.
+_want = st.session_state.pop("_terms_request", None) or st.query_params.get("terms")
 _open_terms = _want in ("en", "tr")
 if _open_terms:
     st.session_state["reader_lang"] = _want
     for _k in ("_terms_pick_tab", "_terms_pick_dialog"):
         st.session_state[_k] = "Türkçe" if _want == "tr" else "English"
-    del st.query_params["terms"]
+    if "terms" in st.query_params:
+        del st.query_params["terms"]
 
 st.markdown(_HERO_SVG, unsafe_allow_html=True)
 
@@ -427,9 +433,24 @@ st.caption(f"AI Lab v{VERSION} · personal study notes by Orhan Gökçöl, writt
 # text directly instead of opening English and making the reader hunt for a switch.
 st.caption(
     "⚠️ Study notes, not a textbook: **no guarantee of accuracy and no liability** for any "
-    "error or omission — verify everything before relying on it. "
-    "**[📜 Terms of use & data](?terms=en)** · "
-    "**[🇹🇷 Kullanım Koşulları ve Veri Kullanımı](?terms=tr)**"
+    "error or omission — verify everything before relying on it."
+)
+terms_en, terms_tr = st.columns(2)
+terms_en.button(
+    "📜 Terms of use & data",
+    key="_open_terms_en",
+    type="tertiary",
+    use_container_width=True,
+    on_click=_request_terms,
+    args=("en",),
+)
+terms_tr.button(
+    "🇹🇷 Kullanım Koşulları ve Veri Kullanımı",
+    key="_open_terms_tr",
+    type="tertiary",
+    use_container_width=True,
+    on_click=_request_terms,
+    args=("tr",),
 )
 
 if _open_terms:
