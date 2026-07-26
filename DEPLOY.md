@@ -189,6 +189,35 @@ Back it up (it is the only non-reproducible data on the box):
 30 3 * * * cp /opt/ai-lab/app/feedback/feedback.jsonl /opt/ai-lab/backup/feedback-$(date +\%F).jsonl
 ```
 
+## 5b. Visitor statistics (from the logs you already have)
+
+No analytics were added to the app — the stats come from nginx's own access log, so
+nothing extra is collected and no data leaves the box:
+
+```bash
+cd /opt/ai-lab/app
+python3 tools/visitor_report.py                 # last 7 days
+python3 tools/visitor_report.py --today
+python3 tools/visitor_report.py --month
+python3 tools/visitor_report.py --today --ips   # per-IP breakdown + heavy clients
+python3 tools/visitor_report.py --hours --pages # when, and what they read
+python3 tools/visitor_report.py --ips --anonymise   # masked IPs, safe to paste
+```
+
+Reported: unique visitors (IPs), **sessions** (Streamlit websocket opens — the honest
+"someone used it" number), **page loads and reloads**, returning visitors, referrers,
+top paths, hour-of-day, error responses, and bot traffic filtered out and counted apart.
+
+Weekly digest by cron:
+
+```cron
+0 8 * * 1 cd /opt/ai-lab/app && python3 tools/visitor_report.py --week | mail -s "AI-LAB visitors (weekly)" you@example.com
+```
+
+Because the report reads the access log, the site's Terms say plainly that access logs
+are kept and reviewed for security and basic visitor counts. Keep that accurate if you
+change what you collect.
+
 ## 6. Application-level protections (already built in)
 
 | layer | limit |

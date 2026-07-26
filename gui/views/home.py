@@ -268,8 +268,10 @@ with tab_terms:
             "- **Free** for personal learning and teaching. Non-commercial project, no ads, no accounts.\n"
             "- **No warranty.** Content is AI-assisted and may contain mistakes — verify before "
             "relying on it. This is education, not professional advice.\n"
-            "- **Privacy:** no tracking or analytics of our own; the feedback form is optional, and "
-            "what you submit there is used only to read your feedback and improve the lab.\n"
+            "- **Privacy:** no cookies, no third-party analytics, no ad networks, no "
+            "accounts. The web server keeps standard access logs, which are reviewed for "
+            "security and simple visitor counts. The feedback form is optional and is "
+            "used only to read your feedback and improve the lab.\n"
             "- **Be kind** to the feedback box — it is rate-limited and plain-text only."
         )
         with st.expander("Read the full terms"):
@@ -281,8 +283,8 @@ with tab_terms:
                 "been granted yet, so please ask before commercial reuse or redistribution.\n\n"
                 "**3 · Accuracy & warranty.** Because these are study notes rather than reviewed publications, the content is provided *as is*, with **no warranty** of accuracy, completeness, or availability. Much of it was AI-generated and, although it has been checked and is numerically verified where possible, **it may contain errors and over-simplifications**. Do not cite it; verify against the primary sources referenced on each page before relying on anything. Nothing here is professional, financial, medical, or legal advice.\n\n"
                 "**No guarantee. No liability.** To the fullest extent permitted by law, this material is provided **as is** and **as available**, without warranties or conditions of any kind, whether express, implied or statutory — including, without limitation, any warranty of accuracy, correctness, completeness, currency, merchantability, fitness for a particular purpose, or non-infringement. **No representation is made that the content is free of errors**, and no obligation is accepted to correct or update it. **In no event shall the author be liable for any claim, damage or loss of any kind** — direct, indirect, incidental, consequential, punitive or otherwise, including lost profits, lost data, wasted study time, or decisions taken in reliance on this material — arising from or in connection with this site, its content, or its use, **even if advised of the possibility of such damage**. You alone are responsible for verifying anything you intend to rely on. If you do not accept this, please do not use the site.\n\n"
-                "**4 · Privacy.** The site requires no account and sets no tracking of its own; the "
-                "hosting infrastructure may keep standard operational logs (e.g. IP addresses in "
+                "**4 · Privacy.** The site sets **no cookies**, loads **no third-party scripts or analytics**, runs no advertising and requires no account. Like any web server it does write **standard access logs** — your IP address, the time, the page requested, your browser's user-agent and the referring page — and the author reviews those logs for security and for **basic visitor counts** (how many people came, how often, roughly where from). Nothing is shared with anyone, **no profile is built**, and logs rotate away automatically. The feedback form is optional: the "
+
                 "web-server logs) for security. The feedback form is optional: the message and any "
                 "name/email you choose to include are stored only so the author can read and "
                 "respond to feedback, are never sold or shared, and are deleted on request. Please "
