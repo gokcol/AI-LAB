@@ -75,8 +75,16 @@ with t1:
     with ctrl[0]:
         st.markdown("**👤 Inputs $\\mathbf x$** — this applicant")
         if aug:
-            st.number_input("x₀ · constant input (always 1 — this is the bias's input)",
-                            value=1.0, disabled=True, key="wn1_x0")
+            st.number_input("🔒 x₀ · constant input — locked at 1 *(this is the bias's input)*",
+                            value=1.0, disabled=True, key="wn1_x0",
+                            help="Deliberately not editable: the bias trick only works because "
+                                 "this input is CONSTANT. Change the bias itself with the w₀ "
+                                 "slider on the right.")
+            st.caption("↑ **Why can't I move this?** Because it is not a feature of the "
+                       "applicant — it is a *constant 1* that exists only so the bias has "
+                       "something to multiply. Adjust **w₀** on the right instead: that is the "
+                       "bias. *(Setting x₀ to some other constant c would change nothing real — "
+                       "the network would just learn w₀/c instead.)*")
         x1 = st.slider("income (scaled)", 0.0, 1.0, 0.80, 0.05, key="wn1_x1")
         x2 = st.slider("credit score (scaled)", 0.0, 1.0, 0.60, 0.05, key="wn1_x2")
         x3 = st.slider("debt ratio (scaled)", 0.0, 1.0, 0.30, 0.05, key="wn1_x3")

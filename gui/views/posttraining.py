@@ -108,7 +108,82 @@ knowledge, shrink the cost.**
 Post-training is mostly about **data quality** (good demos and clean preferences beat clever
 losses), alignment is **ongoing** (jailbreaks, reward hacking, sycophancy are open problems),
 and this is a **concepts** page — no training runs here. To actually train, scale the e21
-nanoGPT and add an SFT/DPO step. *(Roadmap e24–e26.)*
+nanoGPT and add an SFT/DPO step. 
+
+## 10. The reward model, precisely
+
+RLHF needs a scalar "how good is this response?" — but humans are unreliable at absolute
+scores and quite reliable at **comparisons**. So annotators rank two responses, and a **reward
+model** $r_\theta$ is trained on the **Bradley–Terry** likelihood that the preferred one wins:
+$$ P(y_w \succ y_l \mid x)=\sigma\big(r_\theta(x,y_w)-r_\theta(x,y_l)\big) $$
+Maximising its log-likelihood is, once again, **logistic regression** (ML **M2**) — here over
+*pairs* of responses. The reward model is usually the SFT model with its language-modelling
+head swapped for a single scalar output.
+
+## 11. PPO vs DPO — two ways to use those preferences
+
+**PPO** (the original RLHF) treats generation as reinforcement learning: sample a response,
+score it with the reward model, and push up the probability of high-reward text — while a
+**KL penalty** to the SFT model stops it drifting:
+$$ \max_\pi\; \mathbb E\big[r_\theta(x,y)\big]-\beta\,\mathrm{KL}\big(\pi\,\|\,\pi_{\text{SFT}}\big) $$
+It works, but needs four models in memory (policy, reference, reward, critic) and is famously
+fiddly.
+
+**DPO** (2023) made a lovely observation: for that objective the *optimal* policy has a
+closed form, so you can skip the reward model and the RL loop entirely and optimise the
+preference pairs **directly** with a simple classification-style loss on the policy itself.
+Same goal, one model, far more stable — which is why most open post-training now uses DPO or
+a relative (IPO, KTO, ORPO, GRPO).
+
+## 12. RLAIF and Constitutional AI
+
+Human labels are the bottleneck: slow, expensive, inconsistent. **RLAIF** replaces the
+labeller with a model — an AI critiques and ranks the responses. **Constitutional AI**
+(Anthropic) makes this explicit: give the model a written set of principles (a
+*constitution*), have it **critique and revise its own** output against them, train on the
+revisions, and then use AI-generated preferences for the RL stage. The appeal is that the
+values become **inspectable text** rather than being implicit in thousands of individual
+annotations.
+
+## 13. Chat templates — the format is part of the model
+
+An instruct model is trained on a **specific** markup of roles, e.g.
+`<|system|>…<|user|>…<|assistant|>…`. Those special tokens are how it knows who is speaking
+and where to start writing. Two practical consequences: using the **wrong template** at
+inference measurably degrades quality (the model is off-distribution), and the boundary
+between "system instructions" and "user text" is only as strong as this training — which is
+the root of **prompt injection**, since it is all just tokens in one stream.
+
+## 14. What goes wrong
+
+- **Reward hacking** — the policy finds inputs the reward model scores highly but humans
+  dislike (excessive length, hedging, flattery). The KL penalty and better reward models are
+  the defences.
+- **Sycophancy** — annotators prefer agreeable answers, so the model learns to agree. A
+  direct, measurable consequence of *who labelled the data*.
+- **The alignment tax** — post-training can cost raw capability (a well-known effect on
+  benchmarks); mixing pretraining data back in during SFT reduces it.
+- **Mode collapse** — heavy RL narrows the output distribution: safer, more useful, less
+  diverse and creative.
+
+## 15. Evaluation — the hardest part
+
+There is no loss function for "helpful". In practice: **human preference arenas** (pairwise
+battles with Elo scores), **LLM-as-judge** (cheap and scalable, but biased toward length and
+toward its own family's style), **static benchmarks** (MMLU, GSM8K — cheap, but they leak into
+training data), and **red-teaming** for safety. Anyone claiming a single number captures
+post-training quality is selling something.
+
+## 16. Where the frontier is
+
+Post-training used to be a thin polish on a big pretrain; it is now a large fraction of the
+work — and increasingly *is* the product. Two live directions: **reasoning training**
+(rewarding correct chains of thought and letting models spend more compute at inference), and
+**tool use / agents** (training the model to call functions, search and execute code, so it
+can act rather than just answer). Both are post-training problems, not architecture problems
+— the block from Level 4 has not changed.
+
+*(Roadmap e24–e26.)*
 """
 
 _QUIZ = [

@@ -84,23 +84,103 @@ $W_h$ raised to a large power (Backprop §10). $|W_h|<1$ → it **vanishes** (th
 learn long-range dependencies — it forgets the start of the sentence); $|W_h|>1$ → it
 **explodes**. This is the central weakness of plain RNNs.
 
-## 6. LSTM & GRU — gated memory
+## 6. LSTM — gated memory, in full
 
-The fix is **gates**. An **LSTM** adds a separate **cell state** (a protected "conveyor
-belt") plus three learned gates — **forget** (what to drop), **input** (what to add), and
-**output** (what to read). Because the cell state is carried with mostly *additive* updates,
-gradients survive far longer, so LSTMs learn **long-range** structure. A **GRU** is a lighter
-two-gate variant. These powered the first great results in translation and speech.
+The fix is **gates**. An **LSTM** (Hochreiter & Schmidhuber, 1997) adds a second, protected
+memory — the **cell state** $c_t$, a "conveyor belt" running straight through time — and three
+learned gates that decide what happens to it. Each gate is nothing but a **sigmoid neuron**
+whose output in $(0,1)$ acts as a *valve*, multiplied element-wise ($\odot$):
 
-## 7. Why Transformers replaced them (mostly)
+$$ f_t=\sigma(W_f[x_t,h_{t-1}]+b_f),\quad i_t=\sigma(W_i[x_t,h_{t-1}]+b_i),\quad o_t=\sigma(W_o[x_t,h_{t-1}]+b_o) $$
+$$ \tilde c_t=\tanh(W_c[x_t,h_{t-1}]+b_c),\qquad c_t=f_t\odot c_{t-1}+i_t\odot\tilde c_t,\qquad h_t=o_t\odot\tanh(c_t) $$
 
-RNNs have two stubborn problems: they're **inherently sequential** (step $t$ needs step
-$t{-}1$, so you can't parallelize over time → slow on GPUs), and even LSTMs strain at *very*
-long range. **Attention / Transformers** (Attention page) fix both: they process **all
-positions in parallel** and connect any two tokens **directly** in one step. That's why
-modern NLP is Transformer-based. RNNs still shine where input arrives **streaming**, latency
-is tight, or sequences are modest (some speech, control, and time-series tasks). *(Roadmap
-e15; the real version is an LSTM char-model trained in PyTorch.)*
+Read it as three decisions: **forget** — how much of the old memory to keep; **input** — how
+much of the new candidate to write; **output** — how much of the memory to expose as this
+step's hidden state. Note the LSTM has **four** weight matrices where a vanilla RNN has one,
+so it costs ~4× the parameters.
+
+**Why this actually fixes the gradient.** Look at the boxed update: the cell is changed by
+**addition**, not by repeated multiplication with a weight matrix. Differentiating gives
+$$ \frac{\partial c_t}{\partial c_{t-1}} = f_t. $$
+If the network learns to hold the forget gate **open** ($f_t\approx1$), the gradient flows
+back through time **undamped** — the *constant error carousel*. Compare with the vanilla
+RNN's $w_h\tanh'$, which is strictly less than 1 in practice. That single change is what
+made long-range sequence learning work. *(A practical trick that follows: initialise the
+forget-gate bias **positive** — often 1.0 — so the cell starts out remembering by default.)*
+
+## 7. GRU — the lighter alternative
+
+The **Gated Recurrent Unit** (Cho et al., 2014) merges the cell and hidden state and uses
+**two** gates instead of three:
+$$ z_t=\sigma(W_z[x_t,h_{t-1}]),\quad r_t=\sigma(W_r[x_t,h_{t-1}]),\quad \tilde h_t=\tanh(W[x_t,\;r_t\odot h_{t-1}]) $$
+$$ h_t=(1-z_t)\odot h_{t-1}+z_t\odot\tilde h_t $$
+The **update** gate $z_t$ does the job of forget *and* input with one knob (keep $1-z$ of the
+old, write $z$ of the new); the **reset** gate $r_t$ decides how much history is visible when
+forming the candidate. ~25 % fewer parameters and faster, with accuracy usually
+indistinguishable from an LSTM — so GRU is a sensible default when data or compute is tight.
+
+## 8. Sequence shapes — what RNNs are wired to do
+
+The same cell serves several task shapes:
+
+| shape | example | wiring |
+|---|---|---|
+| **one → many** | image → caption | one input, emit a sequence |
+| **many → one** | review → sentiment | read it all, use the final $h_T$ |
+| **many → many (aligned)** | tagging each word | one output per step |
+| **many → many (seq2seq)** | translation | encoder reads, decoder writes |
+
+**Seq2seq / encoder–decoder** (2014) is the important one: an **encoder** RNN reads the whole
+source sentence into a final state, and a **decoder** RNN generates the target from it. This
+was the state of the art in translation — and it exposed the flaw that created modern AI: the
+entire source sentence has to be squeezed into **one fixed-size vector**, an *information
+bottleneck* that gets worse the longer the sentence. **Attention** was invented in 2014–15
+precisely to fix this, by letting the decoder look back at *all* encoder states instead of
+just the last one. That patch eventually ate the whole architecture (§11).
+
+## 9. Deeper and bidirectional
+
+Two standard upgrades. **Stacked (deep) RNNs** feed one recurrent layer's outputs into another
+as its inputs, building hierarchy in the same way stacked MLP layers do. **Bidirectional
+RNNs** run one pass left→right and another right→left, concatenating the two states — so each
+position sees the *whole* sentence. Bidirectional is excellent for **understanding** tasks
+(tagging, classification — the idea behind BERT's "B") but impossible for **generation**,
+where the future is not available yet.
+
+## 10. Training them in practice
+
+Three techniques you will always meet:
+
+- **Truncated BPTT** — unrolling 10 000 steps would exhaust memory, so backprop is cut off
+  after a window (say 50–200 steps). The forward state still carries further than the
+  gradient does.
+- **Gradient clipping** — rescale the gradient when its norm exceeds a threshold. This is the
+  standard, cheap cure for the *exploding* half of the problem (the vanishing half needs
+  gates). See Math **X4 §18**.
+- **Teacher forcing** — during training, feed the *true* previous token rather than the
+  model's own prediction. It converges much faster, but creates **exposure bias**: at
+  generation time the model must consume its own (imperfect) outputs, a distribution it never
+  trained on.
+
+## 11. Why Transformers replaced them (mostly)
+
+RNNs have two stubborn problems. They are **inherently sequential** — step $t$ needs step
+$t{-}1$, so the time dimension cannot be parallelized, which wastes a GPU and makes training
+on long corpora slow. And even a gated cell strains at *very* long range: the path between two
+distant tokens is still $O(\text{distance})$ steps long.
+
+**Attention / Transformers** (Attention page) fix both at once: every position is computed
+**in parallel**, and any two tokens are connected **directly in one step** — path length
+$O(1)$ instead of $O(n)$. The trade is cost: attention is $O(n^2)$ in sequence length where an
+RNN is $O(n)$ with $O(1)$ memory per step.
+
+That trade is why RNNs are **not** extinct. They still win where input arrives **streaming**,
+where latency and memory are tight (on-device speech, control loops), and for modest-length
+time-series. It is also why the **state-space models** of recent years (S4, Mamba) are
+interesting: they are recurrent at inference — $O(1)$ per token, no growing KV-cache — while
+being parallelizable during training. The recurrent idea keeps coming back.
+
+*(Roadmap e15; the real version is an LSTM char-model trained in PyTorch.)*
 """
 
 _QUIZ = [
@@ -170,7 +250,11 @@ tab_live, tab_theory, tab_quiz, tab_tasks, tab_ref = st.tabs(
     ["🔁 Hidden state", "📖 Theory", "❓ Self-check", "🛠 Tasks", "📚 References"]
 )
 
-with tab_live:
+def _sigmoid(z):
+    return 1.0 / (1.0 + np.exp(-np.clip(z, -500, 500)))
+
+
+def _hidden_state():
     st.markdown("A one-unit RNN: $h_t = \\tanh(w_x\\,x_t + w_h\\,h_{t-1})$. Pick an input "
                 "sequence and tune the weights — watch the **hidden state** (memory) evolve:")
     c = st.columns(3)
@@ -199,6 +283,190 @@ with tab_live:
             "long, >1 blows up. The same wₕ multiplies the gradient at every step too — which "
             "is exactly why long sequences vanish/explode, and why LSTMs add gates.",
             icon=":material/history:")
+
+
+def _bptt():
+    st.markdown(
+        "**Why long-range learning fails.** To learn that step $t$ mattered for the loss at step "
+        "$T$, the gradient must survive the whole journey back. Each step multiplies it by the "
+        "*same* two factors — the recurrent weight and the activation's slope:")
+    st.latex(r"\frac{\partial h_T}{\partial h_t}=\prod_{k=t+1}^{T} w_h\,\tanh'(z_k)"
+             r"\;\approx\;\big(w_h\,\tanh'\big)^{T-t}")
+    st.markdown("A **product of the same number** repeated — so it is exponential in the lag: "
+                "below 1 it vanishes, above 1 it explodes. There is no middle ground.")
+    whs = st.multiselect("recurrent weights to race", [0.5, 0.7, 0.9, 1.0, 1.1, 1.3],
+                         default=[0.5, 0.9, 1.0, 1.1], key="rnn_bptt_w")
+    maxlag = st.slider("maximum lag (steps back in time)", 5, 60, 30, 5, key="rnn_bptt_lag")
+
+    if whs:
+        fig, ax = plt.subplots(figsize=(7.2, 3.3))
+        rows = []
+        for wh in whs:
+            g, hh, curve = 1.0, 0.3, []
+            for _ in range(maxlag):
+                z = wh * hh
+                g *= wh * (1 - np.tanh(z) ** 2)
+                hh = np.tanh(z)
+                curve.append(abs(g))
+            ax.semilogy(range(1, maxlag + 1), np.maximum(curve, 1e-300), lw=2.1, marker="o",
+                        ms=2.6, label=f"wₕ = {wh}")
+            verdict = ("🔴 vanished" if curve[-1] < 1e-4 else
+                       ("🟢 survives" if curve[-1] > 1e-2 else "🟡 fading"))
+            rows.append(f"| **wₕ = {wh}** | {curve[0]:.3f} | {curve[-1]:.2e} | {verdict} |")
+        ax.axhline(1.0, color="0.7", ls=":", lw=1)
+        ax.set_xlabel("lag  T − t  (how far back the gradient must travel)", fontsize=9)
+        ax.set_ylabel("|∂h_T/∂h_t|  (log)", fontsize=9)
+        ax.set_title("gradient surviving back through time", fontsize=9.5)
+        ax.legend(fontsize=8); ax.tick_params(labelsize=8)
+        fig.tight_layout(); st.pyplot(fig, width="stretch")
+        st.markdown("| recurrent weight | gradient at lag 1 | at max lag | verdict |\n"
+                    "|---|---|---|---|\n" + "\n".join(rows))
+        st.info(
+            "**Notice there is no safe setting.** Even at $w_h=1$ the $\\tanh'$ factor is < 1, so "
+            "the gradient still decays; push $w_h$ above 1 and it grows until tanh saturates and "
+            "then collapses anyway. This is the **vanishing/exploding gradient through time**, and "
+            "it is why a plain RNN struggles to connect events more than ~10–20 steps apart. "
+            "*Exploding* is the easy half — just **clip** the gradient. *Vanishing* needs an "
+            "architectural fix: **gates**.", icon=":material/trending_down:")
+
+
+def _lstm_cell():
+    st.markdown(
+        "**The fix: let the network decide what to keep.** An LSTM adds a second, protected "
+        "memory — the **cell state** $c_t$ — and three learned **gates** that control it. Each "
+        "gate is just a sigmoid neuron outputting a number in $(0,1)$: a *valve*.")
+    st.latex(r"f_t=\sigma(W_f\cdot[x_t,h_{t-1}]),\quad i_t=\sigma(W_i\cdot[x_t,h_{t-1}]),"
+             r"\quad o_t=\sigma(W_o\cdot[x_t,h_{t-1}])")
+    st.latex(r"\tilde c_t=\tanh(W_c\cdot[x_t,h_{t-1}]),\qquad "
+             r"\boxed{c_t=f_t\odot c_{t-1}+i_t\odot\tilde c_t},\qquad h_t=o_t\odot\tanh(c_t)")
+    c = st.columns(3)
+    x_t = c[0].slider("input xₜ", -2.0, 2.0, 1.0, 0.1, key="ls_x")
+    h_p = c[1].slider("previous hidden hₜ₋₁", -1.0, 1.0, 0.3, 0.1, key="ls_h")
+    c_p = c[2].slider("previous cell cₜ₋₁", -2.0, 2.0, 0.5, 0.1, key="ls_c")
+    st.caption("gate weights — each row is (weight on x, weight on h, bias)")
+    g = st.columns(4)
+    W = {}
+    defs = {"f (forget)": (0.8, 0.5, -0.3), "i (input)": (1.2, -0.4, 0.2),
+            "o (output)": (0.6, 0.9, 0.1), "c̃ (candidate)": (1.5, 0.7, -0.2)}
+    for j, (nm, d) in enumerate(defs.items()):
+        with g[j]:
+            st.markdown(f"**{nm}**")
+            W[nm] = (
+                st.number_input("wx", -3.0, 3.0, d[0], 0.1, key=f"ls_wx{j}", format="%.1f"),
+                st.number_input("wh", -3.0, 3.0, d[1], 0.1, key=f"ls_wh{j}", format="%.1f"),
+                st.number_input("b", -3.0, 3.0, d[2], 0.1, key=f"ls_b{j}", format="%.1f"),
+            )
+
+    def pre(nm):
+        w = W[nm]
+        return w[0] * x_t + w[1] * h_p + w[2]
+
+    f = float(_sigmoid(pre("f (forget)")))
+    i = float(_sigmoid(pre("i (input)")))
+    o = float(_sigmoid(pre("o (output)")))
+    cand = float(np.tanh(pre("c̃ (candidate)")))
+    c_t = f * c_p + i * cand
+    h_t = o * float(np.tanh(c_t))
+
+    m = st.columns(4)
+    m[0].metric("f · forget", f"{f:.4f}", "keep " + f"{f*100:.0f}%", delta_color="off")
+    m[1].metric("i · input", f"{i:.4f}", "write " + f"{i*100:.0f}%", delta_color="off")
+    m[2].metric("o · output", f"{o:.4f}", "expose " + f"{o*100:.0f}%", delta_color="off")
+    m[3].metric("c̃ · candidate", f"{cand:+.4f}")
+    st.latex(rf"c_t=f_t c_{{t-1}}+i_t\tilde c_t={f:.4f}\times{c_p:.2f}+{i:.4f}\times{cand:.4f}"
+             rf"={f*c_p:.4f}+{i*cand:.4f}={c_t:.4f}")
+    st.latex(rf"h_t=o_t\tanh(c_t)={o:.4f}\times\tanh({c_t:.4f})={h_t:.4f}")
+
+    fig, ax = plt.subplots(figsize=(6.8, 1.9))
+    ax.barh(["forget f", "input i", "output o"], [f, i, o],
+            color=["#C0507A", "#1D9E75", "#185FA5"], height=.55)
+    ax.set_xlim(0, 1); ax.axvline(.5, color="0.75", ls=":", lw=1)
+    ax.set_xlabel("gate opening  (0 = closed, 1 = fully open)", fontsize=9)
+    ax.tick_params(labelsize=8)
+    for j, v in enumerate([f, i, o]):
+        ax.text(v + .015, j, f"{v:.2f}", va="center", fontsize=9)
+    fig.tight_layout(); st.pyplot(fig, width="stretch")
+
+    st.success(
+        f"**The key line is $c_t=f_t c_{{t-1}}+i_t\\tilde c_t$ — addition, not repeated "
+        f"multiplication by a weight.** Differentiate it and $\\partial c_t/\\partial c_{{t-1}}"
+        f"=f_t={f:.3f}$. With the forget gate **open ($f\\to1$) the gradient passes through "
+        f"unchanged, forever** — the *constant error carousel*. Here $f={f:.3f}$, so over 25 steps "
+        f"the gradient scales by ${f:.3f}^{{25}}={f**25:.2e}$; at $f=1$ it would be exactly **1**. "
+        "The network *learns* when to hold and when to forget.", icon=":material/lock_open:")
+    st.markdown(
+        "**GRU** is the popular simplification: it merges the cell and hidden state and uses two "
+        "gates instead of three — an **update** gate $z_t$ (one knob doing both forget and input, "
+        "$h_t=(1-z_t)h_{t-1}+z_t\\tilde h_t$) and a **reset** gate. ~25 % fewer parameters, "
+        "usually indistinguishable in accuracy."
+    )
+
+
+def _memory_task():
+    st.markdown(
+        "**The decisive experiment.** Show the network a value at $t=0$, then feed it *nothing* "
+        "for `lag` steps, and ask what it still holds. This is the long-range dependency problem "
+        "in its purest form.")
+    c = st.columns(3)
+    v = c[0].slider("value to remember (at t=0)", 0.5, 3.0, 1.5, 0.1, key="mt_v")
+    lag = c[1].slider("lag (steps of silence)", 1, 60, 25, 1, key="mt_lag")
+    wh = c[2].slider("vanilla RNN wₕ", 0.5, 1.0, 0.9, 0.01, key="mt_wh")
+    fg = st.slider("LSTM forget gate f  (1.0 = hold perfectly)", 0.80, 1.00, 1.00, 0.01,
+                   key="mt_f")
+
+    hv = np.tanh(v); van = [hv]
+    for _ in range(lag):
+        hv = np.tanh(wh * hv); van.append(hv)
+    cc = np.tanh(v); ls = [float(np.tanh(cc))]
+    cells = [cc]
+    for _ in range(lag):
+        cc = fg * cc; ls.append(float(np.tanh(cc))); cells.append(cc)
+
+    fig, ax = plt.subplots(figsize=(7.2, 3.2))
+    tt = np.arange(lag + 1)
+    ax.plot(tt, np.abs(van), "-o", ms=3, lw=2, color="#C0507A", label=f"vanilla RNN (wₕ={wh})")
+    ax.plot(tt, np.abs(ls), "-o", ms=3, lw=2, color="#1D9E75", label=f"LSTM cell (f={fg})")
+    ax.axhline(0.1 * abs(np.tanh(v)), color="0.6", ls=":", lw=1, label="10% of the original")
+    ax.set_xlabel("steps since the value was shown", fontsize=9)
+    ax.set_ylabel("|signal still held|", fontsize=9)
+    ax.set_title("what survives the silence", fontsize=9.5)
+    ax.legend(fontsize=8); ax.tick_params(labelsize=8)
+    fig.tight_layout(); st.pyplot(fig, width="stretch")
+
+    m = st.columns(4)
+    m[0].metric("vanilla, after lag", f"{van[-1]:+.5f}")
+    m[1].metric("LSTM, after lag", f"{ls[-1]:+.5f}")
+    m[2].metric("LSTM cell state", f"{cells[-1]:+.5f}")
+    keep = abs(ls[-1]) / max(abs(van[-1]), 1e-12)
+    m[3].metric("LSTM advantage", f"{keep:,.0f}×" if np.isfinite(keep) and keep < 1e9 else "∞")
+    if fg >= 0.999:
+        st.success(
+            f"**With the forget gate fully open the cell state is unchanged — exactly "
+            f"{cells[-1]:.5f} — no matter how long the lag.** Nothing multiplies it, so nothing "
+            f"decays. Meanwhile the vanilla RNN has faded to {van[-1]:.5f}. That is the whole "
+            "reason LSTMs work on long sequences.", icon=":material/check_circle:")
+    else:
+        st.warning(
+            f"With $f={fg}$ the cell leaks: it decays like $f^{{\\text{{lag}}}}="
+            f"{fg**lag:.4f}$. Gating only helps if the network **learns to open the gate** — "
+            "which is why LSTM forget-gate biases are often initialised **positive**, so the cell "
+            "starts out remembering by default.", icon=":material/warning:")
+
+
+with tab_live:
+    rmode = st.radio("playground",
+                     ["🔁 Hidden state", "⏱ Gradients through time (BPTT)",
+                      "🚪 LSTM cell", "🧠 Memory benchmark"],
+                     horizontal=True, key="rnn_mode")
+    st.divider()
+    if rmode.startswith("🔁"):
+        _hidden_state()
+    elif rmode.startswith("⏱"):
+        _bptt()
+    elif rmode.startswith("🚪"):
+        _lstm_cell()
+    else:
+        _memory_task()
 
 with tab_theory:
     st.markdown(_THEORY.replace("<DIAG/>", _DIAG_SVG), unsafe_allow_html=True)

@@ -134,6 +134,77 @@ Tokenizers reserve a few non-text tokens: **`<bos>` / `<eos>`** (begin/end of se
 - Many famous LLM quirks (miscounting letters in a word, fumbling arithmetic) trace back to
   the fact that the model sees **tokens, not characters**.
 
+
+## 8. BPE, worked merge by merge
+
+Take the toy corpus `low low lower newest widest` (words split into characters, `_` marking a
+word end). BPE counts every adjacent pair and merges the **most frequent** one, then repeats:
+
+| round | most frequent pair | count | new token | effect |
+|---|---|---|---|---|
+| 1 | `e` + `s` | 2 | `es` | `newest` → `n e w es t` |
+| 2 | `es` + `t` | 2 | `est` | `newest` → `n e w est` |
+| 3 | `l` + `o` | 3 | `lo` | `low`, `lower` shorten |
+| 4 | `lo` + `w` | 3 | `low` | `low` is now **one** token |
+
+Two things to notice. Merges are **learned from data, not from grammar** — `est` emerged
+because it is frequent, and it happens to be a real suffix, but nothing guaranteed that.
+And merges are **applied in the order they were learned** at encode time, which is why a
+tokenizer is a *list* of merges, not just a vocabulary.
+
+## 9. Byte-level BPE — how GPT never sees an unknown character
+
+Plain BPE over characters still breaks on an unseen character (an emoji, a rare script).
+**Byte-level BPE** (GPT-2 onward) starts from the **256 possible bytes** instead of
+characters. Since *every* piece of text is bytes, the tokenizer is **total** — it can encode
+literally anything, including binary-looking junk, with no `<unk>` and no preprocessing. The
+cost is that non-Latin scripts get chopped into many bytes.
+
+## 10. The vocabulary-size trade-off
+
+Choosing $V$ trades two costs against each other:
+
+- **Bigger $V$** → fewer tokens per document → **shorter sequences** → attention cost falls
+  ($O(n^2)$!) and more text fits in the context window.
+- **Bigger $V$** → a bigger embedding matrix ($V\times d$) and a bigger output softmax, and
+  each token is seen less often during training.
+
+GPT-2 chose 50 257; GPT-4's `cl100k` ≈ 100 k; Llama 3 moved to 128 k. The trend is *upward*,
+because attention's quadratic cost makes short sequences increasingly valuable.
+
+## 11. The other algorithms
+
+| algorithm | idea | used by |
+|---|---|---|
+| **BPE** | greedily merge the most frequent pair | GPT-2/3/4, Llama, Mistral |
+| **WordPiece** | merge the pair that most improves corpus likelihood | BERT |
+| **Unigram LM** | start with a big vocab and *prune* the least useful tokens | T5, XLNet (via SentencePiece) |
+| **SentencePiece** | a *wrapper*: treats input as a raw stream (spaces become `▁`), so it needs no pre-tokenizer and works for languages without spaces | Llama, T5, many multilingual models |
+
+## 12. Where tokenizers bite you
+
+Real, load-bearing consequences — most "weird LLM behaviour" traces back here:
+
+- **Arithmetic.** `1234` may split as `12|34`, so digits do not line up in columns. This is a
+  genuine cause of arithmetic errors; newer tokenizers deliberately split numbers into
+  single digits.
+- **Spelling & character tasks.** The model sees `strawberry` as ~2 tokens, not 10 letters —
+  which is why counting letters in a word is oddly hard for an LLM.
+- **The non-English tax.** The same sentence can cost 2–3× more tokens in Turkish, Hindi or
+  Thai than in English, because the merges were learned on English-heavy data. You pay more
+  per API call *and* get less usable context.
+- **Trailing whitespace.** `"Hello"` and `"Hello "` tokenize differently, so a trailing space
+  in a prompt can measurably change the output.
+- **Glitch tokens.** Strings that appeared in the tokenizer's training data but almost never
+  in the model's (the famous `SolidGoldMagikarp`) get embeddings that were barely trained,
+  and can trigger bizarre outputs.
+
+## 13. It is a preprocessing step, not part of the model
+
+Worth stating plainly: the tokenizer is **trained separately, before** the network, and then
+**frozen**. The model never sees text — only integer IDs. Every property above is therefore
+locked in before training begins, and changing the tokenizer means retraining the model.
+
 *(Roadmap e22. Next: this feeds the Attention → Tiny GPT → Decoding pages.)*
 """
 

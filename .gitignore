@@ -20,6 +20,9 @@ outputs/
 # Papers: keep the reading list (papers/README.md) in git, ignore the PDFs.
 papers/*.pdf
 
+# Visitor feedback (private data — never commit)
+feedback/
+
 # GUI runtime (start.sh / stop.sh)
 .gui.pid
 .gui.log

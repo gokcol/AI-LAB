@@ -110,6 +110,85 @@ already used, to break the "the the the" loops that pure sampling can fall into.
 There's no single correct setting — decoding is the dial on the **reliability ↔ creativity**
 trade-off. *(Lab: the Tiny GPT page generates with temperature + top-k; this is roadmap
 e23.)*
+
+## 8. The temperature formula
+
+Temperature rescales the **logits** before the softmax:
+$$ p_i=\frac{\exp(z_i/T)}{\sum_j \exp(z_j/T)} $$
+Three regimes worth knowing. As $T\to0$ the largest logit dominates completely and softmax
+becomes **argmax** — greedy decoding is just $T=0$. At $T=1$ you sample from the model's
+actual learned distribution. As $T\to\infty$ every $z_i/T\to0$ and the distribution becomes
+**uniform** — pure noise. Note $T$ divides the logits *before* the exponential, so it changes
+the *ratios* of probabilities, not just their spread: doubling $T$ halves every log-odds gap.
+
+## 9. Beam search — and why chatbots don't use it
+
+Greedy takes the best token at each step, which is not the best *sequence*. **Beam search**
+keeps the $k$ highest-probability partial sequences alive and expands all of them, returning
+the best complete one. It reliably finds higher-likelihood text — and is standard in
+**translation** and **speech recognition**, where there is one right answer.
+
+So why don't chat models use it? Because for open-ended generation, maximising likelihood
+produces **bland, repetitive, degenerate text** — the highest-probability continuation of
+almost anything is a generic platitude, and beam search finds it every time. Human language
+is *not* the most likely word sequence; it carries surprise. This is why the field moved to
+truncated **sampling** (top-k / top-p) for creative generation: we deliberately give up
+likelihood to buy diversity.
+
+## 10. The newer truncation rules
+
+Top-k and top-p are not the last word:
+
+- **min-p** — keep tokens whose probability is at least $p_{\min}\times p_{\max}$, i.e.
+  threshold *relative to the most likely token*. Adapts better than top-p when the
+  distribution is very peaked or very flat.
+- **Typical sampling** — keep tokens whose surprisal is close to the distribution's
+  **entropy** (Math **X5**), on the theory that natural language is "averagely surprising"
+  rather than maximally likely.
+- **Tail-free / eta sampling** — cut where the probability curve's slope collapses.
+
+All of them are the same move: **decide which tail to discard before sampling**. In practice
+top-p ≈ 0.9–0.95 with a modest temperature remains the workhorse.
+
+## 11. Repetition controls, precisely
+
+Three different knobs, often confused:
+
+| control | what it does |
+|---|---|
+| **repetition penalty** | *divides* the logit of any already-used token by $r>1$ |
+| **frequency penalty** | subtracts an amount **proportional to how often** the token appeared |
+| **presence penalty** | subtracts a flat amount if the token appeared **at all** |
+
+They are blunt instruments — penalising a token also suppresses legitimate reuse ("the",
+a variable name in code), so heavy settings degrade text. The real cure for repetition is
+usually a better sampler or a better model, not a bigger penalty.
+
+## 12. Constrained & structured decoding
+
+Sometimes the output *must* be valid JSON, match a regex, or follow a grammar. You can
+enforce this **at decode time** by masking the logits of any token that would break the
+constraint, then re-normalising — the model simply cannot emit an invalid character. This is
+how "JSON mode" and function-calling schemas are implemented, and it is strictly stronger
+than prompting for a format, because it is a *hard* guarantee rather than a request.
+
+## 13. Speculative decoding — the speed trick
+
+Generation is sequential and memory-bound (Tiny GPT §12), so a big model spends most of its
+time waiting on memory. **Speculative decoding** runs a small, fast *draft* model to propose
+several tokens ahead, then has the big model **verify them all in one parallel forward pass**,
+accepting the longest correct prefix. Because verification is parallel and cheap, this gives
+a 2–3× speedup **with mathematically identical output distribution** — a rare free lunch.
+
+## 14. Decoding is where the model meets the user
+
+A closing perspective: none of this changes a single weight. The same trained network can be
+a careful assistant or a wild storyteller depending purely on these settings — which is why
+they are exposed in every API. Practical defaults: **temperature 0 (greedy)** for extraction,
+classification, code and benchmarks — where you want determinism and reproducibility;
+**temperature ≈ 0.7 with top-p ≈ 0.9** for conversation and creative work. And note that
+"temperature 0" is *usually* deterministic but not always: batching, GPU non-determinism and
+mixture-of-experts routing can still produce run-to-run variation.
 """
 
 _QUIZ = [

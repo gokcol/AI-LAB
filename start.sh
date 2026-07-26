@@ -36,7 +36,9 @@ source "$VENV/bin/activate"
 
 # Local runs get the 🐍 Sandbox (arbitrary-code scratchpad); public deploys don't set
 # this, so the Sandbox is hidden there.
-export AILAB_ENABLE_SANDBOX=1
+# Sandbox = in-app arbitrary-Python page. Default ON for LOCAL use only.
+# On a public server run:  AILAB_ENABLE_SANDBOX=0 ./start.sh   (never expose it).
+export AILAB_ENABLE_SANDBOX="${AILAB_ENABLE_SANDBOX:-1}"
 
 echo "Starting AI Lab GUI on port $PORT ..."
 nohup streamlit run gui/app.py \

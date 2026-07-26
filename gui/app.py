@@ -59,7 +59,8 @@ COACH = page("views/study_coach.py", "page.study_coach", ":material/self_improve
 # dict to st.navigation renders the keys as sidebar section headers (much less crowded).
 ANN = {
     i18n.t("section.overview"): [
-        page("views/dashboard.py", "page.dashboard", ":material/dashboard:", default=True),
+        page("views/home.py", "page.home", ":material/home:", default=True),
+        page("views/dashboard.py", "page.dashboard", ":material/dashboard:"),
         COACH,
         page("views/the_chain.py", "page.big_picture", ":material/route:"),
     ],

@@ -140,6 +140,79 @@ X1). The genius is the *composition* — at every layer the data itself decides 
 inform which. Add a causal mask + an MLP into a **block**, repeat, cap with a next-token
 softmax head, and you have a **GPT** (Tiny GPT page). Everything in this lab leads here:
 neuron → MLP → backprop → attention → Transformer → LLM. *(Roadmap Tier 4–5.)*
+
+## 11. The shapes and the parameter count
+
+For a model width $d$ and sequence length $n$, one attention layer holds four square
+matrices — $W_Q, W_K, W_V$ and the output projection $W_O$:
+
+$$ X\in\mathbb R^{n\times d},\quad Q=XW_Q,\; K=XW_K,\; V=XW_V \in \mathbb R^{n\times d},\qquad \text{params} = 4d^2 $$
+
+The attention matrix $QK^\top/\sqrt{d}$ is $n\times n$ — one score for every **pair** of
+positions — and after softmax it multiplies $V$ back to $n\times d$. Note what is *not* in
+that list: **no parameter depends on $n$**, which is why the same weights work at any
+sequence length.
+
+## 12. Multi-head attention, precisely
+
+One attention pattern per layer is limiting — a token may need to track its subject *and* its
+tense *and* its position at once. So we split the width into $h$ **heads** of size
+$d_h = d/h$, run attention independently in each, then concatenate and project:
+
+$$ \mathrm{head}_i=\mathrm{Attn}(XW_Q^{(i)},XW_K^{(i)},XW_V^{(i)}),\qquad \mathrm{MHA}(X)=\big[\mathrm{head}_1;\dots;\mathrm{head}_h\big]W_O $$
+
+Crucially this is **free**: $h$ heads of size $d/h$ cost the same as one head of size $d$.
+GPT-2 small uses $d=768$ with $h=12$, so $d_h=64$. Interpretability work finds heads
+specialise — *previous-token* heads, *syntactic* heads, and famously **induction heads**
+that implement "I saw `A B` earlier, and here is `A` again, so predict `B`" — the mechanism
+behind much of in-context learning.
+
+## 13. Positions: sinusoidal → learned → RoPE
+
+Attention is **permutation-equivariant** (§8): shuffle the tokens and the outputs shuffle with
+them. Order must be injected explicitly, and how has changed over time:
+
+| scheme | idea | used by |
+|---|---|---|
+| **Sinusoidal** | fixed sin/cos of different frequencies, added to the embedding | original Transformer |
+| **Learned absolute** | a trainable vector per position | GPT-2, BERT |
+| **RoPE** (rotary) | *rotate* Q and K by an angle proportional to position, so the dot product depends on **relative** distance | **Llama, GPT-NeoX, most modern LLMs** |
+| **ALiBi** | add a distance-proportional penalty to the scores | BLOOM, MPT |
+
+The move to **relative** schemes matters because absolute embeddings do not extrapolate:
+a model with 1 024 learned position vectors has literally nothing to use at position 1 025.
+RoPE degrades gracefully and can be *interpolated* to extend context after training — which
+is how models get long-context versions without retraining from scratch.
+
+## 14. The cost, and how it is fought
+
+Attention is $O(n^2 d)$ in time and $O(n^2)$ in memory: at $n=1024$ that is ~1 M scores; at
+$n=131\,072$ it is **17 billion**. Four responses, all in production use:
+
+- **FlashAttention** — an *exact* algorithm that never materialises the $n\times n$ matrix,
+  tiling the computation to stay in fast on-chip SRAM. Same maths, several times faster.
+- **GQA / MQA** — let several query heads *share* one key/value head. Barely changes quality
+  and shrinks the KV cache severalfold (Llama 2 70B onward).
+- **Sliding-window / sparse attention** — each token attends only to a local window (Mistral),
+  making cost linear in $n$.
+- **Linear-attention & state-space models** (Mamba) — drop softmax attention for an $O(n)$
+  recurrence, at some cost in recall.
+
+## 15. Self- vs cross-attention
+
+Same equations, different sources. In **self-attention** $Q,K,V$ all come from the same
+sequence — that is what a GPT block uses. In **cross-attention** the queries come from one
+sequence and the keys/values from another: a translation decoder queries the encoder's
+representation of the source sentence, and a text-to-image model has image queries attending
+to text keys. The mechanism is identical; only *where you take the vectors from* changes.
+
+## 16. The mental model worth keeping
+
+Attention is a **soft, differentiable dictionary lookup**. A hard lookup takes a key, finds
+the exact match, returns its value. Attention takes a query, scores *every* key by similarity,
+softmaxes the scores into weights, and returns the **weighted blend of all values**. Because
+every step is differentiable, the network can *learn what to look up* — and that, rather than
+any new kind of neuron, is the whole innovation.
 """
 
 _QUIZ = [

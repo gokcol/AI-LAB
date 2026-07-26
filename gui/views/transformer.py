@@ -126,8 +126,8 @@ what lets the model train on **every position at once** (§5) while never cheati
 ## 4. The output head — next-token softmax
 
 After the last block (and a final LayerNorm), each token's vector passes through a **linear
-layer → softmax over the whole vocabulary**, giving $P(\text{next token}\mid\text{everything
-so far})$ at that position. The linear layer has **one row per vocabulary item**; the dot
+layer → softmax over the whole vocabulary**, giving $P(\text{next token}\mid\text{everything so far})$ at that
+position. The linear layer has **one row per vocabulary item**; the dot
 product of a token's vector with each row scores how likely that item comes next (Math X1,
 once more).
 
@@ -179,6 +179,100 @@ Stack masked multi-head self-attention blocks, add token + position embeddings a
 next-token head, train by cross-entropy, generate by sampling. The whole lab built to here:
 **neuron → MLP → backprop → optimizers → attention → Transformer → a language model.**
 *(Roadmap Tier 5; experiment e21 trains the real thing.)*
+
+## 9. The block, written out
+
+Every modern block is two sub-layers, each wrapped in a residual connection with
+normalization applied **before** it (*pre-norm*):
+
+$$ x \leftarrow x + \mathrm{MHA}\big(\mathrm{Norm}(x)\big), \qquad x \leftarrow x + \mathrm{FFN}\big(\mathrm{Norm}(x)\big) $$
+
+The two halves have complementary jobs: **attention mixes information _between_ positions**,
+while the **FFN processes each position independently** — the "thinking" step applied
+token-wise. The residual `x + ...` is what lets gradients reach layer 1 of a 96-layer stack
+(the same trick as ResNet).
+
+The **FFN** expands and contracts, conventionally by 4×:
+$$ \mathrm{FFN}(x)=W_2\,\varphi(W_1x),\qquad W_1\in\mathbb R^{4d\times d},\; W_2\in\mathbb R^{d\times 4d} $$
+with $\varphi$ = GELU (GPT-2/3) or a gated **SwiGLU** (Llama, PaLM). Note the FFN holds
+**twice** the parameters of the attention it follows.
+
+## 10. Counting the parameters
+
+Per block: $4d^2$ (attention) $+\;8d^2$ (FFN) $=\;\mathbf{12d^2}$. So
+
+$$ N \;\approx\; \underbrace{12\,d^2 L}_{\text{blocks}} \;+\; \underbrace{V d}_{\text{embeddings}} $$
+
+**Worked, for GPT-2 small** ($d=768$, $L=12$, $V=50\,257$, ctx 1024):
+$12\cdot768^2\cdot12 = 84.9\text{M}$, embeddings $50\,257\cdot768=38.6\text{M}$, positions
+$0.8\text{M}$ → **124.3 M**, exactly the published 124 M. The same formula gives GPT-3
+($d=12\,288$, $L=96$): $12d^2L \approx 174\text{B}$ ≈ the published 175 B.
+
+Two consequences: parameters grow with $d^2$, so **width is expensive**; and in small models
+the *embedding table* is a large share of the total (31 % here), which is why many models
+**tie** the input embedding and output-head weights.
+
+## 11. Training: one objective, a lot of tokens
+
+The loss is plain **cross-entropy** on the next token, averaged over every position — one
+sequence of length $n$ yields $n$ training signals at once, which is why self-supervised
+pretraining is so efficient. **Teacher forcing** feeds the true prefix during training
+(so all positions can be computed in parallel), while the **causal mask** prevents cheating.
+
+**How much data?** The Chinchilla result: for a compute budget, parameters and tokens should
+scale *together* — roughly **20 tokens per parameter**. A 7 B model wants ~140 B tokens; a
+70 B model ~1.4 T. Earlier models (GPT-3) were badly under-trained by this measure, which is
+why later 7 B models beat them.
+
+## 12. Inference: the KV cache, and why generation is slow
+
+Generating token $t{+}1$ re-attends over all previous tokens — but their keys and values were
+already computed, so they are **cached** rather than recomputed. That turns per-token cost
+from $O(n^2)$ to $O(n)$, at the price of memory:
+
+$$ \text{KV bytes} = 2\,\cdot\,L\,\cdot\,n_{\text{heads}}\,\cdot\,d_h\,\cdot\,n\,\cdot\,\text{batch}\,\cdot\,\text{bytes} $$
+
+For a 32-layer, 32-head, $d_h{=}128$ model at 32 k context with batch 2, that is ≈ **17 GB**
+in fp16 — often more than the weights. This is why generation is **memory-bandwidth bound**
+rather than compute bound, why long contexts are expensive to *serve*, and why **GQA** (fewer
+KV heads) was adopted so quickly.
+
+Note the asymmetry: **training** processes all positions in parallel, but **generation** is
+inherently sequential — one token at a time, forever.
+
+## 13. Three families from one block
+
+| family | attention | trained to | good at |
+|---|---|---|---|
+| **Decoder-only** (GPT, Llama, Claude) | causal | predict the next token | generation — and, it turns out, everything |
+| **Encoder-only** (BERT) | bidirectional | fill in masked tokens | understanding: classification, retrieval |
+| **Encoder–decoder** (T5, original) | both + cross-attention | map sequence → sequence | translation, summarization |
+
+The field consolidated on **decoder-only** because one simple objective scales, and because
+generation subsumes the other tasks when the model is large enough (just ask it in words).
+
+## 14. Mixture of Experts — more parameters, same compute
+
+The FFN is where most parameters live, so **MoE** replaces it with $E$ expert FFNs plus a
+small router that sends each token to only the top-1 or top-2 experts. Total parameters rise
+enormously while **compute per token stays roughly flat** — a way to buy capacity without
+buying FLOPs. Used in Mixtral, and widely believed to be in the frontier closed models.
+
+## 15. What actually made it work
+
+Worth separating the ideas from the engineering:
+
+1. **Attention** — direct, $O(1)$-path communication between any two positions.
+2. **Residuals + normalization** — makes 100-layer depth trainable at all.
+3. **Parallelism over positions** — the reason it beat RNNs on GPUs; the architecture was
+   designed to *fit the hardware*.
+4. **One self-supervised objective** — next-token prediction needs no labels, so the training
+   set is "the internet".
+5. **Scale** — the same block, made wider and deeper on more tokens, kept improving
+   predictably (scaling laws).
+
+Nothing on that list is a new kind of *neuron*. It is the same weighted sum and nonlinearity
+from Level 1, wired so that information can move freely and the whole thing fits a GPU.
 """
 
 _QUIZ = [

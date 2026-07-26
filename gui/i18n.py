@@ -59,6 +59,7 @@ TEXT = {
     "section.probability": {"en": "Probability & optimization", "tr": "Olasılık ve optimizasyon"},
     "section.information": {"en": "Information & numerics", "tr": "Bilgi kuramı ve sayısal hesap"},
     "section.tools": {"en": "Tools", "tr": "Araçlar"},
+    "page.home": {"en": "Home", "tr": "Ana sayfa"},
     "page.dashboard": {"en": "Dashboard", "tr": "Panel"},
     "page.study_coach": {"en": "Study Coach", "tr": "Çalışma Koçu"},
     "page.big_picture": {"en": "The big picture", "tr": "Büyük resim"},

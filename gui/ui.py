@@ -147,6 +147,9 @@ def inject_theme() -> None:
             color: #173b31;
         }
 
+        /* feedback honeypot — invisible to humans, present in the DOM for bots */
+        .st-key-fb_hp { display: none !important; }
+
         .ailab-step {
             padding: 0.8rem 0.9rem;
             border: 1px solid var(--ailab-border);

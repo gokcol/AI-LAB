@@ -106,7 +106,99 @@ Use **RAG** to supply **facts** (fresh, proprietary, citable). Use **fine-tuning
 The Live tab uses **lexical TF-IDF** vectors (self-contained, no model download), so it
 matches on shared words rather than deep meaning. The **pipeline is exactly RAG** — embed →
 cosine-rank → retrieve → would-be prompt; real systems simply swap in **learned semantic**
-embeddings. *(Roadmap e27; ties to Math X1 and the Attention page.)*
+embeddings. 
+
+## 8. What makes a *good* embedding model
+
+The demo here uses TF-IDF, which matches shared words. Real embedding models are trained with
+**contrastive learning**: show the model pairs that *should* be close (a question and its
+answer, a sentence and its paraphrase) and pairs that should be far apart, then optimise a
+loss like InfoNCE that pulls positives together and pushes negatives away:
+$$ \mathcal L=-\log\frac{\exp(\mathrm{sim}(q,d^{+})/\tau)}{\sum_{d}\exp(\mathrm{sim}(q,d)/\tau)} $$
+Note this is just **softmax + cross-entropy** (Math **X5**) over similarities — the same
+machinery as classification, with "which document matches" as the label. The architecture is
+usually a **dual encoder** (query and document encoded independently), because that lets you
+embed the whole corpus **once, offline**.
+
+## 9. Metrics, normalization and dimension
+
+- **Cosine** ignores length and compares direction only — the default for text.
+- **Dot product** rewards longer vectors too, so it can favour "generally popular" documents.
+- **Euclidean** on **L2-normalized** vectors is *monotonically equivalent* to cosine, so
+  after normalising you may use whichever your database supports.
+
+Most providers return already-normalized vectors, which makes cosine a plain dot product.
+Typical dimensions run 384–3072: bigger captures more nuance but costs more memory and search
+time, and **Matryoshka**-style models let you truncate the vector to trade accuracy for cost.
+
+## 10. Vector databases & approximate search
+
+Exact nearest-neighbour search is $O(N)$ per query — fine for the 10 facts here, hopeless for
+10 million. Vector databases use **ANN (approximate nearest neighbour)** indexes:
+
+- **HNSW** — a navigable small-world graph; you greedily hop toward the query. Fast and
+  accurate, memory-hungry.
+- **IVF** — cluster the corpus, search only the nearest few clusters.
+- **PQ / quantization** — compress each vector to a few bytes so billions fit in RAM.
+
+All of them trade a little **recall** for a lot of speed — you may miss a true neighbour
+occasionally, which is a perfectly acceptable bargain at scale.
+
+## 11. Chunking — the most underrated decision
+
+You cannot embed a 300-page manual as one vector; it must be split. And chunking is where
+most RAG systems are actually won or lost:
+
+- **Too large** → the embedding averages several topics and matches nothing precisely.
+- **Too small** → chunks lose the context needed to be understood on their own.
+- **Overlap** (say 10–20 %) prevents an answer being severed at a boundary.
+- **Respect structure** — split on headings, paragraphs or code blocks rather than a fixed
+  character count.
+- **Enrich** — prepending the document title or section heading to each chunk measurably
+  improves retrieval.
+
+## 12. Hybrid search and reranking
+
+Dense embeddings are good at *meaning* but can miss exact identifiers — a product code, an
+error number, a rare surname. **BM25** (classic keyword search) is excellent at exactly that.
+**Hybrid search** runs both and fuses the rankings, and it beats either alone in practice.
+
+Then add a **reranker**: a *cross-encoder* that reads the query and each candidate
+**together** and scores the pair. It is far more accurate than comparing two independent
+vectors — and far too slow to run over the whole corpus, so the standard pipeline is
+**retrieve ~50 cheaply → rerank to the top 5 → generate**.
+
+## 13. How RAG fails
+
+Knowing the failure modes is most of the skill:
+
+| failure | symptom | fix |
+|---|---|---|
+| **retrieval miss** | the answer exists but was not fetched | hybrid search, better chunking, more k |
+| **wrong chunk wins** | plausible but irrelevant context | reranking |
+| **context ignored** | the model answers from its own memory | stronger prompt, cite-or-refuse instruction |
+| **lost in the middle** | facts placed mid-context are overlooked | put key context first or last, fewer chunks |
+| **stale index** | documents changed, vectors did not | re-embed on write |
+| **no answer exists** | confident hallucination | a similarity floor + "say you don't know" |
+
+## 14. Evaluating a RAG system — two halves
+
+Measure them **separately**, or you will not know what is broken.
+**Retrieval:** `recall@k` (was the right chunk fetched at all?) and `MRR`/`nDCG` (was it near
+the top?). **Generation:** *faithfulness* (is every claim supported by the retrieved text?)
+and *answer relevance*. A system can have excellent retrieval and still hallucinate, or
+perfect faithfulness to the wrong document.
+
+## 15. Does long context make RAG obsolete?
+
+A fair question now that models accept hundreds of thousands of tokens — why not paste the
+whole corpus? Because attention is $O(n^2)$ (**expensive and slow**), because you pay per
+token, because accuracy degrades for facts buried mid-context, and because most corpora are
+still far larger than any window. The two are converging into a middle ground: retrieve
+generously, then let a long-context model sort it out. **Retrieval is not a hack around small
+context — it is how you make an answer *attributable*,** which is why it stays.
+
+*(Roadmap e27; ties to Math X1 and the Attention page.)*
 """
 
 _QUIZ = [
