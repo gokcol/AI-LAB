@@ -307,3 +307,31 @@ def test_page_link_targets_exist_and_are_registered():
             elif target not in app:
                 missing.append(f"{f.name}: links to {target}, which app.py never registers")
     assert not missing, "\n".join(missing)
+
+
+def test_sidebar_controls_are_never_hidden_by_theme_css():
+    """The sidebar's expand button lives inside [data-testid="stToolbar"].
+
+    Hiding that container with display:none made collapsing the sidebar a ONE-WAY DOOR:
+    the collapse button travels off-screen with the sidebar, the expand button only mounts
+    while collapsed, and a child of a display:none parent cannot be un-hidden. Hide the
+    branded ITEMS (stToolbarActions, stMainMenu, stAppDeployButton, stStatusWidget) and
+    never the containers.
+    """
+    import re
+
+    css = (GUI / "ui.py").read_text(encoding="utf-8")
+    # Strip CSS comments first: the comment explaining THIS rule names the very selectors
+    # being checked for, which made the guard fail on correct CSS.
+    css = re.sub(r"/\*.*?\*/", "", css, flags=re.S)
+    forbidden = ("stToolbar\"", "stAppToolbar", "stHeader\"", "stSidebar\"",
+                 "stSidebarCollapseButton", "stExpandSidebarButton", "stSidebarContent")
+    # find each display:none rule and read the selector list preceding it
+    for m in re.finditer(r"([^{}]+)\{[^{}]*display:\s*none[^{}]*\}", css):
+        selector = m.group(1)
+        for bad in forbidden:
+            if bad in selector:
+                raise AssertionError(
+                    f"theme CSS hides {bad} in a display:none rule — this breaks the sidebar "
+                    f"toggle.\nselector was: {selector.strip()[:200]}")
+    assert "stToolbarActions" in css, "expected the branded toolbar items to still be hidden"

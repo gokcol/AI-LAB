@@ -10,18 +10,20 @@ def inject_theme() -> None:
         """
         <style>
         /* ---- framework chrome ------------------------------------------------
-           This is the lab's own site, so nothing should advertise the toolkit it
-           happens to be built with. Hides the hamburger menu (whose items link out
-           to streamlit.io), the Deploy button, the "running man" status widget and
-           the toolbar strip that holds them. Class names verified against the
-           installed build; the [data-testid] twins are belt-and-braces for future
-           versions that rename one or the other. The sidebar collapse control is
-           deliberately NOT hidden — that is navigation, not branding. */
+           This is the lab's own site, so nothing should advertise the toolkit it happens
+           to be built with: the hamburger menu (whose items link out to streamlit.io and
+           expose Clear cache / Record a screencast), the Deploy button, and the
+           "running man" status widget.
+
+           CRITICAL: hide those ITEMS, never the toolbar that contains them. The sidebar's
+           expand button lives inside [data-testid="stToolbar"], so `display:none` on the
+           toolbar made collapsing the sidebar a one-way door -- there was no control left
+           to bring it back, and a child of a display:none parent cannot be un-hidden.
+           stToolbarActions is the wrapper around just the branded controls, which is the
+           correct thing to remove. */
         #MainMenu, .stMainMenu, [data-testid="stMainMenu"],
         .stAppDeployButton, [data-testid="stAppDeployButton"],
         .stStatusWidget, [data-testid="stStatusWidget"],
-        .stToolbar, [data-testid="stToolbar"],
-        .stAppToolbar, [data-testid="stAppToolbar"],
         .stToolbarActions, [data-testid="stToolbarActions"],
         .stDecoration, [data-testid="stDecoration"],
         .stAppViewerBadge, [data-testid="stAppViewerBadge"],
@@ -29,9 +31,14 @@ def inject_theme() -> None:
             display: none !important;
             visibility: hidden !important;
         }
-        /* The header keeps its layout role (it reserves the top offset and holds the
-           sidebar toggle) — make it invisible rather than removing it, or the page
-           jumps up under the sidebar button. */
+        /* Belt and braces: the sidebar controls must always be reachable. */
+        [data-testid="stExpandSidebarButton"],
+        [data-testid="stSidebarCollapseButton"] {
+            display: flex !important;
+            visibility: visible !important;
+        }
+        /* The header and toolbar keep their layout role -- they hold the sidebar toggle --
+           so they are made plain, not removed. */
         .stAppHeader, [data-testid="stHeader"] {
             background: transparent !important;
             box-shadow: none !important;
@@ -39,10 +46,9 @@ def inject_theme() -> None:
             height: 2.9rem !important;
             min-height: 2.9rem !important;   /* height alone loses to Streamlit's min-height */
         }
-        /* The default 6rem of top padding exists to clear the toolbar. With the toolbar
-           hidden that is ~100px of dead space above the first thing on the page, which
-           makes every screen feel emptier and the text smaller than it is. Give it back,
-           keeping enough room for the sidebar toggle that still lives up there. */
+        /* The default 6rem of top padding exists to clear the toolbar. With the branded
+           controls gone that is ~100px of dead space above the first thing on the page,
+           which makes every screen feel emptier and the text smaller than it is. */
         [data-testid="stMainBlockContainer"] {
             padding-top: 3rem !important;
         }
