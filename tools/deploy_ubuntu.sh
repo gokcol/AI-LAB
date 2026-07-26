@@ -4,7 +4,11 @@
 #
 #   wget -qO deploy.sh https://raw.githubusercontent.com/gokcol/AI-LAB/main/tools/deploy_ubuntu.sh
 #   chmod +x deploy.sh
-#   DOMAIN=ai-lab.gokcol.online EMAIL=you@example.com ./deploy.sh
+#   DOMAIN=ai-lab.gokcol.online ./deploy.sh
+#
+# EMAIL is optional: if this server already has a Let's Encrypt account (it does if any
+# other site here uses HTTPS) certbot reuses it. Set EMAIL=you@example.com only if you
+# want expiry-warning mail.
 #
 # Safe to re-run: it updates the code, refreshes configs, and restarts cleanly.
 # Point the DNS A/AAAA record at this server BEFORE running (certbot needs it).
@@ -12,7 +16,7 @@
 set -euo pipefail
 
 DOMAIN="${DOMAIN:-ai-lab.gokcol.online}"
-EMAIL="${EMAIL:-}"                       # for Let's Encrypt expiry notices
+EMAIL="${EMAIL:-}"                       # OPTIONAL — see the note above
 REPO="${REPO:-https://github.com/gokcol/AI-LAB.git}"
 APP_USER="${APP_USER:-ailab}"
 APP_HOME="/opt/ai-lab"
@@ -181,12 +185,30 @@ elif [ -n "$MYIP" ] && [ "$RESOLVED" != "$MYIP" ]; then
     warn "$DOMAIN resolves to $RESOLVED but this host is $MYIP — skipping certbot."
     warn "  Fix DNS, then run: certbot --nginx -d $DOMAIN --redirect"
 else
-    if [ -n "$EMAIL" ]; then
-        certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos -m "$EMAIL" --redirect \
-            && ok "HTTPS enabled (auto-renewal via the certbot timer)" \
-            || warn "certbot failed — run it manually: certbot --nginx -d $DOMAIN --redirect"
+    # Email is OPTIONAL. Three cases, in order of preference:
+    #   1. certbot already has an ACME account here (very likely if other sites use TLS)
+    #      -> reuse it, no email needed at all
+    #   2. EMAIL was provided -> register with it (gets expiry-warning mail)
+    #   3. neither -> register without an email (renewal still works; no warning mail)
+    if [ -d /etc/letsencrypt/accounts ] && [ -n "$(ls -A /etc/letsencrypt/accounts 2>/dev/null)" ]; then
+        ACME_ARGS=""
+        ok "existing Let's Encrypt account found — reusing it (no email required)"
+    elif [ -n "$EMAIL" ]; then
+        ACME_ARGS="-m $EMAIL"
     else
-        warn "EMAIL not set — run: certbot --nginx -d $DOMAIN --redirect"
+        ACME_ARGS="--register-unsafely-without-email"
+        warn "no email given — registering without one (renewal still automatic,"
+        warn "  but you will get no expiry-warning mail if renewal ever breaks)"
+    fi
+    # shellcheck disable=SC2086
+    if certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos $ACME_ARGS --redirect; then
+        ok "HTTPS enabled (auto-renewal via the certbot systemd timer)"
+        systemctl list-timers 2>/dev/null | grep -q certbot \
+            && ok "renewal timer active" \
+            || warn "check the renewal timer: systemctl status certbot.timer"
+    else
+        warn "certbot failed — run it manually:"
+        warn "  certbot --nginx -d $DOMAIN --redirect"
     fi
 fi
 

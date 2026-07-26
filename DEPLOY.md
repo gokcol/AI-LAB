@@ -143,7 +143,10 @@ server {
 ```bash
 sudo ln -s /etc/nginx/sites-available/ai-lab /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
-sudo certbot --nginx -d ai-lab.gokcol.online        # HTTPS
+sudo certbot --nginx -d ai-lab.gokcol.online --redirect   # HTTPS
+# No email required if this server already has a Let's Encrypt account
+# (it does if any other site here uses HTTPS). Otherwise certbot will ask,
+# or you can skip it with: --register-unsafely-without-email
 ```
 
 Firewall + brute-force protection:
