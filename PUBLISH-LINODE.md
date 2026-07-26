@@ -240,7 +240,7 @@ until you delete it yourself.
 ## What the server ends up running
 
 ```
-visitor ──HTTPS──▶ nginx :443            (TLS, rate limits 30 r/m, security headers)
+visitor ──HTTPS──▶ nginx :443            (TLS, interactive rate limit, security headers)
                      │  proxy_pass + WebSocket upgrade
                      ▼
                   streamlit :8501        (127.0.0.1 only — unreachable from outside)

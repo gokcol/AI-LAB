@@ -25,7 +25,7 @@ st.caption("The core idea of ML: generalize, don't memorize. Crank model complex
 
 lessons.predict(
     'Crank model complexity up on noisy data — does *training* error keep dropping? Does *test* error? Which one should you actually trust?',
-    "Training error keeps dropping (more flexibility always fits the training set better) — so it's a trap. Test error is **U-shaped**: it falls, bottoms out, then rises as the model memorizes noise (overfitting). Trust **test / validation** error; its minimum is the best model.",
+    "Training error generally drops as flexibility grows, so it is a trap for selection. On noisy data, held-out error is often **U-shaped**: it falls, bottoms out, then rises as the model fits noise. In a real workflow choose complexity on **validation/CV**, then use the test set once for the final estimate.",
 )
 
 tab_play, tab_theory, tab_quiz, tab_tasks, tab_ref = st.tabs(
@@ -81,9 +81,10 @@ with tab_play:
     c3.metric("Test MSE", f"{te_mse:.3f}")
     if eff_deg < int(degree):
         st.caption(f"(Degree capped at {eff_deg}: can't fit a degree-{degree} polynomial to {len(xtr)} train points.)")
-    st.info("**Low degree → underfit** (high train *and* test error). "
-            "**High degree → overfit** (tiny train error, large test error — it memorized noise). "
-            "The best model **minimizes test error**.", icon=":material/lightbulb:")
+    st.info("**Low degree often underfits**. With noisy data, high degree can overfit: training "
+            "error falls while held-out error rises. This playground exposes the test curve for "
+            "teaching; in a real workflow choose the degree on **validation/CV** and inspect the "
+            "test set only once.", icon=":material/lightbulb:")
 
 with tab_theory:
     st.markdown(LESSON.theory, unsafe_allow_html=True)

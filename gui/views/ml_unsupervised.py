@@ -13,9 +13,17 @@ import ml_lessons2
 LESSON = ml_lessons2.UNSUPERVISED
 
 
-def _kmeans(X, k, seed, iters=100):
-    rng = np.random.default_rng(seed)
-    centroids = X[rng.choice(len(X), k, replace=False)].copy()
+def _kmeans_once(X, k, rng, iters=100):
+    """One k-means++ initialization followed by Lloyd iterations."""
+    chosen = [int(rng.integers(len(X)))]
+    while len(chosen) < k:
+        d2 = ((X[:, None, :] - X[chosen][None, :, :]) ** 2).sum(2).min(1)
+        if d2.sum() <= 0:
+            remaining = np.setdiff1d(np.arange(len(X)), chosen)
+            chosen.append(int(rng.choice(remaining)))
+        else:
+            chosen.append(int(rng.choice(len(X), p=d2 / d2.sum())))
+    centroids = X[chosen].copy()
     assign = np.zeros(len(X), dtype=int)
     for _ in range(iters):
         d = ((X[:, None, :] - centroids[None, :, :]) ** 2).sum(2)
@@ -23,10 +31,18 @@ def _kmeans(X, k, seed, iters=100):
         new = np.array([X[assign == j].mean(0) if np.any(assign == j) else centroids[j]
                         for j in range(k)])
         if np.allclose(new, centroids):
+            centroids = new
             break
         centroids = new
     inertia = float(((X - centroids[assign]) ** 2).sum())
     return assign, centroids, inertia
+
+
+def _kmeans(X, k, seed, iters=100, n_init=20):
+    """Best of several k-means++ starts; avoids presenting one poor local run as the optimum."""
+    rng = np.random.default_rng(seed)
+    runs = [_kmeans_once(X, k, rng, iters) for _ in range(n_init)]
+    return min(runs, key=lambda result: result[2])
 
 
 st.title("M5 · Unsupervised — playground & lesson")
@@ -35,7 +51,7 @@ st.caption("No labels — find structure. Watch k-means group points and place c
 
 lessons.predict(
     'As you raise **k** in k-means, does the inertia go up or down? So can you just pick k by minimizing inertia?',
-    'Inertia always **drops** as k rises (more centroids fit tighter) — so minimizing it picks k = n points, which is useless. Use the **elbow** or **silhouette** instead. Also change the seed: k-means can settle into different local optima.',
+    'The **globally optimal** inertia cannot rise as k increases (more centroids can fit at least as tightly), so minimizing it alone picks k = n points. This demo uses 20 k-means++ restarts to get close to that optimum; use the **elbow** or **silhouette** to choose k.',
 )
 
 tab_play, tab_theory, tab_quiz, tab_tasks, tab_ref = st.tabs(
@@ -72,9 +88,10 @@ with tab_play:
     c1.metric("k (chosen)", int(k))
     c2.metric("true clusters", int(true_k))
     c3.metric("inertia", f"{inertia:.0f}")
-    st.info("Inertia always **drops as k rises** (more centroids), so you can't just minimize "
-            "it — use the **elbow** or **silhouette** to choose k. Try k below/above the true "
-            "number and change the seed to see init sensitivity.", icon=":material/lightbulb:")
+    st.info("The **optimal** inertia never rises with k. A finite solver can miss that optimum, "
+            "so this demo uses the best of 20 k-means++ starts rather than one fragile random "
+            "initialization. Inertia still favors ever-larger k; use the **elbow** or "
+            "**silhouette** to choose k.", icon=":material/lightbulb:")
 
 with tab_theory:
     st.markdown(LESSON.theory, unsafe_allow_html=True)

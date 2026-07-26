@@ -136,7 +136,6 @@ server {
     listen [::]:80;
     server_name $DOMAIN;
 
-    limit_req  zone=ailab burst=60 nodelay;
     limit_conn ailabconn 10;
     client_max_body_size 1m;
 
@@ -160,7 +159,19 @@ server {
         expires 7d;
     }
 
+    # Streamlit loads many JavaScript modules concurrently. Static assets must
+    # not share the interactive-route request limit or the UI can render blank.
+    location ^~ /static/ {
+        proxy_pass http://127.0.0.1:$PORT;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_read_timeout 3600s;
+    }
+
     location / {
+        limit_req zone=ailab burst=60 nodelay;
         # sub_filter cannot rewrite a compressed upstream response, so ask the app for
         # plain text and let nginx do the compressing instead (gzip on, above).
         proxy_set_header Accept-Encoding "";

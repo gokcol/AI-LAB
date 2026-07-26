@@ -284,7 +284,7 @@ with tab_live:
                 "** (hand-set embeddings: *cat≈dog*, *sat≈ran*, *.* alone — in a real model "
                 "these are learned). Q = K = V = the embeddings here.")
     cc = st.columns(2)
-    temp = cc[0].slider("temperature (softmax sharpness)", 0.2, 2.0, 1.0, 0.1, key="att_T",
+    temp = cc[0].slider("temperature (softmax sharpness)", 0.2, 2.0, 0.5, 0.1, key="att_T",
                         help="lower = sharper / harder attention, higher = flatter")
     qi = cc[1].selectbox("inspect query token", TOKENS, index=0, key="att_q")
 

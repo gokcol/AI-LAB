@@ -122,8 +122,6 @@ limit_conn_zone $binary_remote_addr zone=ailabconn:10m;
 server {
     server_name ai-lab.gokcol.online;
 
-    # app-wide limits: burst absorbs normal Streamlit chatter
-    limit_req   zone=ailab burst=60 nodelay;
     limit_conn  ailabconn 10;
     client_max_body_size 1m;
 
@@ -145,7 +143,20 @@ server {
         expires 7d;
     }
 
+    # Static JavaScript modules are exempt from request throttling; Streamlit
+    # loads enough modules concurrently that limiting them can yield a blank UI.
+    location ^~ /static/ {
+        proxy_pass http://127.0.0.1:8501;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_read_timeout 3600s;
+    }
+
     location / {
+        # Burst absorbs normal interactive Streamlit traffic.
+        limit_req zone=ailab burst=60 nodelay;
         # sub_filter cannot rewrite a compressed upstream response, so take it plain
         # and let nginx compress instead.
         proxy_set_header Accept-Encoding "";

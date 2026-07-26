@@ -156,17 +156,12 @@ achieved.
 
 $$ \text{test error} \;\;\text{rises to a peak at } P \approx n,\;\text{ then descends a second time} $$
 
-The measured shape, from the demo on this page — ridgeless regression on random ReLU
-features, $n=40$ training points:
-
-| features $P$ | 5 | 20 | 38 | **40** | 50 | 120 | 2000 |
-|---|---|---|---|---|---|---|---|
-| test MSE | 0.94 | 1.20 | 4.78 | **32.3** | 1.66 | 0.33 | **0.14** |
-
-The classical story is the left half of that table and it is accurate there. But the best
-underparameterised model scores 0.94, and the model with **fifty times more parameters than
-data points** scores 0.14 — nearly seven times better. No amount of U-curve reasoning
-predicts that.
+The demo below measures that shape live using ridgeless regression on random ReLU features.
+It reports the best underparameterised error, the interpolation peak, and the final
+overparameterised error directly from the current $n$, noise, and repeat count. Those
+values are deliberately not copied into this theory section: change any control and they
+change, while the reproducible pattern — a peak near $P=n$ followed by a second descent —
+remains the claim to test.
 
 **So which page is right?** Both, in their regime:
 
@@ -280,7 +275,7 @@ def _double_descent():
     fig.tight_layout(); st.pyplot(fig)
 
     under = min(t for P, t in zip(Ps, te) if P < n)
-    peak = max(te)
+    peak = te[Ps.index(n)]
     over = te[-1]
     m = st.columns(3)
     m[0].metric("best classical (P < n)", f"{under:.3f}")

@@ -73,16 +73,17 @@ How long does information last? It's governed by $W_h$. Feed a single spike (the
 **impulse**) and watch the state:
 - **small $W_h$** → the state forgets almost immediately (short memory);
 - **$W_h \approx 1$** → it persists for many steps (long memory);
-- **$W_h > 1$** → it can blow up (tanh caps it here, but gradients won't be capped).
+- **$W_h > 1$** → the state is driven toward tanh saturation; gradients may grow
+  transiently or vanish once the saturated $\tanh'$ becomes small.
 
 Slide $w_h$ in the Live tab and see the impulse response stretch or vanish.
 
 ## 5. Vanishing & exploding through time
 
-Backprop multiplies by $W_h$ at **every** step, so over a long sequence the gradient is
-$W_h$ raised to a large power (Backprop §10). $|W_h|<1$ → it **vanishes** (the RNN can't
-learn long-range dependencies — it forgets the start of the sentence); $|W_h|>1$ → it
-**explodes**. This is the central weakness of plain RNNs.
+Backprop multiplies by the **product** $W_h\tanh'(z_t)$ at every step. Small factors make
+the gradient vanish; factors above 1 can make it explode, but large $W_h$ can also push
+tanh into saturation, where $\tanh'(z_t)\approx0$ and the gradient vanishes. This
+data-dependent product — not $W_h$ alone — is the central weakness of plain RNNs.
 
 ## 6. LSTM — gated memory, in full
 
@@ -193,7 +194,7 @@ _QUIZ = [
         "In the demo, the recurrent weight w_h controls…",
         ["the input size", "how long information persists in the state (memory length)",
          "the number of classes", "the learning rate"], 1,
-        "Small w_h forgets fast; w_h≈1 remembers long; w_h>1 blows up — it's the memory knob."),
+        "Small w_h forgets fast; w_h≈1 remembers long; above 1 the bounded state tends toward tanh saturation — it's the memory knob."),
     lessons.Question(
         "Why do plain RNNs struggle with long-range dependencies?",
         ["too few parameters", "gradients get multiplied by W_h each step, so they vanish or explode over long sequences",
@@ -215,8 +216,8 @@ _TASKS = r"""
 ### In the Live tab
 1. Use **Impulse** input. At **w_h = 0.2**, how many steps until the state ≈ 0? Now **w_h =
    0.9** — count again. That's *memory length* as a function of the recurrent weight.
-2. Push **w_h > 1** with a **Step** input — watch the state pin to the tanh limits (and
-   imagine the *gradient*, which tanh does **not** cap → exploding).
+2. Push **w_h > 1** with a **Step** input — watch the state pin to the tanh limits. In that
+   saturated regime $\tanh'$ becomes small, so the gradient can vanish even though $w_h>1$.
 3. Set **w_h ≈ 0** — the state just copies the (scaled) input: no memory, an RNN reduced to
    a per-step neuron.
 
@@ -243,7 +244,7 @@ st.caption("Walk a sequence carrying a hidden state. The Live tab runs a 1-unit 
 
 lessons.predict(
     'Feed one spike, then zeros. With recurrent weight **wₕ ≈ 1** vs **wₕ ≈ 0.3**, which remembers the spike longer — and what happens if **wₕ > 1**?',
-    '**wₕ ≈ 1** holds the value for many steps (long memory); **wₕ ≈ 0.3** forgets fast (×0.3 each step); **wₕ > 1** blows up. The same wₕ multiplies the *gradient* every step too — exactly why long sequences vanish/explode, and why LSTMs add gates.',
+    '**wₕ ≈ 1** holds the value for many steps (long memory); **wₕ ≈ 0.3** forgets fast. Above 1 the state stays bounded but tends to saturate. The gradient multiplies by **wₕ·tanh′** each step, so it may explode or vanish depending on the trajectory — why LSTMs add gates.',
 )
 
 tab_live, tab_theory, tab_quiz, tab_tasks, tab_ref = st.tabs(
@@ -280,8 +281,9 @@ def _hidden_state():
         st.metric("impulse remembered for ≈", f"{max(decayed-1,0)} steps",
                   help="how long after the spike the state stays above 10% — i.e. memory length")
     st.info("The recurrent weight wₕ is the **memory knob**: small forgets fast, ≈1 remembers "
-            "long, >1 blows up. The same wₕ multiplies the gradient at every step too — which "
-            "is exactly why long sequences vanish/explode, and why LSTMs add gates.",
+            "long, and >1 pushes this bounded tanh state toward saturation. During backprop the "
+            "per-step factor is **wₕ·tanh′**, so either vanishing or exploding is possible — "
+            "and sustained saturation usually makes it vanish.",
             icon=":material/history:")
 
 
@@ -489,13 +491,16 @@ with tab_tasks:
     lessons.solution(
         r"""**1.** At $w_h=0.2$ the state decays as $0.2^n$ → ≈0 in ~3–4 steps (short memory). At $w_h=0.9$ it decays as $0.9^n$ → lingers ~20+ steps. Memory length grows with $w_h$ (roughly $1/(1-w_h)$).
 
-**2.** With $w_h>1$ the *state* still saturates at tanh's $\pm1$ limits (bounded output) — but the **gradient** isn't squashed the same way, so across steps it multiplies by $>1$ and **explodes**.
+**2.** With $w_h>1$ the state saturates at tanh's $\pm1$ limits. The gradient factor is
+$w_h\tanh'(z_t)$, not $w_h$ alone: it can exceed 1 before saturation, but once tanh is
+saturated its derivative is near zero and the long-range gradient can **vanish**. The
+live BPTT curve shows exactly this for $w_h=1.5$.
 
 **3.** At $w_h\approx0$, $h_t\approx\tanh(w_x x_t)$: no memory at all — the RNN collapses to a plain per-step neuron on the current input.""",
         label="Live tab 1–3",
     )
     lessons.solution(
-        r"""**4.** Unrolled: $h_1=\tanh(W_x x_1 + W_h h_0)$, $h_2=\tanh(W_x x_2 + W_h h_1)$, $h_3=\tanh(W_x x_3 + W_h h_2)$ — the **same $W_h$** appears at every step. Backprop-through-time multiplies by $W_h$ (and $\tanh'$) once per step, giving a factor $\approx W_h^{\,k}$: $<1$ **vanishes**, $>1$ **explodes**.
+        r"""**4.** Unrolled: $h_1=\tanh(W_x x_1 + W_h h_0)$, $h_2=\tanh(W_x x_2 + W_h h_1)$, $h_3=\tanh(W_x x_3 + W_h h_2)$ — the **same $W_h$** appears at every step. Backprop-through-time multiplies by $W_h\tanh'(z_t)$ once per step. A product whose magnitude stays below 1 vanishes; one that stays above 1 explodes. Large $W_h$ does not guarantee explosion because it can saturate tanh and make $\tanh'$ tiny.
 
 **5.** **Forget** gate: how much of the old cell state to keep. **Input** gate: how much of the new candidate to write. **Output** gate: how much of the cell to expose as the hidden state.
 

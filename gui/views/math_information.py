@@ -15,7 +15,12 @@ EPS = 1e-3
 
 
 def _H(a):
-    return float(-a * np.log2(a) - (1 - a) * np.log2(1 - a))
+    terms = []
+    if a > 0:
+        terms.append(-a * np.log2(a))
+    if a < 1:
+        terms.append(-(1 - a) * np.log2(1 - a))
+    return float(sum(terms))
 
 
 st.title("X5 · Information theory — playground & lesson")
@@ -36,7 +41,7 @@ with tab_play:
     with left:
         p = st.slider("true P(class 1)  ·  p", 0.0, 1.0, 0.70, 0.01, key="i_p")
         q = st.slider("model prediction  ·  q", 0.0, 1.0, 0.50, 0.01, key="i_q")
-    pc, qc = np.clip(p, EPS, 1 - EPS), np.clip(q, EPS, 1 - EPS)
+    pc, qc = float(p), float(np.clip(q, EPS, 1 - EPS))
     Hp = _H(pc)
     CE = float(-pc * np.log2(qc) - (1 - pc) * np.log2(1 - qc))
     KL = CE - Hp

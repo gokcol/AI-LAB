@@ -176,7 +176,7 @@ with tab_tasks:
     st.markdown("#### ✅ Worked solutions")
     st.caption("Attempt each first, then check.")
     lessons.solution(
-        r"""**1.** GD diverges once $\eta$ exceeds $1/\text{(largest curvature)}$; below that it converges, and a tiny $\eta$ just crawls. (Along a unit-curvature axis it's stable for $\eta<1$.)
+        r"""**1.** For a quadratic with largest Hessian eigenvalue $L$, GD is stable for $0<\eta<2/L$. Here $f=x^2+b y^2$ has $L=2\max(1,b)$, so the limit is $\eta<1/\max(1,b)$. With $b=1$ that is $\eta<1$; a tiny $\eta$ merely crawls.
 
 **2.** High anisotropy makes a ravine, so the step is dominated by the steep axis → **zig-zag**. Feature scaling (M7) makes the axes comparable → a rounder bowl → straighter descent.""",
         label="Playground 1–2",

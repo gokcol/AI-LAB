@@ -39,11 +39,11 @@ def _cv_errors(x, y, degree, k, seed):
 
 st.title("M6 · Model selection — playground & lesson")
 st.caption("Pick the model that wins on held-out data, not on training data. The validation "
-           "curve (via k-fold CV) shows train error always falling while CV error is U-shaped.")
+           "curve (via k-fold CV) shows training error falling while CV error often forms a U.")
 
 lessons.predict(
     'Training error always falls as models get more flexible. So why not just pick the lowest *training* error — and what curve should you use instead?',
-    "Because lowest training error = the most complex, overfit model. Use **cross-validated** error: it's U-shaped, and its minimum is the model that generalizes best. The gap between train and CV error *is* overfitting, made visible.",
+    "Because lowest training error usually selects the most flexible model. Use **cross-validated** error: on noisy data it often forms a U, and its minimum estimates the best-generalizing complexity. The train–CV gap makes overfitting visible.",
 )
 
 tab_play, tab_theory, tab_quiz, tab_tasks, tab_ref = st.tabs(
@@ -88,10 +88,10 @@ with tab_play:
     c1.metric("Best degree (by CV)", best_deg)
     c2.metric("CV MSE @ best", f"{val_curve[best_i]:.3f}")
     c3.metric("Train MSE @ best", f"{tr_curve[best_i]:.3f}")
-    st.info("**Train MSE keeps falling** as the model gets more flexible (it can always fit "
-            "training data better) — so choosing by train error would always pick the most "
-            "complex model. **CV MSE is U-shaped**; its minimum is the model that generalizes "
-            "best. *That* is model selection.", icon=":material/lightbulb:")
+    st.info("**Train MSE generally falls** as flexibility grows, so selecting by it favors the "
+            "most complex candidate. On noisy data **CV MSE often forms a U**; its minimum is "
+            "the estimated best-generalizing model. With zero noise or finite-sample wiggles, "
+            "the curve need not be perfectly U-shaped.", icon=":material/lightbulb:")
 
 with tab_theory:
     st.markdown(LESSON.theory, unsafe_allow_html=True)

@@ -1,9 +1,8 @@
-"""Tiny GPT — Transformer block & next-token prediction (ANN module).
+"""Transformers and a tiny next-token model (ANN module).
 
-The capstone: wrap attention in a Transformer block, stack blocks, and train on a single
-objective — predict the next token (softmax over the vocabulary, cross-entropy). The Live
-tab trains a tiny character-level language model and lets you prompt it and generate text
-by sampling, with a temperature knob — exactly how an LLM produces words, in miniature.
+The capstone explains how attention is wrapped into Transformer blocks and how GPT trains
+on next-token prediction. The Live model deliberately is not a Transformer: it is an MLP
+over a fixed character window that isolates the objective and sampling loop.
 """
 
 import pathlib
@@ -366,13 +365,13 @@ _REFS = r"""
 """
 
 
-st.title("Tiny GPT — Transformer & next-token prediction")
-st.caption("Wrap attention in a block, stack it, and train on one objective: predict the "
-           "next token. The Live tab trains a tiny char-level LM you can prompt and sample.")
+st.title("Transformers & a tiny next-token model")
+st.caption("Learn the Transformer architecture, then isolate its training objective in a small "
+           "fixed-window character model you can prompt and sample.")
 
 lessons.predict(
     'This tiny model trains on **one** objective. What is it — and how does the *same* model then **generate** text?',
-    "Predict the **next token** (softmax + cross-entropy over the vocabulary). Generation is just **sampling that next-token distribution**, appending the choice, and repeating — token by token. Scale this up and it's a GPT.",
+    "Predict the **next token** (softmax + cross-entropy over the vocabulary). Generation is sampling that distribution, appending the choice, and repeating. A GPT uses the same objective and loop, but replaces this live demo's fixed-window MLP with stacked causal Transformer blocks.",
 )
 
 tab_live, tab_theory, tab_quiz, tab_tasks, tab_ref = st.tabs(
@@ -406,9 +405,10 @@ with tab_live:
         rng = np.random.default_rng()
         text = _generate(model, vocab, c2i, V, enc, prompt, nchars, temp, rng)
         st.markdown(f"**{prompt}**{text}")
-    st.info("One objective — next-token prediction via softmax + cross-entropy — and "
-            "generation is just sampling that softmax, token by token. Scale this up and "
-            "it's a GPT.", icon=":material/smart_toy:")
+    st.info("This live model is an **MLP over five one-hot characters**, not a Transformer. "
+            "It demonstrates next-token cross-entropy and autoregressive sampling only. A GPT "
+            "uses the same objective and loop with stacked causal attention blocks.",
+            icon=":material/smart_toy:")
     st.caption("⚡ The **real, GPU-trained** version is experiment **e21** — a PyTorch "
                "Transformer (causal multi-head attention + AdamW) at "
                "`experiments/tier4_attention/e21_nanogpt`. Run it from the **Experiments** "

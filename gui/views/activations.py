@@ -316,8 +316,9 @@ with t3:
         "Once a ReLU unit is dead its gradient is **exactly 0**, so gradient descent has no way "
         "to revive it — that slice of the network's capacity is gone for the rest of training. "
         "Defences: sensible **initialization** (He, experiment **e10**), a **learning rate** low "
-        "enough not to slam biases negative, or simply **Leaky ReLU / GELU**, whose gradient is "
-        "never exactly zero.", icon=":material/warning:")
+        "enough not to slam biases negative, or an activation without a flat zero half-line such "
+        "as **Leaky ReLU / ELU**. **GELU** is smooth and does not have ReLU's dead half-line, "
+        "although its derivative does cross zero at one isolated point.", icon=":material/warning:")
 
 # =========================================================================== #
 # ④ WHICH ONE TO USE

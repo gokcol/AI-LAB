@@ -18,6 +18,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))   # gui/
 import matplotlib.pyplot as plt
 import numpy as np
 import streamlit as st
+from scipy.stats import wasserstein_distance
 
 import lessons
 
@@ -40,6 +41,39 @@ def _target_samples(n=4000, seed=0):
     rng = np.random.default_rng(seed)
     pick = rng.random(n) < 0.35
     return np.where(pick, rng.normal(-1.6, 0.35, n), rng.normal(1.1, 0.55, n))
+
+
+@st.cache_data(show_spinner=False)
+def _diffusion_samples(steps, nsamp, seed=11):
+    """Sample the toy mixture with a deterministic, step-count-independent RNG."""
+    rng = np.random.default_rng(seed)
+    abar = np.clip(
+        np.cos(np.linspace(0.0, 1.0, steps + 1) * (np.pi / 2)) ** 2,
+        1e-4,
+        1.0,
+    )[1:]
+    alphas = abar / np.concatenate([[1.0], abar[:-1]])
+    betas = 1.0 - alphas
+
+    def score(x, t):
+        s = np.sqrt(abar[t])
+        weights = np.array([0.35, 0.65])
+        mu = np.array([-1.6, 1.1])
+        sd = np.array([0.35, 0.55])
+        means = s * mu
+        variances = abar[t] * sd ** 2 + (1 - abar[t])
+        delta = x[:, None] - means[None, :]
+        comp = weights / np.sqrt(2 * np.pi * variances) * np.exp(
+            -0.5 * delta ** 2 / variances
+        )
+        posterior = comp / np.clip(comp.sum(1, keepdims=True), 1e-30, None)
+        return -(posterior * delta / variances).sum(1)
+
+    x = rng.normal(0, 1, nsamp)
+    for t in range(steps - 1, -1, -1):
+        mean = (x + betas[t] * score(x, t)) / np.sqrt(alphas[t])
+        x = mean + (np.sqrt(betas[t]) * rng.normal(0, 1, nsamp) if t else 0.0)
+    return x
 
 
 tab_live, tab_theory, tab_cmp, tab_quiz, tab_tasks, tab_ref = st.tabs(
@@ -78,36 +112,10 @@ with tab_live:
     idx = rng.choice(bins, size=nsamp, p=probs)
     ar = edges[idx] + rng.random(nsamp) * (edges[1] - edges[0])
 
-    # --- diffusion: forward noising has a closed form, so learn the reversal --- #
-    # Variance-preserving schedule: x_t = sqrt(abar_t) x_0 + sqrt(1-abar_t) eps.
-    # The exact posterior mean is available for this toy target, so the "model" here is
-    # the true score - which is the point: it isolates the *sampler* from the network.
-    #
-    # The CUMULATIVE schedule is defined first, then betas are derived from it. The usual
-    # betas = linspace(1e-4, 0.02, T) is tuned for T ~ 1000 and does NOT rescale with T:
-    # at T=60 it only reaches abar = 0.54, meaning x_T is still 74% signal, so starting
-    # the reverse walk from N(0,1) would begin from the wrong distribution entirely. A
-    # cosine abar ending at 1e-4 destroys the data for ANY T, which is what makes the
-    # step-count slider mean what the page says it means.
-    abar = np.clip(np.cos(np.linspace(0.0, 1.0, steps + 1) * (np.pi / 2)) ** 2, 1e-4, 1.0)[1:]
-    alphas = abar / np.concatenate([[1.0], abar[:-1]])
-    betas = 1.0 - alphas
-
-    def _score(x, t):
-        """d/dx log q(x_t) for a two-Gaussian mixture pushed through the forward process."""
-        s, w, mu, sd = np.sqrt(abar[t]), np.array([0.35, 0.65]), \
-            np.array([-1.6, 1.1]), np.array([0.35, 0.55])
-        m, v = s * mu, abar[t] * sd ** 2 + (1 - abar[t])
-        d = x[:, None] - m[None, :]
-        comp = w / np.sqrt(2 * np.pi * v) * np.exp(-0.5 * d ** 2 / v)
-        post = comp / np.clip(comp.sum(1, keepdims=True), 1e-30, None)
-        return -(post * d / v).sum(1)
-
-    x = rng.normal(0, 1, nsamp)                      # start from pure noise
-    for t in range(steps - 1, -1, -1):
-        mean = (x + betas[t] * _score(x, t)) / np.sqrt(alphas[t])
-        x = mean + (np.sqrt(betas[t]) * rng.normal(0, 1, nsamp) if t else 0.0)
-    dif = x
+    # The diffusion RNG is independent of the AR RNG, so changing the bin count does not
+    # silently change the diffusion sample. The exact score isolates sampler quality from
+    # neural-network training quality.
+    dif = _diffusion_samples(int(steps), int(nsamp))
 
     fig, ax = plt.subplots(1, 2, figsize=(9.6, 3.2), sharey=True)
     for a, samp, name, col in ((ax[0], ar, "Autoregressive (binned)", "#2F7BEA"),
@@ -122,23 +130,39 @@ with tab_live:
     fig.tight_layout()
     st.pyplot(fig)
 
-    m = st.columns(3)
+    target_std = float(np.std(data))
+    diffusion_std = float(np.std(dif))
+    diffusion_distance = float(wasserstein_distance(data, dif))
+    m = st.columns(5)
     m[0].metric("AR vocabulary size", f"{bins}",
                 help="Its resolution can never beat one bin — visible as steps in the outline.")
-    m[1].metric("Diffusion network calls / sample", f"{steps}",
-                help="One forward pass per step. This is why diffusion sampling is slow.")
+    m[1].metric("Diffusion score evaluations", f"{steps}",
+                help="This toy uses the exact score; a learned diffusion model would make "
+                     "one neural-network call per step.")
     m[2].metric("AR network calls / sample", "1",
                 help="One draw for a single-variable target. For a length-T sequence it "
                      "would be T — the same trade, mirrored.")
+    m[3].metric("diffusion sample std", f"{diffusion_std:.3f}",
+                help=f"target standard deviation: {target_std:.3f}")
+    m[4].metric("distance to target", f"{diffusion_distance:.3f}",
+                help="1-D Wasserstein distance; lower is better")
+
+    dif2 = _diffusion_samples(2, int(nsamp))
+    dif60 = _diffusion_samples(60, int(nsamp))
+    wd2 = float(wasserstein_distance(data, dif2))
+    wd60 = float(wasserstein_distance(data, dif60))
+    ratio = wd2 / wd60 if wd60 else float("inf")
 
     st.info(
         "**Turn the bins down to 8.** The autoregressive outline goes visibly blocky — it "
         "cannot represent anything finer than one bin, because it made the variable "
         "*discrete* to get an exact likelihood. That is the same trade a tokenizer makes.\n\n"
-        "**Now set diffusion steps to 2.** The valley between the two bumps fills in and the "
-        "spread shrinks — measured, the trough is only 50 % deep against 97 % at 60 steps, "
-        "the standard deviation drops from 1.37 to 1.02, and the distance to the target "
-        "distribution is about 18× worse. A reversal step is only approximately Gaussian "
+        f"**Now set diffusion steps to 2.** The valley between the two bumps fills in and the "
+        f"spread shrinks. With the current sample count and deterministic seed, std is "
+        f"**{np.std(dif2):.3f}** at 2 steps versus **{np.std(dif60):.3f}** at 60; "
+        f"Wasserstein distance is **{wd2:.3f}** versus **{wd60:.3f}** "
+        f"(about **{ratio:.1f}×** worse). These values are computed live, not copied into "
+        "the lesson. A reversal step is only approximately Gaussian "
         "when it is *small*; with two steps each one must undo almost the entire noising "
         "process at once, and a single Gaussian cannot straddle two modes. Raise it and the "
         "valley reopens.",
@@ -393,11 +417,11 @@ means a small change in $\bar\alpha$ — not a small $\beta$ in absolute terms. 
 here always takes $\bar\alpha$ from ~1 down to $10^{-4}$, so with $T=2$ each step must undo
 half of that journey by itself: $\beta$ becomes 0.50 and 0.9998 respectively. Over a jump
 that large the true reverse distribution is strongly bimodal, and one Gaussian cannot
-straddle two modes — so probability mass lands in the valley between them. Measured: the
-trough between the bumps is 50 % deep at $T=2$ against 97 % at $T=60$, and the sample
-standard deviation is 1.02 against 1.37. The score function is identical at $T=200$; what
-changes is only whether each step is small enough for the Gaussian form to be a good
-approximation.
+straddle two modes — so probability mass lands in the valley between them. The Live tab
+reports the sample standard deviation and Wasserstein distance for the current sample
+count, and recomputes the 2-step/60-step comparison instead of relying on fixed numbers.
+The score function is identical at $T=200$; what changes is only whether each step is small
+enough for the Gaussian form to be a good approximation.
 
 **3.** Autoregressive: the $T$ passes buy an **exact likelihood and a valid ordering** —
 each pass conditions on everything already generated. Diffusion: the $T$ passes buy

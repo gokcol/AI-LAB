@@ -42,7 +42,8 @@ def run(name: str, lr: float, steps: int, A: float):
         opt.zero_grad()
         loss.backward()
         opt.step()
-        xs.append(x.data); ys.append(y.data); losses.append(loss.data)
+        xs.append(x.data); ys.append(y.data)
+        losses.append(float(A * x.data ** 2 + y.data ** 2))
         if abs(x.data) > 50 or abs(y.data) > 50:    # diverged — stop recording
             break
     return xs, ys, losses
@@ -196,7 +197,7 @@ st.caption("The same ravine, three optimizers, run on the lab's core.optim. Watc
 
 lessons.predict(
     'On a **ravine** (steep one way, flat the other) at the *same* learning rate, which optimizer reaches the bottom fastest — SGD, Momentum, or Adam — and which one zig-zags?',
-    '**SGD** zig-zags across the steep axis and crawls along the flat one. **Momentum** builds velocity and rolls through the zig-zag. **Adam** adapts a per-axis step and usually arrives first. Same gradients — different ways of *using* their history.',
+    'There is no optimizer-only winner: the shared **learning rate changes the race**. At the default η=0.2, SGD is above this ravine’s stability limit and diverges, while Adam usually finishes ahead of Momentum. Lower η to 0.1 and plain SGD wins this simple quadratic. The lesson is to compare paths **and tune η**, not declare a universal champion.',
 )
 
 tab_cmp, tab_theory, tab_quiz, tab_tasks, tab_ref = st.tabs(
@@ -207,7 +208,7 @@ with tab_cmp:
     st.markdown("Minimizing the **ravine** $f(x,y) = A\\,x^2 + y^2$ (steep in $x$, flat in "
                 "$y$) from the same start. Tune the shared learning rate and the steepness:")
     c = st.columns(3)
-    lr = c[0].select_slider("learning rate η", [0.02, 0.05, 0.1, 0.2, 0.3], value=0.1, key="opt_lr")
+    lr = c[0].select_slider("learning rate η", [0.02, 0.05, 0.1, 0.2, 0.3], value=0.2, key="opt_lr")
     A = c[1].select_slider("ravine steepness A", [2, 4, 6, 9, 12], value=6, key="opt_A")
     steps = c[2].select_slider("steps", [30, 60, 100, 150], value=100, key="opt_steps")
 
@@ -265,7 +266,7 @@ with tab_tasks:
     st.markdown("#### ✅ Worked solutions")
     st.caption("Attempt each first, then check.")
     lessons.solution(
-        r"""**1.** **SGD** zig-zags across the steep axis; **Momentum** rolls almost straight down the valley; **Adam** usually reaches the minimum in the fewest steps (per-axis adaptation).
+        r"""**1.** At the default $\eta=0.2$, **SGD diverges** because the steep-axis stability limit is $1/A=1/6\approx0.167$; **Adam** normally finishes ahead of Momentum. At $\eta=0.1$, however, SGD converges extremely quickly on this deterministic quadratic and can beat both. The ranking is not universal: optimizer and learning rate must be evaluated together.
 
 **2.** Higher steepness $A$ worsens SGD's zig-zag (the steep axis dominates). Momentum still copes (it damps the oscillation) and Adam copes best (it rescales each axis independently).
 
