@@ -108,236 +108,260 @@ m[1].metric("code experiments", f"{exps}")
 m[2].metric("diagrams", f"{svgs}+")
 m[3].metric("self-check questions", f"{quiz}+")
 
-# --- three tracks ----------------------------------------------------------- #
-st.markdown("### 🗺 Three tracks — pick your path")
-t = st.columns(3)
-with t[0]:
-    with st.container(border=True):
-        st.markdown("#### 🧠 ANN\n**The spine.** A single neuron → logic gates → training "
-                    "→ CNN/RNN → attention → a **tiny GPT you can train**. Five levels, "
-                    "basics to frontier.")
-        st.button("Start with the big picture →", key="home_go_chain",
-                  on_click=_goto, args=("ANN", "views/the_chain.py"),
-                  use_container_width=True)
-        st.button("See the 5-level roadmap →", key="home_go_dash",
-                  on_click=_goto, args=("ANN", "views/dashboard.py"),
-                  use_container_width=True)
-with t[1]:
-    with st.container(border=True):
-        st.markdown("#### 🧮 ML\n**Classical machine learning.** Regression, classification, "
-                    "trees, SVMs, clustering, model selection, and doing it for real in "
-                    "scikit-learn (M0–M8).")
-        st.button("Open the ML track →", key="home_go_ml", on_click=_switch_module,
-                  args=("ML",), use_container_width=True)
-with t[2]:
-    with st.container(border=True):
-        st.markdown("#### 📐 Math\n**The foundations, as needed.** Vectors & matrices, "
-                    "calculus & gradients, probability, optimization, information theory, "
-                    "numerics (X1–X6).")
-        st.button("Open the Math track →", key="home_go_math", on_click=_switch_module,
-                  args=("Math",), use_container_width=True)
+# --------------------------------------------------------------------------- #
+# Everything below the fold lives in tabs: the page carries a lot of material and
+# a single long scroll buries it. Short labels so the row stays usable on a phone,
+# where Streamlit scrolls the tab strip horizontally.
+# --------------------------------------------------------------------------- #
+tab_start, tab_method, tab_run, tab_terms, tab_fb, tab_about = st.tabs(
+    ["🚀 Start", "🎓 Method", "🖥 Run it", "📜 Terms", "💬 Feedback", "👤 About"]
+)
 
-# --- how to use it ---------------------------------------------------------- #
-with st.container(border=True):
-    st.markdown("### 🔁 How to use this lab")
-    lc = st.columns([0.55, 0.45])
-    with lc[0]:
-        st.markdown(_LOOP_SVG, unsafe_allow_html=True)
-    with lc[1]:
-        st.markdown(
-            "Every page follows the same loop:\n\n"
-            "1. **Predict** — each page opens with a 🔮 question; commit to a guess first.\n"
-            "2. **Play** — move the sliders; every number on screen recomputes live.\n"
-            "3. **Check** — instant-feedback quizzes and ✅ worked solutions for every task.\n"
-            "4. **Rebuild** — the *Study Coach* and code experiments help you reconstruct "
-            "ideas from memory — the only proof you've learned them.\n\n"
-            "Work top-to-bottom through the levels, or jump straight to what you're curious "
-            "about — the math track is there whenever a page leans on it."
-        )
-        st.button("Study Coach — a guided routine →", key="home_go_coach",
-                  on_click=_goto, args=("ANN", "views/study_coach.py"))
+with tab_start:
+    # --- three tracks ----------------------------------------------------------- #
+    st.markdown("### 🗺 Three tracks — pick your path")
+    t = st.columns(3)
+    with t[0]:
+        with st.container(border=True):
+            st.markdown("#### 🧠 ANN\n**The spine.** A single neuron → logic gates → training "
+                        "→ CNN/RNN → attention → a **tiny GPT you can train**. Five levels, "
+                        "basics to frontier.")
+            st.button("Start with the big picture →", key="home_go_chain",
+                      on_click=_goto, args=("ANN", "views/the_chain.py"),
+                      use_container_width=True)
+            st.button("See the 5-level roadmap →", key="home_go_dash",
+                      on_click=_goto, args=("ANN", "views/dashboard.py"),
+                      use_container_width=True)
+    with t[1]:
+        with st.container(border=True):
+            st.markdown("#### 🧮 ML\n**Classical machine learning.** Regression, classification, "
+                        "trees, SVMs, clustering, model selection, and doing it for real in "
+                        "scikit-learn (M0–M8).")
+            st.button("Open the ML track →", key="home_go_ml", on_click=_switch_module,
+                      args=("ML",), use_container_width=True)
+    with t[2]:
+        with st.container(border=True):
+            st.markdown("#### 📐 Math\n**The foundations, as needed.** Vectors & matrices, "
+                        "calculus & gradients, probability, optimization, information theory, "
+                        "numerics (X1–X6).")
+            st.button("Open the Math track →", key="home_go_math", on_click=_switch_module,
+                      args=("Math",), use_container_width=True)
 
-with st.container(border=True):
-    st.markdown("### 🎓 How I actually studied this")
-    st.info(
-        "**I did not read my way to understanding — I built my way there.** These notes are the "
-        "residue of that process, and they are laid out the same way I worked:\n\n"
-        "**1 · Interactive labs before prose.** I learn a concept by *moving it*. So almost every "
-        "idea here has a playground where the numbers recompute as you drag a slider — because "
-        "watching a decision boundary tilt taught me more in a minute than a page of text did.\n\n"
-        "**2 · A starting point, not a finished lecture.** For each topic I wrote down just "
-        "enough to begin — the core definition, a worked number, one diagram — and let the "
-        "exercises carry the rest. Treat every page as a launch pad, not a destination.\n\n"
-        "**3 · Pen and paper, always.** The derivations were done by hand before they were typed. "
-        "If I could not reproduce a gradient on paper, I did not understand it yet — and that is "
-        "why the worked solutions show the arithmetic rather than just the answer.\n\n"
-        "**4 · I read around everything, like a student.** No single source is enough. I cross-read "
-        "textbooks, papers, lectures and other people's explanations until the ideas agreed — the "
-        "**References** tab on each page lists what I leaned on, and you should go there too.\n\n"
-        "*If you use these notes the same way — play first, derive on paper, then read widely — "
-        "they will work far better than reading them straight through.*",
-        icon=":material/school:")
 
-# --- run it locally --------------------------------------------------------- #
-with st.container(border=True):
-    st.markdown("### 🖥 Best experience: run it on your own machine")
-    _local = os.environ.get("AILAB_ENABLE_SANDBOX") == "1"
-    if _local:
-        st.success(
-            "**You are running the lab locally — everything is unlocked**, including the 🐍 "
-            "Sandbox in the sidebar. The notes below describe what visitors to the hosted site "
-            "are missing.", icon=":material/check_circle:")
-    else:
+    # --- how to use it ---------------------------------------------------------- #
+    with st.container(border=True):
+        st.markdown("### 🔁 How to use this lab")
+        lc = st.columns([0.55, 0.45])
+        with lc[0]:
+            st.markdown(_LOOP_SVG, unsafe_allow_html=True)
+        with lc[1]:
+            st.markdown(
+                "Every page follows the same loop:\n\n"
+                "1. **Predict** — each page opens with a 🔮 question; commit to a guess first.\n"
+                "2. **Play** — move the sliders; every number on screen recomputes live.\n"
+                "3. **Check** — instant-feedback quizzes and ✅ worked solutions for every task.\n"
+                "4. **Rebuild** — the *Study Coach* and code experiments help you reconstruct "
+                "ideas from memory — the only proof you've learned them.\n\n"
+                "Work top-to-bottom through the levels, or jump straight to what you're curious "
+                "about — the math track is there whenever a page leans on it."
+            )
+            st.button("Study Coach — a guided routine →", key="home_go_coach",
+                      on_click=_goto, args=("ANN", "views/study_coach.py"))
+
+
+with tab_method:
+    with st.container(border=True):
+        st.markdown("### 🎓 How I actually studied this")
         st.info(
-            "**This site is the read-only edition.** The lab was built to be *run*, not just "
-            "read — and a few of the best parts only exist locally. Cloning it takes about two "
-            "minutes.", icon=":material/rocket_launch:")
+            "**I did not read my way to understanding — I built my way there.** These notes are the "
+            "residue of that process, and they are laid out the same way I worked:\n\n"
+            "**1 · Interactive labs before prose.** I learn a concept by *moving it*. So almost every "
+            "idea here has a playground where the numbers recompute as you drag a slider — because "
+            "watching a decision boundary tilt taught me more in a minute than a page of text did.\n\n"
+            "**2 · A starting point, not a finished lecture.** For each topic I wrote down just "
+            "enough to begin — the core definition, a worked number, one diagram — and let the "
+            "exercises carry the rest. Treat every page as a launch pad, not a destination.\n\n"
+            "**3 · Pen and paper, always.** The derivations were done by hand before they were typed. "
+            "If I could not reproduce a gradient on paper, I did not understand it yet — and that is "
+            "why the worked solutions show the arithmetic rather than just the answer.\n\n"
+            "**4 · I read around everything, like a student.** No single source is enough. I cross-read "
+            "textbooks, papers, lectures and other people's explanations until the ideas agreed — the "
+            "**References** tab on each page lists what I leaned on, and you should go there too.\n\n"
+            "*If you use these notes the same way — play first, derive on paper, then read widely — "
+            "they will work far better than reading them straight through.*",
+            icon=":material/school:")
 
-    rc = st.columns(2)
-    with rc[0]:
+
+with tab_run:
+    # --- run it locally --------------------------------------------------------- #
+    with st.container(border=True):
+        st.markdown("### 🖥 Best experience: run it on your own machine")
+        _local = os.environ.get("AILAB_ENABLE_SANDBOX") == "1"
+        if _local:
+            st.success(
+                "**You are running the lab locally — everything is unlocked**, including the 🐍 "
+                "Sandbox in the sidebar. The notes below describe what visitors to the hosted site "
+                "are missing.", icon=":material/check_circle:")
+        else:
+            st.info(
+                "**This site is the read-only edition.** The lab was built to be *run*, not just "
+                "read — and a few of the best parts only exist locally. Cloning it takes about two "
+                "minutes.", icon=":material/rocket_launch:")
+
+        rc = st.columns(2)
+        with rc[0]:
+            st.markdown(
+                "**What you additionally get locally**\n\n"
+                "- 🐍 **The Python Sandbox** — a live scratchpad with `numpy` and the lab's own "
+                "`core` preloaded, so you can test every idea immediately. *Disabled here* (see "
+                "below).\n"
+                "- 🔬 **The code experiments** — `e01`–`e21` actually execute, including the real "
+                "**PyTorch nanoGPT** you can train on your own GPU/Apple-Silicon.\n"
+                "- ✅ **The test suite** — `pytest` proves the autograd engine's gradients are "
+                "correct.\n"
+                "- ✏️ **Edit anything** — change a lesson, add a playground, break something on "
+                "purpose (the fastest way to learn).\n"
+                "- ⚡ **Full speed, no limits**, and nothing leaves your machine."
+            )
+        with rc[1]:
+            st.markdown("**Prerequisites**")
+            st.markdown(
+                "- **Python 3.10+** (developed on 3.14) and **git**\n"
+                "- ~**1.5 GB** disk for the virtual environment\n"
+                "- Any OS — macOS, Linux, or Windows\n"
+                "- *Optional:* **PyTorch** (`requirements-dl.txt`) only for the nanoGPT "
+                "experiment; everything else is NumPy + scikit-learn"
+            )
+            st.markdown("**Install and run**")
+            st.code(
+                "git clone https://github.com/gokcol/AI-LAB.git\n"
+                "cd AI-LAB\n"
+                "python3 -m venv .venv\n"
+                "source .venv/bin/activate        # Windows: .venv\\Scripts\\activate\n"
+                "pip install -e '.[gui]'\n"
+                "./start.sh                       # → http://localhost:8501",
+                language="bash")
+            st.caption("`./stop.sh` stops it. On Windows, run "
+                       "`streamlit run gui/app.py` instead of `./start.sh`.")
+
+        with st.expander("🔒 Why the Sandbox is disabled on this server"):
+            st.markdown(
+                "The Sandbox executes **arbitrary Python that the visitor types**, inside the "
+                "application's own process. On your own laptop that is exactly what makes it "
+                "useful — it is *your* code on *your* machine.\n\n"
+                "On a public server it would be a **remote code execution** hole: any visitor could "
+                "read private files, steal credentials, install malware, or attack other systems "
+                "from this server's address. No amount of filtering makes "
+                "*\"run whatever Python you like\"* safe for the open internet.\n\n"
+                "So the page is **switched off here by design** — the server runs with "
+                "`AILAB_ENABLE_SANDBOX=0`, and the Sandbox does not even appear in the sidebar. "
+                "Everything else on the site is fully interactive; only the free-form code runner is "
+                "withheld. Clone the repository and you get it back instantly."
+            )
+
+
+with tab_terms:
+    # --- terms of use ----------------------------------------------------------- #
+    with st.container(border=True):
+        st.markdown("### 📜 Terms of use & privacy — the short version")
         st.markdown(
-            "**What you additionally get locally**\n\n"
-            "- 🐍 **The Python Sandbox** — a live scratchpad with `numpy` and the lab's own "
-            "`core` preloaded, so you can test every idea immediately. *Disabled here* (see "
-            "below).\n"
-            "- 🔬 **The code experiments** — `e01`–`e21` actually execute, including the real "
-            "**PyTorch nanoGPT** you can train on your own GPU/Apple-Silicon.\n"
-            "- ✅ **The test suite** — `pytest` proves the autograd engine's gradients are "
-            "correct.\n"
-            "- ✏️ **Edit anything** — change a lesson, add a playground, break something on "
-            "purpose (the fastest way to learn).\n"
-            "- ⚡ **Full speed, no limits**, and nothing leaves your machine."
+            "- **Free** for personal learning and teaching. Non-commercial project, no ads, no accounts.\n"
+            "- **No warranty.** Content is AI-assisted and may contain mistakes — verify before "
+            "relying on it. This is education, not professional advice.\n"
+            "- **Privacy:** no tracking or analytics of our own; the feedback form is optional, and "
+            "what you submit there is used only to read your feedback and improve the lab.\n"
+            "- **Be kind** to the feedback box — it is rate-limited and plain-text only."
         )
-    with rc[1]:
-        st.markdown("**Prerequisites**")
+        with st.expander("Read the full terms"):
+            st.markdown(
+                "**1 · What this is — and is not.** AI Lab (ai-lab.gokcol.online) is a set of **personal study notes** curated by Orhan Gökçöl while learning how artificial neural networks, classical machine learning, and their mathematics work. It is a private, non-commercial learning notebook that happens to be published; it was written with heavy use of Claude (Anthropic) as an AI assistant. It is **not** a textbook, a course, a certification, peer-reviewed material, or professional teaching content, and it carries no institutional endorsement. It represents one learner's notes at one moment in time.\n\n"
+                "**2 · Use.** You are welcome to use the site freely for personal learning, "
+                "teaching, and sharing with attribution. The source code is public on "
+                "[GitHub](https://github.com/gokcol/AI-LAB) for reading and personal study; no open-source license has "
+                "been granted yet, so please ask before commercial reuse or redistribution.\n\n"
+                "**3 · Accuracy & warranty.** Because these are study notes rather than reviewed publications, the content is provided *as is*, with **no warranty** of accuracy, completeness, or availability. Much of it was AI-generated and, although it has been checked and is numerically verified where possible, **it may contain errors and over-simplifications**. Do not cite it; verify against the primary sources referenced on each page before relying on anything. Nothing here is professional, financial, medical, or legal advice.\n\n"
+                "**No guarantee. No liability.** To the fullest extent permitted by law, this material is provided **as is** and **as available**, without warranties or conditions of any kind, whether express, implied or statutory — including, without limitation, any warranty of accuracy, correctness, completeness, currency, merchantability, fitness for a particular purpose, or non-infringement. **No representation is made that the content is free of errors**, and no obligation is accepted to correct or update it. **In no event shall the author be liable for any claim, damage or loss of any kind** — direct, indirect, incidental, consequential, punitive or otherwise, including lost profits, lost data, wasted study time, or decisions taken in reliance on this material — arising from or in connection with this site, its content, or its use, **even if advised of the possibility of such damage**. You alone are responsible for verifying anything you intend to rely on. If you do not accept this, please do not use the site.\n\n"
+                "**4 · Privacy.** The site requires no account and sets no tracking of its own; the "
+                "hosting infrastructure may keep standard operational logs (e.g. IP addresses in "
+                "web-server logs) for security. The feedback form is optional: the message and any "
+                "name/email you choose to include are stored only so the author can read and "
+                "respond to feedback, are never sold or shared, and are deleted on request. Please "
+                "don't submit sensitive personal information. Abusive, automated, or off-topic "
+                "submissions are filtered and discarded.\n\n"
+                "**5 · External links** point to third-party resources (papers, videos, books) that "
+                "are not under this site's control and are not endorsements.\n\n"
+                "**6 · Availability.** This is a personal server run on a best-effort basis — it "
+                "may be down, slow, or change without notice.\n\n"
+                "**7 · Contact.** Questions, corrections, and removal requests: open an issue on "
+                "[GitHub](https://github.com/gokcol/AI-LAB/issues) or use the feedback form below."
+            )
+
+
+with tab_fb:
+    # --- feedback --------------------------------------------------------------- #
+    st.markdown("### 💬 Feedback")
+    st.markdown("Found a mistake? Want a topic covered? A quick note helps the lab improve — "
+                "name and email are optional.")
+    feedback.render_form()
+
+
+with tab_about:
+    # --- about the author ------------------------------------------------------- #
+    with st.container(border=True):
+        st.markdown("### 👤 About the author — whose notes these are")
+        st.markdown(_TIMELINE_SVG, unsafe_allow_html=True)
         st.markdown(
-            "- **Python 3.10+** (developed on 3.14) and **git**\n"
-            "- ~**1.5 GB** disk for the virtual environment\n"
-            "- Any OS — macOS, Linux, or Windows\n"
-            "- *Optional:* **PyTorch** (`requirements-dl.txt`) only for the nanoGPT "
-            "experiment; everything else is NumPy + scikit-learn"
+            "**Orhan Gökçöl** has been writing software since **1987** — starting on IBM mainframes "
+            "in Assembler and REXX, then Fortran for scientific computing, analysing and visualizing "
+            "the interplanetary magnetic field for his MSc. During those graduate years he completed "
+            "a **PhD-level course on the mathematical foundations of artificial neural networks "
+            "(1993–94)** — the very mathematics this lab is built on. He earned a **PhD in "
+            "Aeronautics** at Istanbul Technical University in 1999, where computational engineering "
+            "led him to model industrial processes across manufacturing, retail, finance, electronics "
+            "and education, writing his own simulation and visualization codes.\n\n"
+            "Through the 1990s he built ERP-style business systems for SMEs and the enterprise Linux "
+            "infrastructure they ran on, and helped bring the internet to industry and the public. "
+            "From **1999–2006** he led a university's IT services and its Cyber Technologies Research "
+            "Center while teaching Computer and Mechatronics Engineering — object-oriented "
+            "programming, data structures, computer graphics, web programming — and, with "
+            "psychologists and educators, built career-counselling tools used by **millions of "
+            "students**. He later developed graduate IT programmes at Bahçeşehir University, and in "
+            "**2016** founded his own consultancy, training and audit practice, where he works as a "
+            "senior auditor and trainer in information security and IT resilience "
+            "(**ISO/IEC 27001, ISO/SAE 21434, IEC 62443, TISAX**).\n\n"
+            "Since **2021** he has mentored new graduates and students in software engineering, and "
+            "since **2025** he has used large language models and agentic tools professionally for "
+            "software development — the subject of a forthcoming book. Across that arc he has written "
+            "software in Assembler, BASIC, REXX, Fortran, Pascal, C, C++, Java, C#/.NET, Perl, PHP "
+            "and Python: *from punched mainframe decks to LLM agents*.\n\n"
+            "**These notes are a return to those 1993–94 foundations** — relearning neural networks "
+            "from the single neuron up, thirty years on, now that they run the world. That is all "
+            "this site is: one engineer's study notebook, kept in public."
         )
-        st.markdown("**Install and run**")
-        st.code(
-            "git clone https://github.com/gokcol/AI-LAB.git\n"
-            "cd AI-LAB\n"
-            "python3 -m venv .venv\n"
-            "source .venv/bin/activate        # Windows: .venv\\Scripts\\activate\n"
-            "pip install -e '.[gui]'\n"
-            "./start.sh                       # → http://localhost:8501",
-            language="bash")
-        st.caption("`./stop.sh` stops it. On Windows, run "
-                   "`streamlit run gui/app.py` instead of `./start.sh`.")
-
-    with st.expander("🔒 Why the Sandbox is disabled on this server"):
+        ac = st.columns([0.42, 0.58])
+        ac[0].link_button("👤 LinkedIn — /in/gokcol", "https://www.linkedin.com/in/gokcol",
+                          use_container_width=True)
+        ac[1].link_button("⭐ This lab's source on GitHub", "https://github.com/gokcol/AI-LAB",
+                          use_container_width=True)
         st.markdown(
-            "The Sandbox executes **arbitrary Python that the visitor types**, inside the "
-            "application's own process. On your own laptop that is exactly what makes it "
-            "useful — it is *your* code on *your* machine.\n\n"
-            "On a public server it would be a **remote code execution** hole: any visitor could "
-            "read private files, steal credentials, install malware, or attack other systems "
-            "from this server's address. No amount of filtering makes "
-            "*\"run whatever Python you like\"* safe for the open internet.\n\n"
-            "So the page is **switched off here by design** — the server runs with "
-            "`AILAB_ENABLE_SANDBOX=0`, and the Sandbox does not even appear in the sidebar. "
-            "Everything else on the site is fully interactive; only the free-form code runner is "
-            "withheld. Clone the repository and you get it back instantly."
+            "> *“What I cannot create, I do not understand.”* — **Richard Feynman**, blackboard note "
+            "(1988).  \n"
+            "That line is why this lab exists: everything here is rebuilt from scratch, in code you "
+            "can run."
         )
 
-# --- terms of use ----------------------------------------------------------- #
-with st.container(border=True):
-    st.markdown("### 📜 Terms of use & privacy — the short version")
-    st.markdown(
-        "- **Free** for personal learning and teaching. Non-commercial project, no ads, no accounts.\n"
-        "- **No warranty.** Content is AI-assisted and may contain mistakes — verify before "
-        "relying on it. This is education, not professional advice.\n"
-        "- **Privacy:** no tracking or analytics of our own; the feedback form is optional, and "
-        "what you submit there is used only to read your feedback and improve the lab.\n"
-        "- **Be kind** to the feedback box — it is rate-limited and plain-text only."
-    )
-    with st.expander("Read the full terms"):
-        st.markdown(
-            "**1 · What this is — and is not.** AI Lab (ai-lab.gokcol.online) is a set of **personal study notes** curated by Orhan Gökçöl while learning how artificial neural networks, classical machine learning, and their mathematics work. It is a private, non-commercial learning notebook that happens to be published; it was written with heavy use of Claude (Anthropic) as an AI assistant. It is **not** a textbook, a course, a certification, peer-reviewed material, or professional teaching content, and it carries no institutional endorsement. It represents one learner's notes at one moment in time.\n\n"
-            "**2 · Use.** You are welcome to use the site freely for personal learning, "
-            "teaching, and sharing with attribution. The source code is public on "
-            "[GitHub](https://github.com/gokcol/AI-LAB) for reading and personal study; no open-source license has "
-            "been granted yet, so please ask before commercial reuse or redistribution.\n\n"
-            "**3 · Accuracy & warranty.** Because these are study notes rather than reviewed publications, the content is provided *as is*, with **no warranty** of accuracy, completeness, or availability. Much of it was AI-generated and, although it has been checked and is numerically verified where possible, **it may contain errors and over-simplifications**. Do not cite it; verify against the primary sources referenced on each page before relying on anything. Nothing here is professional, financial, medical, or legal advice.\n\n"
-            "**No guarantee. No liability.** To the fullest extent permitted by law, this material is provided **as is** and **as available**, without warranties or conditions of any kind, whether express, implied or statutory — including, without limitation, any warranty of accuracy, correctness, completeness, currency, merchantability, fitness for a particular purpose, or non-infringement. **No representation is made that the content is free of errors**, and no obligation is accepted to correct or update it. **In no event shall the author be liable for any claim, damage or loss of any kind** — direct, indirect, incidental, consequential, punitive or otherwise, including lost profits, lost data, wasted study time, or decisions taken in reliance on this material — arising from or in connection with this site, its content, or its use, **even if advised of the possibility of such damage**. You alone are responsible for verifying anything you intend to rely on. If you do not accept this, please do not use the site.\n\n"
-            "**4 · Privacy.** The site requires no account and sets no tracking of its own; the "
-            "hosting infrastructure may keep standard operational logs (e.g. IP addresses in "
-            "web-server logs) for security. The feedback form is optional: the message and any "
-            "name/email you choose to include are stored only so the author can read and "
-            "respond to feedback, are never sold or shared, and are deleted on request. Please "
-            "don't submit sensitive personal information. Abusive, automated, or off-topic "
-            "submissions are filtered and discarded.\n\n"
-            "**5 · External links** point to third-party resources (papers, videos, books) that "
-            "are not under this site's control and are not endorsements.\n\n"
-            "**6 · Availability.** This is a personal server run on a best-effort basis — it "
-            "may be down, slow, or change without notice.\n\n"
-            "**7 · Contact.** Questions, corrections, and removal requests: open an issue on "
-            "[GitHub](https://github.com/gokcol/AI-LAB/issues) or use the feedback form below."
-        )
 
-# --- feedback --------------------------------------------------------------- #
-st.markdown("### 💬 Feedback")
-st.markdown("Found a mistake? Want a topic covered? A quick note helps the lab improve — "
-            "name and email are optional.")
-feedback.render_form()
+    # --- version history -------------------------------------------------------- #
+    with st.container(border=True):
+        vh = st.columns([0.72, 0.28])
+        vh[0].markdown("### 🗓 Version history")
+        vh[1].link_button("⭐ Source on GitHub", "https://github.com/gokcol/AI-LAB",
+                          use_container_width=True)
+        for date, ver, notes in VERSION_HISTORY:
+            st.markdown(f"**v{ver}** · {date} — {notes}")
 
-# --- version history -------------------------------------------------------- #
-with st.container(border=True):
-    vh = st.columns([0.72, 0.28])
-    vh[0].markdown("### 🗓 Version history")
-    vh[1].link_button("⭐ Source on GitHub", "https://github.com/gokcol/AI-LAB",
-                      use_container_width=True)
-    for date, ver, notes in VERSION_HISTORY:
-        st.markdown(f"**v{ver}** · {date} — {notes}")
 
-# --- about the author ------------------------------------------------------- #
-with st.container(border=True):
-    st.markdown("### 👤 About the author — whose notes these are")
-    st.markdown(_TIMELINE_SVG, unsafe_allow_html=True)
-    st.markdown(
-        "**Orhan Gökçöl** has been writing software since **1987** — starting on IBM mainframes "
-        "in Assembler and REXX, then Fortran for scientific computing, analysing and visualizing "
-        "the interplanetary magnetic field for his MSc. During those graduate years he completed "
-        "a **PhD-level course on the mathematical foundations of artificial neural networks "
-        "(1993–94)** — the very mathematics this lab is built on. He earned a **PhD in "
-        "Aeronautics** at Istanbul Technical University in 1999, where computational engineering "
-        "led him to model industrial processes across manufacturing, retail, finance, electronics "
-        "and education, writing his own simulation and visualization codes.\n\n"
-        "Through the 1990s he built ERP-style business systems for SMEs and the enterprise Linux "
-        "infrastructure they ran on, and helped bring the internet to industry and the public. "
-        "From **1999–2006** he led a university's IT services and its Cyber Technologies Research "
-        "Center while teaching Computer and Mechatronics Engineering — object-oriented "
-        "programming, data structures, computer graphics, web programming — and, with "
-        "psychologists and educators, built career-counselling tools used by **millions of "
-        "students**. He later developed graduate IT programmes at Bahçeşehir University, and in "
-        "**2016** founded his own consultancy, training and audit practice, where he works as a "
-        "senior auditor and trainer in information security and IT resilience "
-        "(**ISO/IEC 27001, ISO/SAE 21434, IEC 62443, TISAX**).\n\n"
-        "Since **2021** he has mentored new graduates and students in software engineering, and "
-        "since **2025** he has used large language models and agentic tools professionally for "
-        "software development — the subject of a forthcoming book. Across that arc he has written "
-        "software in Assembler, BASIC, REXX, Fortran, Pascal, C, C++, Java, C#/.NET, Perl, PHP "
-        "and Python: *from punched mainframe decks to LLM agents*.\n\n"
-        "**These notes are a return to those 1993–94 foundations** — relearning neural networks "
-        "from the single neuron up, thirty years on, now that they run the world. That is all "
-        "this site is: one engineer's study notebook, kept in public."
-    )
-    ac = st.columns([0.42, 0.58])
-    ac[0].link_button("👤 LinkedIn — /in/gokcol", "https://www.linkedin.com/in/gokcol",
-                      use_container_width=True)
-    ac[1].link_button("⭐ This lab's source on GitHub", "https://github.com/gokcol/AI-LAB",
-                      use_container_width=True)
-    st.markdown(
-        "> *“What I cannot create, I do not understand.”* — **Richard Feynman**, blackboard note "
-        "(1988).  \n"
-        "That line is why this lab exists: everything here is rebuilt from scratch, in code you "
-        "can run."
-    )
-
+st.divider()
 st.caption(f"AI Lab v{VERSION} · personal study notes by Orhan Gökçöl, written with Claude · "
            "source: [github.com/gokcol/AI-LAB](https://github.com/gokcol/AI-LAB) · "
            "hosted at **ai-lab.gokcol.online** 🧠")

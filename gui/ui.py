@@ -147,6 +147,39 @@ def inject_theme() -> None:
             color: #173b31;
         }
 
+        /* ---------------- tabs: bigger touch targets, clear active state ------- */
+        button[data-baseweb="tab"] {
+            font-size: 0.96rem;
+            font-weight: 620;
+            padding: 0.55rem 0.95rem;
+            border-radius: 8px 8px 0 0;
+        }
+        button[data-baseweb="tab"][aria-selected="true"] {
+            background: rgba(37, 99, 235, 0.07);
+            color: #1d4ed8 !important;
+        }
+        div[data-baseweb="tab-highlight"] { background-color: #2563eb; height: 3px; }
+        /* keep the strip swipeable instead of squashing labels on narrow screens */
+        div[data-baseweb="tab-list"] {
+            gap: 0.15rem;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+        }
+        div[data-baseweb="tab-list"]::-webkit-scrollbar { display: none; }
+        button[data-baseweb="tab"] { flex: 0 0 auto; }
+
+        /* ---------------- mobile ------------------------------------------------ */
+        @media (max-width: 640px) {
+            .block-container { padding-left: 0.8rem; padding-right: 0.8rem; }
+            button[data-baseweb="tab"] { font-size: 0.9rem; padding: 0.5rem 0.7rem; }
+            .ailab-hero { padding: 0.9rem 1rem; }
+            .ailab-hero h2 { font-size: 1.25rem; }
+            /* metric rows get cramped at 4-across on a phone */
+            div[data-testid="stMetricValue"] { font-size: 1.15rem; }
+            div[data-testid="stMetricLabel"] { font-size: 0.72rem; }
+        }
+
         /* feedback honeypot — invisible to humans, present in the DOM for bots */
         .st-key-fb_hp { display: none !important; }
 
