@@ -172,7 +172,17 @@ $$ -\log\tfrac1C = \log C \qquad\Rightarrow\qquad C=2:\ 0.693,\quad C=3:\ 1.099,
 Check it before you check anything else, because it is a *closed-form prediction of your
 first log line*.
 *Too high?* The output layer is not neutral at init — biases set to something odd, weights
-far too large, or a stray activation on the logits. *Suspiciously low?* Label leakage, or
+far too large, or a stray activation on the logits.
+
+> **Try it on this lab's own network, because it fails the check.** `core.nn.MLP` starts at
+> a binary cross-entropy of **0.858**, not 0.693. Rung 2 says that means a non-neutral
+> output layer, and it is right: `core/nn.Neuron` draws weights from `uniform(-1, 1)`, so
+> $\operatorname{Var}(w)=1/3$ — **5.3×** the Xavier value of $1/n=1/16$ that §7 and Math
+> **X3 §10** derive. The logits come out with a standard deviation of ~1.35 instead of
+> ~0.69, i.e. the untrained net starts out *confidently* wrong rather than undecided.
+> Harmless here — these demos are two layers deep and train in seconds — but it is a real
+> gap between what the lab teaches and what its own engine does, and it is exactly the
+> kind of thing this rung exists to surface. *Suspiciously low?* Label leakage, or
 you are already looking at a batch the model has memorised. *Exactly $\log C$ forever?*
 The gradient is not arriving; go to rung 3.
 

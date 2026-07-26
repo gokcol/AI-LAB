@@ -96,6 +96,8 @@ ANN = {
         page("views/attention.py", "page.attention", ":material/auto_awesome:"),
         page("views/transformer.py", "page.tiny_gpt", ":material/smart_toy:"),
         page("views/generative.py", "page.generative", ":material/auto_awesome:"),
+        page("views/interpretability.py", "page.interpretability",
+             ":material/biotech:"),
     ],
     i18n.t("section.level5"): [
         page("views/sampling.py", "page.sampling", ":material/casino:"),

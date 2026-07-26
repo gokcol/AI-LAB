@@ -129,6 +129,62 @@ step**, repeated, just on more data with a tuned solver. The takeaway: **depth +
 nonlinearity learns features** that make even tangled classes separable by the final layer —
 the core trick that, scaled to images and text, *is* modern deep learning. *(Lab tie-ins:
 MLP, Backprop, Optimizers, M0, M7.)*
+## 9. Where the U-curve stops applying — double descent
+
+The prediction at the top of this page says test accuracy **rises then falls** as you add
+capacity, and on this page, with this much data, it does. Meanwhile the Tiny GPT page
+teaches **scaling laws** and Chinchilla: make the model bigger and, given the tokens to
+match, it gets predictably *better*. Both are in this lab, and read together they look
+like a contradiction. They are not — but the boundary between them is worth knowing,
+because it is where classical ML stops describing modern deep learning.
+
+**The classical U-curve is correct in the regime it was drawn for**: the model has fewer
+parameters than the data has constraints, so there is one best fit, and capacity beyond the
+true complexity of the signal buys only noise-fitting. Polynomial degree, tree depth, $k$
+in $k$-NN, the width slider on this page against a small noisy dataset — all genuinely
+U-shaped.
+
+**What changes is what happens when you keep going past the point of exactly fitting the
+data.** Let $P$ be the number of parameters and $n$ the number of training points. At
+$P = n$ there is exactly *one* function that interpolates the training set, and no freedom
+left to choose a sensible one — so the fit is wildly contorted between the points, and test
+error **spikes**. Push past it and there are now infinitely many interpolating solutions;
+gradient descent does not pick one at random, it converges to the **minimum-norm** one,
+which is the smoothest of them. More parameters means a richer set to choose the smooth
+one from, and test error falls *again* — often below anything the underparameterised regime
+achieved.
+
+$$ \text{test error} \;\;\text{rises to a peak at } P \approx n,\;\text{ then descends a second time} $$
+
+The measured shape, from the demo on this page — ridgeless regression on random ReLU
+features, $n=40$ training points:
+
+| features $P$ | 5 | 20 | 38 | **40** | 50 | 120 | 2000 |
+|---|---|---|---|---|---|---|---|
+| test MSE | 0.94 | 1.20 | 4.78 | **32.3** | 1.66 | 0.33 | **0.14** |
+
+The classical story is the left half of that table and it is accurate there. But the best
+underparameterised model scores 0.94, and the model with **fifty times more parameters than
+data points** scores 0.14 — nearly seven times better. No amount of U-curve reasoning
+predicts that.
+
+**So which page is right?** Both, in their regime:
+
+- This page trains a *small* net on a *small* noisy 2-D dataset, and the width slider stops
+  well short of $P \gg n$. You are on the left of the peak; the U-curve is what you will see,
+  and the prediction is correct.
+- A frontier language model has $P \gg n$ by a wide margin and never leaves the second
+  descent. That is why "make it bigger" is a strategy there and malpractice here.
+
+**The honest caveats.** Double descent is real and reproducible, but it is not a licence to
+skip regularisation: with well-tuned ridge or early stopping the peak flattens and the curve
+can become monotone — the spike is partly an artifact of interpolating *exactly*. It also
+depends on how capacity is counted; the peak sits at $P\approx n$, not at some absolute
+size. And "more parameters is better" only holds with the data and compute to match, which
+is precisely what Chinchilla quantifies.
+
+*(Related: the classical U-curve in **M3 · Model selection**, scaling laws in **Level 5 ·
+Tiny GPT** §11, and the minimum-norm idea in Math **X1**.)*
 """
 
 _QUIZ = [
@@ -180,8 +236,78 @@ lessons.predict(
     'It rises, then **falls**. Extra capacity first captures the true shape, then starts memorizing noise (**overfitting**): train accuracy keeps climbing while test accuracy drops. The goal is *enough* capacity, not maximum.',
 )
 
-tab_train, tab_theory, tab_quiz, tab_tasks, tab_ref = st.tabs(
-    ["🌀 Train it", "📖 Theory", "❓ Self-check", "🛠 Tasks", "📚 References"]
+
+def _double_descent():
+    """Ridgeless regression on random ReLU features: the cleanest reproduction of double
+    descent that runs in a second. Minimum-norm (pinv) is essential — the second descent
+    is a property of WHICH interpolating solution you land on, so a regularised solve
+    would flatten the very peak this is here to show."""
+    st.markdown("**The U-curve, and what is on the other side of it.** Test error against "
+                "model size, all the way past the point where the model can fit the "
+                "training data exactly. The dashed line is $P=n$, where there is exactly "
+                "one interpolating solution and no freedom to pick a good one.")
+    c = st.columns(3)
+    n = c[0].slider("training points $n$", 20, 120, 40, 5, key="dd_n")
+    noise = c[1].slider("label noise σ", 0.0, 1.0, 0.35, 0.05, key="dd_noise")
+    trials = c[2].slider("repeats (median)", 5, 40, 20, 5, key="dd_trials",
+                         help="The peak is violent and heavy-tailed; the median over "
+                              "repeats is what makes the shape legible.")
+    d = 20
+    Ps = sorted({5, 10, 20, 30, int(0.9 * n), int(0.95 * n), n, int(1.05 * n) + 1,
+                 int(1.25 * n), 2 * n, 3 * n, 6 * n, 15 * n, 40 * n})
+    Ps = [P for P in Ps if P >= 2]
+
+    def run(P):
+        errs = []
+        for t in range(trials):
+            r = np.random.default_rng(1000 + t)
+            beta = r.normal(0, 1, d) / np.sqrt(d)
+            Xtr, Xte = r.normal(0, 1, (n, d)), r.normal(0, 1, (400, d))
+            ytr = Xtr @ beta + r.normal(0, noise, n)
+            yte = Xte @ beta
+            W = r.normal(0, 1, (d, P)) / np.sqrt(d)
+            w = np.linalg.pinv(np.maximum(Xtr @ W, 0)) @ ytr     # minimum-norm fit
+            errs.append(float(np.mean((np.maximum(Xte @ W, 0) @ w - yte) ** 2)))
+        return float(np.median(errs))
+
+    te = [run(P) for P in Ps]
+    fig, ax = plt.subplots(figsize=(7.4, 3.2))
+    ax.loglog(Ps, te, "o-", color="#2F7BEA", lw=2, ms=4)
+    ax.axvline(n, color="#C0507A", ls="--", lw=1.4, label=f"$P=n={n}$ (interpolation)")
+    ax.set_xlabel("parameters $P$  (random ReLU features)")
+    ax.set_ylabel("test MSE"); ax.legend(fontsize=8, frameon=False)
+    ax.spines[["top", "right"]].set_visible(False)
+    fig.tight_layout(); st.pyplot(fig)
+
+    under = min(t for P, t in zip(Ps, te) if P < n)
+    peak = max(te)
+    over = te[-1]
+    m = st.columns(3)
+    m[0].metric("best classical (P < n)", f"{under:.3f}")
+    m[1].metric("at the interpolation peak", f"{peak:.2f}", delta=f"×{peak/under:.0f} worse",
+                delta_color="inverse")
+    m[2].metric(f"heavily overparameterised (P={Ps[-1]})", f"{over:.3f}",
+                delta=f"×{under/over:.1f} better", delta_color="normal")
+    if over < under:
+        st.success(
+            f"**The second descent is real.** The best model with fewer parameters than data "
+            f"scores {under:.3f}. Push to {Ps[-1]} parameters — {Ps[-1]//n}× more than there "
+            f"are training points — and it scores {over:.3f}, **{under/over:.1f}× better**, "
+            f"having passed through a peak {peak/under:.0f}× worse on the way. The U-curve "
+            f"describes only the left of that dashed line.", icon=":material/trending_down:")
+    else:
+        st.info("At this noise level the peak is shallow and the second descent has not "
+                "overtaken the classical regime — raise the noise, or lower n, to sharpen it.",
+                icon=":material/lightbulb:")
+    st.caption("Ridgeless (minimum-norm) fits on purpose: the second descent is about *which* "
+               "interpolating solution gradient descent finds, so adding ridge flattens the "
+               "peak — which is itself the point, and the reason this is not a licence to "
+               "drop regularisation.")
+
+
+tab_train, tab_dd, tab_theory, tab_quiz, tab_tasks, tab_ref = st.tabs(
+    ["🌀 Train it", "📉 Double descent", "📖 Theory", "❓ Self-check", "🛠 Tasks",
+     "📚 References"]
 )
 
 with tab_train:
@@ -223,6 +349,9 @@ with tab_train:
     st.info("Same MLP idea as the XOR page, scaled to real 2-D data with scikit-learn's "
             "vectorized solver. Capacity (width/depth) lets it bend the boundary; too much "
             "and it overfits.", icon=":material/blur_on:")
+
+with tab_dd:
+    _double_descent()
 
 with tab_theory:
     st.markdown(_THEORY, unsafe_allow_html=True)

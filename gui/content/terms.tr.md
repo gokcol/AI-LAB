@@ -1,4 +1,4 @@
-### 📜 Kullanım koşulları ve gizlilik — kısa özet
+### 📜 Kullanım koşulları ve veri gizliliği (mahremiyet) — kısa özet
 
 - **Ücretsizdir**; kişisel öğrenme ve öğretme amacıyla kullanılabilir. Ticari olmayan bir projedir; reklam yoktur, üyelik yoktur.
 - **Garanti verilmez.** İçerik yapay zekâ desteğiyle hazırlanmıştır ve hata içerebilir — güvenmeden önce doğrulayın. Burası bir eğitim ortamıdır, profesyonel danışmanlık değildir.

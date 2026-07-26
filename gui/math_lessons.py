@@ -184,7 +184,73 @@ times weights $W^\top$ of shape $d\times h$ gives $N\times h$; the bias, shape $
 are the classic error. Rule of thumb: **write the shape of every tensor next to it**, and
 matmuls chain as $(a\times b)(b\times c)=(a\times c)$.
 
-## 17. The big picture — linear algebra runs the whole lab
+## 17. High-dimensional geometry — why your intuition stops working
+
+Every vector in this lab is high-dimensional: a word embedding is 384–3072 numbers, an
+attention key is 64–128, an MNIST image is 784. Two- and three-dimensional intuition does
+not merely get imprecise there — it gets the answers **backwards**. Three facts, each one
+line of algebra and each measurable in the Playground.
+
+**1 · Distances stop distinguishing anything.** Draw $n$ points from the same distribution
+and look at the spread of pairwise distances relative to the smallest one:
+
+| dimension $d$ | 2 | 10 | 100 | 1 000 | 10 000 |
+|---|---|---|---|---|---|
+| $(\max-\min)/\min$ | 583 | 7.5 | 0.84 | 0.21 | **0.062** |
+
+In 2-D the farthest pair is hundreds of times farther than the closest. In 10 000-D every
+pair is within 6 % of the same distance. The reason is the variance algebra from X3:
+$\lVert x-y\rVert^2$ is a sum of $d$ independent squared differences, so it grows like $d$
+while its standard deviation grows like $\sqrt d$ — the **relative** spread falls like
+$1/\sqrt d$ and everything converges to equidistant.
+
+This is the "curse of dimensionality" the ML track keeps referring to, and it is why
+**k-NN degrades**, why **k-means** struggles, and why "nearest" stops meaning "similar".
+
+**2 · Random vectors are almost exactly orthogonal.** For two independent random unit
+vectors, $\cos\theta$ has mean 0 and standard deviation $1/\sqrt d$:
+
+| dimension $d$ | 2 | 10 | 100 | 1 000 | 10 000 |
+|---|---|---|---|---|---|
+| measured std of $\cos\theta$ | 0.711 | 0.316 | 0.0999 | 0.0316 | 0.0099 |
+| $1/\sqrt d$ | 0.707 | 0.316 | 0.1000 | 0.0316 | 0.0100 |
+| fraction with $\lvert\cos\theta\rvert>0.1$ | 94 % | 77 % | 31 % | 0.1 % | 0.0 % |
+
+Four significant figures. In 1000 dimensions, **essentially every pair of unrelated
+directions is perpendicular to within a hundredth**.
+
+This is the answer to a question the Embeddings page currently asserts rather than
+explains: *why does cosine similarity work on 1536-dimensional vectors?* Because the
+baseline is so sharp. Two unrelated embeddings score $0.00\pm0.03$, so a similarity of
+0.4 is not "somewhat similar" — it is **thirteen standard deviations** away from what
+chance produces. High dimension does not blur the signal; it makes the null hypothesis
+extraordinarily tight. The same fact is why a network can pack far more distinguishable
+concepts into $d$ neurons than it has neurons — there are exponentially many *nearly*
+orthogonal directions even though only $d$ exactly orthogonal ones.
+
+**3 · All the volume is in the skin.** Scale a $d$-dimensional ball to 90 % of its radius
+and you capture $0.9^d$ of its volume:
+
+| $d$ | 1 | 3 | 10 | 100 |
+|---|---|---|---|---|
+| volume in the outer 10 % | 10 % | 27 % | 65 % | **99.997 %** |
+
+In 100 dimensions a ball is essentially a hollow shell. Nothing lives in the middle — which
+is also why a high-dimensional Gaussian's samples are nowhere near its mode, and why
+"typical" and "most probable" part company. The mode of $\mathcal N(0,I_d)$ is the origin,
+and almost no sample is anywhere near it: they all sit at radius $\approx\sqrt d$.
+
+**What to take from this.** Distance-based reasoning weakens with dimension while
+angle-based reasoning gets *sharper* — which is exactly why the lab's similarity work uses
+cosine and the dot product rather than Euclidean distance, and why the attention scores in
+Level 4 are dot products scaled by $1/\sqrt{d_k}$: that $\sqrt{d_k}$ is the same $\sqrt d$
+appearing for the same reason, undoing the growth of a $d$-term sum so the softmax does not
+saturate.
+
+*(Used by: **M5** k-NN / k-means / PCA, **M6** SVM kernels, **Embeddings** §9, **Attention**
+§3. Derived from the variance rules in Math **X3 §10**.)*
+
+## 18. The big picture — linear algebra runs the whole lab
 
 | you'll see it as… | it's really… |
 |---|---|

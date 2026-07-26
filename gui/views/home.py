@@ -329,9 +329,21 @@ def _terms_body(where: str = 'tab'):
         st.markdown(full)
 
 
+# st.dialog fixes its title at decoration time, so a language-aware modal needs one
+# decorated function per language rather than a computed string. Two small wrappers beat
+# showing a Turkish reader an English title over Turkish text.
 @st.dialog("📜 Terms of use & privacy", width="large")
-def _terms_dialog():
+def _terms_dialog_en():
     _terms_body(where='dialog')
+
+
+@st.dialog("📜 Kullanım koşulları ve veri gizliliği (mahremiyet)", width="large")
+def _terms_dialog_tr():
+    _terms_body(where='dialog')
+
+
+def _terms_dialog():
+    (_terms_dialog_tr if terms_lang() == "tr" else _terms_dialog_en)()
 
 
 with tab_terms:

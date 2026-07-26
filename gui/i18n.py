@@ -79,6 +79,8 @@ TEXT = {
     "page.tokenization": {"en": "Tokenization", "tr": "Tokenizasyon"},
     "page.attention": {"en": "Attention (LLMs)", "tr": "Attention (LLM'ler)"},
     "page.tiny_gpt": {"en": "Tiny GPT", "tr": "Küçük GPT"},
+    "page.interpretability": {"en": "Interpretability",
+                              "tr": "Yorumlanabilirlik"},
     "page.generative": {"en": "Generative family",
                         "tr": "Üretken model ailesi"},
     "page.sampling": {"en": "Decoding (sampling)", "tr": "Decoding (sampling)"},

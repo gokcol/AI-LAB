@@ -25,6 +25,13 @@ class Module:
 class Neuron(Module):
     def __init__(self, n_in, nonlin="tanh", rng=None):
         rng = rng or random
+        # NOTE: uniform(-1, 1) gives Var(w) = 1/3 regardless of fan_in, which is NOT the
+        # Xavier/He scaling derived in core/init.py and taught in Math X3 section 10. It is
+        # kept because these demos are two layers deep, train in seconds, and several tuned
+        # seeds in the GUI depend on it; at this depth the difference is cosmetic. It does
+        # mean an untrained MLP starts at a cross-entropy above ln(C) rather than at it --
+        # see the debugging ladder on the MLP page, which uses this as its worked example.
+        # For anything deep, use core.init.xavier / core.init.he.
         self.w = [Value(rng.uniform(-1, 1)) for _ in range(n_in)]
         self.b = Value(0.0)
         self.nonlin = nonlin

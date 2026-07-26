@@ -21,8 +21,9 @@ lessons.predict(
     "Largest (positive) when **aligned** (θ=0), **zero** when perpendicular (θ=90°), negative when opposed: w·x = ‖w‖‖x‖cos θ. That's exactly a neuron's pre-activation z = w·x + b — the neuron scores how much the input aligns with its weight direction.",
 )
 
-tab_dot, tab_matrix, tab_theory, tab_quiz, tab_tasks, tab_ref = st.tabs(
-    ["🎛 Dot product", "🔲 Matrix transform", "📖 Theory", "❓ Self-check", "🛠 Tasks", "📚 References"]
+tab_dot, tab_matrix, tab_hd, tab_theory, tab_quiz, tab_tasks, tab_ref = st.tabs(
+    ["🎛 Dot product", "🔲 Matrix transform", "🌌 High dimensions", "📖 Theory",
+     "❓ Self-check", "🛠 Tasks", "📚 References"]
 )
 
 # --------------------------------------------------------------------------- #
@@ -155,6 +156,87 @@ with tab_matrix:
             "**det W** is the area factor: det = 0 collapses the square to a line (W is singular, "
             "non-invertible). Dotted lines are **eigen-directions** — vectors W only stretches, the "
             "basis of PCA.", icon=":material/lightbulb:")
+
+
+# --------------------------------------------------------------------------- #
+# Playground 3 — high-dimensional geometry (theory §17)
+# --------------------------------------------------------------------------- #
+with tab_hd:
+    st.markdown("**Three things that are false in 2-D and true in 1000-D.** Move the "
+                "dimension slider and watch each one arrive. Every number here is measured, "
+                "not asserted — the theory tab (§17) gives the one-line reason for each.")
+    hc = st.columns(3)
+    d = hc[0].select_slider("dimension $d$", [2, 3, 5, 10, 30, 100, 300, 1000, 3000],
+                            value=100, key="hd_d")
+    npts = hc[1].slider("sample size", 100, 800, 300, 50, key="hd_n",
+                        help="Points for the distance test; pairs for the angle test.")
+    show = hc[2].radio("show", ["Distances", "Angles", "Volume"], key="hd_show",
+                       horizontal=False)
+
+    _rng = np.random.default_rng(0)
+    if show == "Distances":
+        X = _rng.normal(0, 1, (npts, d))
+        D = np.sqrt(((X[:, None, :] - X[None, :, :]) ** 2).sum(-1))
+        v = D[np.triu_indices(npts, 1)]
+        ratio = (v.max() - v.min()) / v.min()
+        fig, ax = plt.subplots(figsize=(6.6, 2.9))
+        ax.hist(v, bins=60, color="#2F7BEA", alpha=.85)
+        ax.axvline(v.min(), color="#C0507A", lw=1.4, ls="--", label=f"min {v.min():.2f}")
+        ax.axvline(v.max(), color="#1D9E75", lw=1.4, ls="--", label=f"max {v.max():.2f}")
+        ax.set_xlabel("pairwise distance"); ax.set_ylabel("count")
+        ax.legend(fontsize=8, frameon=False); ax.spines[["top", "right"]].set_visible(False)
+        fig.tight_layout(); st.pyplot(fig)
+        m = st.columns(3)
+        m[0].metric("closest pair", f"{v.min():.2f}")
+        m[1].metric("farthest pair", f"{v.max():.2f}")
+        m[2].metric("(max − min) / min", f"{ratio:.3f}")
+        st.info(f"At $d={d}$ the farthest pair is only **{100*ratio:.1f}% farther** than the "
+                f"closest. As $d$ grows this goes to zero like $1/\\sqrt d$ — the sum of $d$ "
+                f"squared differences grows like $d$ while its spread grows like $\\sqrt d$. "
+                f"This is the curse of dimensionality that weakens k-NN and k-means.",
+                icon=":material/social_distance:")
+    elif show == "Angles":
+        A = _rng.normal(0, 1, (2000, d)); A /= np.linalg.norm(A, axis=1, keepdims=True)
+        B = _rng.normal(0, 1, (2000, d)); B /= np.linalg.norm(B, axis=1, keepdims=True)
+        cos = (A * B).sum(1)
+        fig, ax = plt.subplots(figsize=(6.6, 2.9))
+        ax.hist(cos, bins=60, range=(-1, 1), color="#1D9E75", alpha=.85)
+        ax.axvline(0, color="#33312E", lw=1)
+        ax.set_xlabel("cos θ between two random unit vectors"); ax.set_ylabel("count")
+        ax.spines[["top", "right"]].set_visible(False)
+        fig.tight_layout(); st.pyplot(fig)
+        m = st.columns(3)
+        m[0].metric("std of cos θ", f"{cos.std():.4f}")
+        m[1].metric("predicted 1/√d", f"{1/np.sqrt(d):.4f}")
+        m[2].metric("|cos θ| > 0.1", f"{(np.abs(cos) > 0.1).mean():.1%}")
+        st.success(
+            f"Measured **{cos.std():.4f}** against a prediction of **{1/np.sqrt(d):.4f}**. "
+            f"Two unrelated directions in $d={d}$ score $0.00\\pm{cos.std():.3f}$, so a "
+            f"cosine similarity of 0.4 sits **{0.4/max(cos.std(),1e-9):.0f} standard "
+            f"deviations** from chance. That sharpness — not any blurring — is why cosine "
+            f"similarity works on 1536-dimensional embeddings.",
+            icon=":material/straighten:")
+    else:
+        ds = np.arange(1, 201)
+        fig, ax = plt.subplots(figsize=(6.6, 2.9))
+        for frac, col in ((0.10, "#C0507A"), (0.01, "#9A6A2A")):
+            ax.plot(ds, 1 - (1 - frac) ** ds, lw=2, color=col,
+                    label=f"outer {frac:.0%} of the radius")
+        ax.axvline(d, color="#2F7BEA", ls="--", lw=1.4, label=f"$d={d}$")
+        ax.set_xlabel("dimension $d$"); ax.set_ylabel("fraction of the ball's volume")
+        ax.legend(fontsize=8, frameon=False); ax.spines[["top", "right"]].set_visible(False)
+        fig.tight_layout(); st.pyplot(fig)
+        m = st.columns(3)
+        m[0].metric("volume in the outer 10 %", f"{1 - 0.9 ** d:.4%}")
+        m[1].metric("volume in the outer 1 %", f"{1 - 0.99 ** d:.2%}")
+        m[2].metric("typical radius of a sample", f"√{d} ≈ {np.sqrt(d):.1f}")
+        st.info(f"Scale a $d$-ball to 90 % of its radius and you keep $0.9^{{{d}}}$ of the "
+                f"volume — at $d={d}$ that is {0.9 ** d:.2e}. The ball is a **hollow shell**. "
+                f"The same fact means samples from $\\mathcal N(0, I_d)$ sit at radius "
+                f"$\\approx\\sqrt d = {np.sqrt(d):.1f}$, nowhere near the mode at the "
+                f"origin: *typical* and *most probable* are different things in high "
+                f"dimension.", icon=":material/blur_circular:")
+
 
 with tab_theory:
     st.markdown(LESSON.theory, unsafe_allow_html=True)
