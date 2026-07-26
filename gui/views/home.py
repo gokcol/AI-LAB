@@ -279,7 +279,7 @@ def _terms_text(lang: str) -> tuple[str, str]:
     """(short version, full terms) for one language, with the live values filled in."""
     raw = (TERMS_DIR / f"terms.{lang}.md").read_text(encoding="utf-8")
     raw = raw.replace("{retention}", str(feedback.RETENTION_DAYS)) \
-             .replace("{region}", feedback.DATA_LOCATION)
+             .replace("{region}", feedback.data_location(lang))
     short, _, full = raw.partition("<!--FULL-->")
     return short.strip(), full.strip()
 

@@ -58,7 +58,11 @@ The site tells visitors where their data is held, so the value has to be true. F
 
 I could not determine this from the IP: `139.162.159.186` is registered in the RIPE
 (European) region, which narrows it to Europe but not to a city. Until you set it, the
-notice says only "the European Union".
+notice says only "the European Union" (and "Avrupa Birliği" in the Turkish version).
+
+The Turkish notice renders the country name itself: `REGION="Frankfurt, Germany"` shows as
+*Frankfurt, Almanya*. If you pick a region the map does not cover, set
+`AILAB_DATA_REGION_TR="..."` alongside it.
 
 ---
 

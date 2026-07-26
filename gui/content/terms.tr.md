@@ -3,7 +3,7 @@
 - **Ücretsizdir**; kişisel öğrenme ve öğretme amacıyla kullanılabilir. Ticari olmayan bir projedir; reklam yoktur, üyelik yoktur.
 - **Garanti verilmez.** İçerik yapay zekâ desteğiyle hazırlanmıştır ve hata içerebilir — güvenmeden önce doğrulayın. Burası bir eğitim ortamıdır, profesyonel danışmanlık değildir.
 - **Gizlilik:** çerez yok, üçüncü taraf analiz aracı yok, reklam ağı yok, üyelik yok. Web sunucusu, güvenlik ve basit ziyaretçi sayımı için incelenen standart erişim kayıtları (access log) tutar. Geri bildirim isteğe bağlıdır; **ad ve e-posta da onun içinde isteğe bağlıdır**, yalnızca açık rızanızla istenir, sadece size yanıt vermek için kullanılır ve talebiniz üzerine silinir.
-- Geri bildirim kutusuna **nazik davranın** — hız sınırı uygulanır ve yalnızca düz metin kabul edilir.
+- Geri bildirim mesajlarında **nezaket kurallarına uymanızı rica ediyorum** — bu platformda hız sınırlayıcı uygulanır ve yalnızca düz metin kabul edilir.
 
 <!--FULL-->
 

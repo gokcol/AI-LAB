@@ -68,6 +68,35 @@ RETENTION_DAYS = 365         # maximum retention for an entry carrying a name/em
 # address block is registered in the RIPE (European) region.
 DATA_LOCATION = os.environ.get("AILAB_DATA_REGION", "the European Union")
 
+# The same fact in Turkish. A privacy notice that reads "verileriniz the European Union
+# konumunda tutulur" is not a Turkish notice. Countries are mapped so that setting
+# REGION="Frankfurt, Germany" at deploy time yields "Frankfurt, Almanya" without a second
+# variable; AILAB_DATA_REGION_TR overrides it for anything the map does not cover.
+_TR_PLACES = {
+    "the European Union": "Avrupa Birliği",
+    "Germany": "Almanya", "United Kingdom": "Birleşik Krallık", "England": "İngiltere",
+    "Netherlands": "Hollanda", "France": "Fransa", "Sweden": "İsveç", "Italy": "İtalya",
+    "Spain": "İspanya", "Ireland": "İrlanda", "Poland": "Polonya", "Turkey": "Türkiye",
+    "Türkiye": "Türkiye", "United States": "Amerika Birleşik Devletleri",
+}
+
+
+def _tr_location(value: str) -> str:
+    for en, tr in _TR_PLACES.items():
+        if value == en:
+            return tr
+        if value.endswith(", " + en):
+            return value[: -len(en)] + tr
+    return value
+
+
+DATA_LOCATION_TR = os.environ.get("AILAB_DATA_REGION_TR") or _tr_location(DATA_LOCATION)
+
+
+def data_location(lang: str = "en") -> str:
+    """Where the data is held, phrased in the reader's language."""
+    return DATA_LOCATION_TR if lang == "tr" else DATA_LOCATION
+
 _EMAIL_RE = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
 _URL_RE = re.compile(
     r"(https?\s*:|www\.|://|ftp\.|\.[a-z]{2,6}/"           # scheme / path forms
@@ -291,7 +320,7 @@ CONSENT_TEXT = {
 
 def consent_text(part: str) -> str:
     t = CONSENT_TEXT[reader_lang()][part]
-    return t.replace("{region}", DATA_LOCATION).replace("{days}", str(RETENTION_DAYS))
+    return t.replace("{region}", data_location(reader_lang())).replace("{days}", str(RETENTION_DAYS))
 
 
 def new_captcha() -> None:
