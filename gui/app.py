@@ -39,8 +39,12 @@ with st.sidebar:
         "ML": i18n.t("track.ml"),
         "Math": i18n.t("track.math"),
     }
+    # Seeded in session_state (rather than passing default=) so pages can switch tracks
+    # programmatically without Streamlit warning about a widget that has both a default
+    # and an API-set value.
+    st.session_state.setdefault("module", "ANN")
     module = st.segmented_control(
-        i18n.t("app.module"), ["ANN", "ML", "Math"], default="ANN", key="module",
+        i18n.t("app.module"), ["ANN", "ML", "Math"], key="module",
         help=i18n.t("app.module_help"),
     ) or "ANN"
     st.caption(track_blurb[module])
@@ -54,13 +58,17 @@ def page(path: str, title_key: str, icon: str, *, default: bool = False):
 # Shared across modules — a Python scratchpad with numpy + the lab's core preloaded.
 SANDBOX = page("views/sandbox.py", "page.sandbox", ":material/code:")
 COACH = page("views/study_coach.py", "page.study_coach", ":material/self_improvement:")
+# The site-wide landing page. It lives in the ANN "Overview" group so it is always one
+# click away, but it is NOT that module's default — switching to a track opens the
+# track's own overview (Dashboard / ML overview / Math overview).
+HOME = page("views/home.py", "page.home", ":material/home:")
 
 # Pages are grouped into sections that follow the learning path. Passing a {section: [pages]}
 # dict to st.navigation renders the keys as sidebar section headers (much less crowded).
 ANN = {
     i18n.t("section.overview"): [
-        page("views/home.py", "page.home", ":material/home:", default=True),
-        page("views/dashboard.py", "page.dashboard", ":material/dashboard:"),
+        HOME,
+        page("views/dashboard.py", "page.dashboard", ":material/dashboard:", default=True),
         COACH,
         page("views/the_chain.py", "page.big_picture", ":material/route:"),
     ],
@@ -101,6 +109,7 @@ ANN = {
 }
 ML = {
     i18n.t("section.overview"): [
+        HOME,
         page("views/ml_overview.py", "page.ml_overview", ":material/dashboard:", default=True),
         page("views/ml_foundations.py", "page.ml_foundations", ":material/school:"),
     ],
@@ -121,6 +130,7 @@ ML = {
 }
 MATH = {
     i18n.t("section.overview"): [
+        HOME,
         page("views/math_overview.py", "page.math_overview", ":material/dashboard:", default=True),
     ],
     i18n.t("section.algebra"): [
@@ -148,6 +158,20 @@ if SANDBOX_ENABLED:
 
 # position="hidden": we render our own grouped links below, so the Module selector sits on top.
 nav = st.navigation(MODULES[module], position="hidden")
+
+# A page can ask to jump to a page in ANOTHER module (Home links to ANN pages while the
+# ML/Math tracks are selected). The requester sets "module" + "_goto_page"; by the time we
+# get here the nav has been rebuilt for the new module, so the target is resolvable.
+_pending = st.session_state.get("_goto_page")
+if _pending:
+    del st.session_state["_goto_page"]
+    st.switch_page(_pending)
+
+# First visit of a session -> the landing page. Afterwards each module opens its own
+# overview, so clicking "ANN" goes to the Dashboard rather than back to Home.
+if not st.session_state.get("ailab_booted"):
+    st.session_state["ailab_booted"] = True
+    st.switch_page("views/home.py")
 
 with st.sidebar:
     for section, pages in MODULES[module].items():

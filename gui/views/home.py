@@ -57,6 +57,17 @@ def _switch_module(mod: str):
     st.session_state["module"] = mod
 
 
+def _goto(mod: str, page: str):
+    """Jump to a page that lives in another module's navigation.
+
+    st.page_link can only target pages registered in the ACTIVE nav, and Home is shown
+    in all three tracks — so a direct link to an ANN page raises while ML/Math is
+    selected. Instead we switch the module and let app.py perform the navigation on the
+    next run, once the nav has been rebuilt."""
+    st.session_state["module"] = mod
+    st.session_state["_goto_page"] = page
+
+
 # --------------------------------------------------------------------------- #
 # Page
 # --------------------------------------------------------------------------- #
@@ -105,10 +116,12 @@ with t[0]:
         st.markdown("#### 🧠 ANN\n**The spine.** A single neuron → logic gates → training "
                     "→ CNN/RNN → attention → a **tiny GPT you can train**. Five levels, "
                     "basics to frontier.")
-        st.page_link("views/the_chain.py", label="Start with the big picture",
-                     icon=":material/route:")
-        st.page_link("views/dashboard.py", label="See the 5-level roadmap",
-                     icon=":material/dashboard:")
+        st.button("Start with the big picture →", key="home_go_chain",
+                  on_click=_goto, args=("ANN", "views/the_chain.py"),
+                  use_container_width=True)
+        st.button("See the 5-level roadmap →", key="home_go_dash",
+                  on_click=_goto, args=("ANN", "views/dashboard.py"),
+                  use_container_width=True)
 with t[1]:
     with st.container(border=True):
         st.markdown("#### 🧮 ML\n**Classical machine learning.** Regression, classification, "
@@ -141,8 +154,29 @@ with st.container(border=True):
             "Work top-to-bottom through the levels, or jump straight to what you're curious "
             "about — the math track is there whenever a page leans on it."
         )
-        st.page_link("views/study_coach.py", label="Study Coach — a guided routine",
-                     icon=":material/self_improvement:")
+        st.button("Study Coach — a guided routine →", key="home_go_coach",
+                  on_click=_goto, args=("ANN", "views/study_coach.py"))
+
+with st.container(border=True):
+    st.markdown("### 🎓 How I actually studied this")
+    st.info(
+        "**I did not read my way to understanding — I built my way there.** These notes are the "
+        "residue of that process, and they are laid out the same way I worked:\n\n"
+        "**1 · Interactive labs before prose.** I learn a concept by *moving it*. So almost every "
+        "idea here has a playground where the numbers recompute as you drag a slider — because "
+        "watching a decision boundary tilt taught me more in a minute than a page of text did.\n\n"
+        "**2 · A starting point, not a finished lecture.** For each topic I wrote down just "
+        "enough to begin — the core definition, a worked number, one diagram — and let the "
+        "exercises carry the rest. Treat every page as a launch pad, not a destination.\n\n"
+        "**3 · Pen and paper, always.** The derivations were done by hand before they were typed. "
+        "If I could not reproduce a gradient on paper, I did not understand it yet — and that is "
+        "why the worked solutions show the arithmetic rather than just the answer.\n\n"
+        "**4 · I read around everything, like a student.** No single source is enough. I cross-read "
+        "textbooks, papers, lectures and other people's explanations until the ideas agreed — the "
+        "**References** tab on each page lists what I leaned on, and you should go there too.\n\n"
+        "*If you use these notes the same way — play first, derive on paper, then read widely — "
+        "they will work far better than reading them straight through.*",
+        icon=":material/school:")
 
 # --- run it locally --------------------------------------------------------- #
 with st.container(border=True):
