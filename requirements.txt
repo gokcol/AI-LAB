@@ -1,4 +1,4 @@
-# --- GUI / deploy: Streamlit Community Cloud installs exactly these ---
+# --- GUI / deploy: the server venv installs exactly these ---
 streamlit>=1.36
 numpy>=1.26
 matplotlib>=3.8
