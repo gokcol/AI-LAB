@@ -20,22 +20,6 @@ outputs/
 # Papers: keep the reading list (papers/README.md) in git, ignore the PDFs.
 papers/*.pdf
 
-# Visitor feedback (private data — never commit)
-feedback/
-
-# Server-specific operational notes (private; never publish)
-.private/
-OPS-DASHBOARD.md
-ops.sh
-ops_dashboard/
-tools/ops.sh
-tools/install_ops_dashboard.sh
-tools/deploy_ubuntu.sh
-tools/feedback_report.py
-tools/visitor_report.py
-tests/test_ops_dashboard.py
-tests/test_deployment_guards.py
-
 # GUI runtime (start.sh / stop.sh)
 .gui.pid
 .gui.log
