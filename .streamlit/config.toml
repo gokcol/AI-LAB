@@ -4,6 +4,12 @@
 # forced-light background — a mismatch. Pin light so every visitor sees the intended look.
 [theme]
 base = "light"
+# Streamlit's default is 16px, which reads small in a wide, prose-heavy layout like this
+# one -- long lines of explanation and a lot of inline maths. 17px is about 6% larger.
+# This sets the html root font-size, so every rem-based rule in gui/ui.py scales with it
+# and the whole interface stays in proportion; do not "fix" a size by hardcoding px.
+baseFontSize = 17
+
 primaryColor = "#2563eb"
 backgroundColor = "#ffffff"
 secondaryBackgroundColor = "#eef2f7"

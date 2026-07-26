@@ -36,7 +36,18 @@ def inject_theme() -> None:
             background: transparent !important;
             box-shadow: none !important;
             border: 0 !important;
-            height: 2.6rem !important;
+            height: 2.9rem !important;
+            min-height: 2.9rem !important;   /* height alone loses to Streamlit's min-height */
+        }
+        /* The default 6rem of top padding exists to clear the toolbar. With the toolbar
+           hidden that is ~100px of dead space above the first thing on the page, which
+           makes every screen feel emptier and the text smaller than it is. Give it back,
+           keeping enough room for the sidebar toggle that still lives up there. */
+        [data-testid="stMainBlockContainer"] {
+            padding-top: 3rem !important;
+        }
+        @media (max-width: 640px) {
+            [data-testid="stMainBlockContainer"] { padding-top: 2.4rem !important; }
         }
 
         :root {
