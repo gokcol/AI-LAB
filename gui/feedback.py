@@ -29,8 +29,11 @@ $proxy_add_x_forwarded_for;  so per-client limits see real addresses.
 
 from __future__ import annotations
 
+import base64
 import collections
 import hashlib
+import io
+import random
 import json
 import os
 import pathlib
@@ -52,6 +55,7 @@ SESSION_MAX = 3              # per session lifetime
 WINDOW_S = 3600.0            # sliding window for the global limiter
 GLOBAL_MAX_PER_WINDOW = 30   # all clients combined, per window
 KEY_MAX_PER_WINDOW = 5       # per client (IP / session), per window
+IP_DAILY_MAX = 5             # stored entries per client per UTC day (then blocked)
 DAILY_MAX = 50               # stored entries per UTC day, all clients combined
 MAX_FILE_BYTES = 256_000     # hard cap on the feedback file (~1200 entries)
 
@@ -181,6 +185,69 @@ def check_and_record(key: str, now: float | None = None) -> tuple[bool, str | No
 
 
 # --------------------------------------------------------------------------- #
+# Graphical CAPTCHA — rendered locally with matplotlib as a PNG.
+# No third-party service, no cookies, no tracking: the challenge is drawn on this
+# server and the answer lives only in the visitor's session. Characters are drawn
+# into a raster image (not as SVG/DOM text), so a scraper cannot simply read them
+# out of the page source.
+# --------------------------------------------------------------------------- #
+CAPTCHA_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"   # no confusable I/O/0/1
+CAPTCHA_LEN = 5
+
+
+def _draw_captcha(text: str) -> bytes:
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    rng = random.Random(text)                     # deterministic per challenge
+    fig, ax = plt.subplots(figsize=(2.9, 0.95), dpi=110)
+    ax.set_xlim(0, len(text) + 0.4)
+    ax.set_ylim(0, 1)
+    ax.axis("off")
+    fig.patch.set_facecolor("#F4F7FB")
+    for i, ch in enumerate(text):                 # jittered, rotated glyphs
+        ax.text(i + 0.45 + rng.uniform(-0.09, 0.09), 0.42 + rng.uniform(-0.12, 0.12), ch,
+                fontsize=rng.randint(23, 29),
+                rotation=rng.uniform(-26, 26),
+                color=rng.choice(["#17324F", "#1D4ED8", "#8A2351", "#0E5E45"]),
+                fontweight="bold", ha="center", va="center",
+                family=rng.choice(["DejaVu Sans", "DejaVu Serif"]))
+    for _ in range(4):                            # noise strokes
+        xs = [rng.uniform(0, len(text) + 0.4) for _ in range(3)]
+        ys = [rng.uniform(0, 1) for _ in range(3)]
+        ax.plot(xs, ys, lw=rng.uniform(0.8, 1.6), alpha=0.45,
+                color=rng.choice(["#9CA3AF", "#93B4E8", "#C0507A"]))
+    for _ in range(160):                          # speckle
+        ax.plot(rng.uniform(0, len(text) + 0.4), rng.uniform(0, 1), ".",
+                ms=rng.uniform(0.6, 1.8), color="#9CA3AF", alpha=0.5)
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", bbox_inches="tight", pad_inches=0.04)
+    plt.close(fig)
+    return buf.getvalue()
+
+
+def new_captcha() -> None:
+    """Create a fresh challenge and remember only its hash in the session."""
+    text = "".join(random.choice(CAPTCHA_CHARS) for _ in range(CAPTCHA_LEN))
+    st.session_state["fb_captcha_png"] = _draw_captcha(text)
+    st.session_state["fb_captcha_hash"] = hashlib.sha256(text.encode()).hexdigest()
+
+
+def check_captcha(answer: str) -> bool:
+    want = st.session_state.get("fb_captcha_hash")
+    if not want:
+        return False
+    got = hashlib.sha256(normalize(answer).upper().encode()).hexdigest()
+    return hmac_compare(got, want)
+
+
+def hmac_compare(a: str, b: str) -> bool:
+    import hmac
+    return hmac.compare_digest(a, b)
+
+
+# --------------------------------------------------------------------------- #
 # Storage — bounded, escaped, append-only
 # --------------------------------------------------------------------------- #
 _write_lock = threading.Lock()
@@ -205,6 +272,22 @@ def _count_today_in_file(f: pathlib.Path, today: str) -> int:
     return n
 
 
+def _ip_day_count(f: pathlib.Path, today: str, client: str) -> int:
+    """How many entries this client already stored today (read from disk, so the cap
+    survives restarts and cannot be reset by dropping the session cookie)."""
+    if not client or not f.exists():
+        return 0
+    n = 0
+    try:
+        with open(f, encoding="utf-8") as fh:
+            for line in fh:
+                if today in line and client in line:
+                    n += 1
+    except OSError:
+        return 0
+    return n
+
+
 def _append(record: dict) -> tuple[bool, str | None]:
     """Append one entry, enforcing the size cap and the DAILY_MAX cap atomically.
     The daily counter is cached per process and re-seeded from the file on the
@@ -218,6 +301,9 @@ def _append(record: dict) -> tuple[bool, str | None]:
             if _daily["day"] != today:
                 _daily["day"] = today
                 _daily["count"] = _count_today_in_file(f, today)
+            if _ip_day_count(f, today, record.get("client", "")) >= IP_DAILY_MAX:
+                return False, ("You have reached today's feedback limit from this connection "
+                               "— thank you! Please come back tomorrow, or open a GitHub issue.")
             if _daily["count"] >= DAILY_MAX:
                 return False, ("Today's feedback box is full (daily limit reached) — "
                                "please come back tomorrow, or open a GitHub issue.")
@@ -238,7 +324,7 @@ _THANKS = "Thank you — your feedback was received! 🧠"
 
 
 def submit(name: str, surname: str, email: str, message: str,
-           honeypot: str, first_seen: float) -> tuple[str, str]:
+           honeypot: str, first_seen: float, captcha: str = "") -> tuple[str, str]:
     """Run the full protection pipeline. Returns (level, text) where level is one of
     'success' | 'warning' | 'error'. Bot detections return 'success' with nothing
     stored, so automated senders learn nothing."""
@@ -263,7 +349,13 @@ def submit(name: str, surname: str, email: str, message: str,
     if not allowed:
         return "warning", why
 
-    # 4 · validation
+    # 4 · CAPTCHA — checked before validation so a bot cannot use the error messages
+    #     to probe the validator. Only enforced when a challenge was actually issued.
+    if st.session_state.get("fb_captcha_hash") and not check_captcha(captcha):
+        new_captcha()
+        return "error", "The characters did not match — please try the new image."
+
+    # 5 · validation
     msg, err = validate_message(message)
     if err:
         return "error", err
@@ -277,7 +369,7 @@ def submit(name: str, surname: str, email: str, message: str,
     if err:
         return "error", err
 
-    # 5 · store (escaped; client key hashed; no raw IP anywhere)
+    # 6 · store (escaped; client key hashed; no raw IP anywhere)
     ok, err = _append({
         "ts": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime(now)),
         "name": nm, "surname": sn, "email": em,
@@ -297,33 +389,81 @@ def submit(name: str, surname: str, email: str, message: str,
 # --------------------------------------------------------------------------- #
 def render_form() -> None:
     st.session_state.setdefault("fb_first_seen", time.time())
+    if "fb_captcha_png" not in st.session_state:
+        new_captcha()
 
-    with st.form("fb_form", clear_on_submit=True, border=True):
-        c = st.columns(3)
-        name = c[0].text_input("Name *(optional)*", max_chars=MAX_NAME, key="fb_name")
-        surname = c[1].text_input("Surname *(optional)*", max_chars=MAX_NAME, key="fb_surname")
-        email = c[2].text_input("Email *(optional)*", max_chars=MAX_EMAIL, key="fb_email",
-                                help="Only if you'd like a reply. Never shared.")
+    st.markdown(
+        '<div class="ailab-fb-head">'
+        "<h4>💬 Tell me what you think</h4>"
+        "<p>Spotted a mistake? Something explained badly? A topic you wish were here? "
+        "These notes get better because people say so — one line is plenty.</p>"
+        f'<span class="ailab-chip">✍️ plain text</span>'
+        f'<span class="ailab-chip">{MAX_MSG} characters</span>'
+        '<span class="ailab-chip">name &amp; email optional</span>'
+        '<span class="ailab-chip">🔒 never shared</span>'
+        '<span class="ailab-chip">🤖 bot-checked</span>'
+        "</div>",
+        unsafe_allow_html=True,
+    )
+
+    with st.form("fb_form", clear_on_submit=True, border=False):
         message = st.text_area(
-            f"Message · plain text · max {MAX_MSG} characters", max_chars=MAX_MSG,
-            height=90, key="fb_message",
-            placeholder="What did you like? What's confusing? What should the lab teach next?",
+            "Your message",
+            max_chars=MAX_MSG, height=120, key="fb_message",
+            placeholder="e.g. “The XOR walkthrough finally made backprop click — but the "
+                        "softmax section lost me.”",
+            help=f"Plain text only — no links, code or HTML. Up to {MAX_MSG} characters.",
         )
-        # Honeypot — hidden by CSS (.st-key-fb_hp in ui.inject_theme). Humans never
-        # see it; anything typed here marks the submission as automated.
+        with st.expander("Add your name or email *(optional — only if you'd like a reply)*"):
+            c = st.columns(3)
+            name = c[0].text_input("Name", max_chars=MAX_NAME, key="fb_name",
+                                   placeholder="optional")
+            surname = c[1].text_input("Surname", max_chars=MAX_NAME, key="fb_surname",
+                                      placeholder="optional")
+            email = c[2].text_input("Email", max_chars=MAX_EMAIL, key="fb_email",
+                                    placeholder="optional")
+        # Honeypot — hidden by CSS (.st-key-fb_hp). Humans never see it; anything typed
+        # here marks the submission as automated.
         honeypot = st.text_input("Leave this field empty", key="fb_hp",
                                  label_visibility="collapsed")
+
+        cap_l, cap_r = st.columns([0.44, 0.56])
+        with cap_l:
+            st.markdown("<div style='font-size:.83rem;color:#56697F;margin-bottom:.25rem'>"
+                        "Type the characters you see:</div>", unsafe_allow_html=True)
+            st.image(st.session_state["fb_captcha_png"])
+        with cap_r:
+            captcha = st.text_input("Characters", key="fb_captcha",
+                                    max_chars=CAPTCHA_LEN + 3,
+                                    placeholder=f"{CAPTCHA_LEN} characters",
+                                    help="Not case-sensitive. A new image appears after "
+                                         "each attempt.")
+        # NOTE: keep this at the form's top level. Nesting a form_submit_button inside
+        # st.columns makes the submission untestable via AppTest, and an unverifiable
+        # submit path is not worth a nicer row.
+        st.markdown("<div style='font-size:.82rem;color:#7A8A99;margin:-.2rem 0 .5rem'>"
+                    "Anonymous is completely fine — just write the message.</div>",
+                    unsafe_allow_html=True)
         submitted = st.form_submit_button("Send feedback", icon=":material/send:",
                                           type="primary")
 
-    st.caption("No links, code, or HTML — plain text only. Optional fields are used solely "
-               "to read and reply to feedback, are never shared, and you can ask for removal "
-               "any time via GitHub. Rate limits apply.")
-
     if submitted:
-        level, text = submit(name, surname, email, message,
-                             honeypot, st.session_state.get("fb_first_seen", 0.0))
+        before = st.session_state.get("fb_count", 0)
+        level, text = submit(name, surname, email, message, honeypot,
+                             st.session_state.get("fb_first_seen", 0.0), captcha)
         {"success": st.success, "warning": st.warning, "error": st.error}[level](text)
+        # Celebrate only when something was really stored: the bot traps also report
+        # "success" (deliberately), and they must not look different to a machine.
+        if level == "success" and st.session_state.get("fb_count", 0) > before:
+            st.balloons()
+        if level != "error":          # errors already refreshed the challenge
+            new_captcha()
+
+    st.caption("If the image is hard to read for any reason, please open a GitHub issue "
+               "instead — the link is in the About tab. ")
+    st.caption("Your note is stored on the site's own server and read only by the author. "
+               "No links, code or HTML — plain text keeps the box safe for everyone. "
+               "Ask any time (via GitHub) and it will be deleted. Rate limits apply.")
 
     # Local-only admin view (env var is never set on the public deploy).
     if os.environ.get("AILAB_FEEDBACK_ADMIN") == "1":

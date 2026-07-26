@@ -102,11 +102,18 @@ st.caption("Source, issues and corrections: "
            "genuinely welcome; that is how study notes get better.")
 
 views, exps, svgs, quiz = _stats()
-m = st.columns(4)
-m[0].metric("interactive pages", f"{views}")
-m[1].metric("code experiments", f"{exps}")
-m[2].metric("diagrams", f"{svgs}+")
-m[3].metric("self-check questions", f"{quiz}+")
+_CARDS = [("s-blue", "🧭", f"{views}", "interactive pages"),
+          ("s-green", "🔬", f"{exps}", "code experiments"),
+          ("s-amber", "📈", f"{svgs}+", "diagrams"),
+          ("s-plum", "❓", f"{quiz}+", "self-check questions")]
+st.markdown(
+    '<div class="ailab-stats">'
+    + "".join(f'<div class="ailab-stat {c}"><div class="ic">{i}</div>'
+              f'<div class="num">{n}</div><div class="lab">{l}</div></div>'
+              for c, i, n, l in _CARDS)
+    + "</div>",
+    unsafe_allow_html=True,
+)
 
 # --------------------------------------------------------------------------- #
 # Everything below the fold lives in tabs: the page carries a lot of material and
