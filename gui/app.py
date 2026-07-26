@@ -69,6 +69,7 @@ ANN = {
         page("views/neurons_compute.py", "page.neurons_compute", ":material/calculate:"),
     ],
     i18n.t("section.level2"): [
+        page("views/worked_numbers.py", "page.worked_numbers", ":material/functions:"),
         page("views/backprop.py", "page.backprop", ":material/sync_alt:"),
         page("views/mlp.py", "page.mlp", ":material/network_node:"),
         page("views/optimizers.py", "page.optimizers", ":material/trending_down:"),

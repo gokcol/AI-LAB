@@ -200,6 +200,21 @@ with tab_live:
             "kernels per layer (channels), interleaves **pooling**, and trains the kernels by "
             "backprop — building edges → textures → objects.", icon=":material/filter_center_focus:")
 
+    with st.expander("🐦 Hinton's example: how edge detection builds up to \"bird\""):
+        st.markdown(
+            """<div style="text-align:center;margin:0.3rem 0"><svg viewBox="0 0 720 300" style="width:100%;max-width:720px;height:auto" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A feature hierarchy for recognizing a bird: an edge-detection layer feeds part detectors beak and eye, which feed an object-part detector bird's head, which votes among the output classes cat, dog, bird and politician — bird wins."><defs><marker id="cnh" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#5B8FC2"/></marker></defs><rect x="1" y="1" width="718" height="298" rx="14" fill="#FAFAF7" stroke="#E2E2DA"/><g stroke="#5B8FC2" stroke-width="2" fill="none"><line x1="130" y1="126" x2="270" y2="90" marker-end="url(#cnh)"/><line x1="130" y1="174" x2="270" y2="210" marker-end="url(#cnh)"/><line x1="332" y1="90" x2="460" y2="136" marker-end="url(#cnh)"/><line x1="332" y1="210" x2="460" y2="164" marker-end="url(#cnh)"/><line x1="540" y1="136" x2="640" y2="56" marker-end="url(#cnh)"/><line x1="543" y1="147" x2="639" y2="110" marker-end="url(#cnh)"/><line x1="543" y1="153" x2="639" y2="174" marker-end="url(#cnh)"/><line x1="540" y1="164" x2="640" y2="236" marker-end="url(#cnh)"/></g><g font-family="sans-serif" text-anchor="middle" font-weight="600" fill="#FFFFFF"><circle cx="86" cy="150" r="46" fill="#8FBF4A" stroke="#5E8A2E" stroke-width="2"/><text x="86" y="146" font-size="11">Edge</text><text x="86" y="162" font-size="11">Detection</text><circle cx="300" cy="82" r="34" fill="#8FBF4A" stroke="#5E8A2E" stroke-width="2"/><text x="300" y="87" font-size="12">Beak</text><circle cx="300" cy="218" r="34" fill="#8FBF4A" stroke="#5E8A2E" stroke-width="2"/><text x="300" y="223" font-size="12">Eye</text><circle cx="500" cy="150" r="44" fill="#8FBF4A" stroke="#5E8A2E" stroke-width="2"/><text x="500" y="147" font-size="11.5">Bird's</text><text x="500" y="163" font-size="11.5">Head</text><circle cx="666" cy="48" r="27" fill="#8FBF4A" stroke="#5E8A2E" stroke-width="2"/><text x="666" y="52" font-size="11">Cat</text><circle cx="666" cy="112" r="27" fill="#8FBF4A" stroke="#5E8A2E" stroke-width="2"/><text x="666" y="116" font-size="11">Dog</text><circle cx="666" cy="176" r="29" fill="#8FBF4A" stroke="#E0A32A" stroke-width="3.5"/><text x="666" y="180" font-size="12">Bird</text><circle cx="666" cy="244" r="27" fill="#8FBF4A" stroke="#5E8A2E" stroke-width="2"/><text x="666" y="248" font-size="8.5">Politician</text></g><text x="360" y="292" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#6B6A66">edges → parts → object part → class · each layer's features are built from the one below</text></svg></div>""",
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            "The feature map you just made **is layer 1 — edge detection.** In a deep vision net "
+            "(Hinton's *StarTalk* example) those edges combine into **part** detectors — a "
+            "**beak**, an **eye** — which combine into an **object-part** detector — a **bird's "
+            "head** — which finally votes for a **class** (*bird*, not cat/dog). Each layer "
+            "detects features built from the layer below, and the whole hierarchy is **learned "
+            "bottom-up by backprop**, never hand-designed — which is exactly why *depth* matters "
+            "for vision."
+        )
+
 with tab_theory:
     st.markdown(_THEORY.replace("<ARCH/>", _ARCH_SVG), unsafe_allow_html=True)
 
