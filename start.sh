@@ -39,6 +39,8 @@ source "$VENV/bin/activate"
 # Sandbox = in-app arbitrary-Python page. Default ON for LOCAL use only.
 # On a public server run:  AILAB_ENABLE_SANDBOX=0 ./start.sh   (never expose it).
 export AILAB_ENABLE_SANDBOX="${AILAB_ENABLE_SANDBOX:-1}"
+# The pytest runner is also a developer tool: convenient locally, hidden in production.
+export AILAB_ENABLE_TESTS="${AILAB_ENABLE_TESTS:-1}"
 
 echo "Starting AI Lab GUI on port $PORT ..."
 nohup streamlit run gui/app.py \

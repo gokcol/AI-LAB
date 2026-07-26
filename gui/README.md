@@ -35,7 +35,8 @@ Opens at http://localhost:8501. `start.sh` writes a PID to `.gui.pid` and logs t
 - **Experiments** — per-experiment Overview (README), Code, and Run (captures stdout).
   The public UI is read-only; personal notes stay in local files, not browser-editable forms.
 - **Infobase** — renders the `infobase/*.md` notes.
-- **Tests** — runs `pytest -q` and shows passed/skipped/failed.
+- **Tests** — local-only; runs `pytest -q` and shows passed/skipped/failed. Enabled by
+  `./start.sh` through `AILAB_ENABLE_TESTS=1`.
 - **Sandbox** — local-only Python scratchpad, enabled by `./start.sh` through
   `AILAB_ENABLE_SANDBOX=1`.
 

@@ -107,7 +107,6 @@ ANN = {
     i18n.t("section.lab"): [
         page("views/experiments.py", "page.experiments", ":material/science:"),
         page("views/infobase.py", "page.infobase", ":material/menu_book:"),
-        page("views/tests.py", "page.tests", ":material/check_circle:"),
     ],
 }
 ML = {
@@ -150,6 +149,14 @@ MATH = {
     ],
 }
 MODULES = {"ANN": ANN, "ML": ML, "Math": MATH}
+
+# Running pytest from a web request consumes substantial CPU and exposes developer
+# diagnostics. Keep it local-only unless an operator explicitly opts in.
+TESTS_ENABLED = os.environ.get("AILAB_ENABLE_TESTS") == "1"
+if TESTS_ENABLED:
+    ANN[i18n.t("section.lab")].append(
+        page("views/tests.py", "page.tests", ":material/check_circle:")
+    )
 
 # The Sandbox runs arbitrary Python in-process, so expose it ONLY when explicitly
 # enabled — start.sh sets AILAB_ENABLE_SANDBOX=1 locally; the systemd unit on the
