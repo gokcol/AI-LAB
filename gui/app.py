@@ -149,8 +149,8 @@ MATH = {
 MODULES = {"ANN": ANN, "ML": ML, "Math": MATH}
 
 # The Sandbox runs arbitrary Python in-process, so expose it ONLY when explicitly
-# enabled — start.sh sets AILAB_ENABLE_SANDBOX=1 locally; it's unset on a public
-# deploy (Streamlit Cloud), so the Sandbox is hidden there.
+# enabled — start.sh sets AILAB_ENABLE_SANDBOX=1 locally; the systemd unit on the
+# public server pins it to 0, so the Sandbox never exists there.
 SANDBOX_ENABLED = os.environ.get("AILAB_ENABLE_SANDBOX") == "1"
 if SANDBOX_ENABLED:
     for _sections in MODULES.values():
