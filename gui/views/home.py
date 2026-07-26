@@ -73,56 +73,63 @@ def _goto(mod: str, page: str):
 # --------------------------------------------------------------------------- #
 st.markdown(_HERO_SVG, unsafe_allow_html=True)
 
-st.markdown(
-    "**Welcome.** These are **my own study notes** — personal notes I curated for myself while "
-    "relearning how modern AI actually works — **neural networks** from a single neuron to a "
-    "small GPT, **classical machine learning**, and the **mathematics** underneath both. "
-    "I learn by "
-    "**doing**, so every note here comes with an interactive playground, worked numeric "
-    "examples, self-check questions with answers, and code that runs. I am publishing them "
-    "as-is, exactly as I use them, in case they are useful to someone else on the same road."
-)
-
-st.warning(
-    "**Please read this first — what this is, and what it is not.**\n\n"
-    "This is a **personal study notebook**, curated by **Orhan Gökçöl** while learning, and "
-    "written with heavy use of **Claude** (Anthropic) as an AI assistant. It is **not** a "
-    "textbook, not a course, not peer-reviewed, and not authoritative teaching material. It "
-    "reflects one learner's understanding at one point in time — it may be incomplete, "
-    "simplified, or in places simply **wrong**. Please treat every claim as a starting point "
-    "to verify against the primary sources listed on each page, never as a citation.\n\n"
-    "**There is no guarantee — explicit or implied — that anything here is correct, "
-    "complete, or error-free. The author accepts no liability whatsoever for any "
-    "misinformation, error or omission, nor for any loss or damage arising from the use "
-    "of this material. You use it entirely at your own risk.**",
-    icon=":material/menu_book:")
-
-st.caption("Source, issues and corrections: "
-           "[github.com/gokcol/AI-LAB](https://github.com/gokcol/AI-LAB) — corrections are "
-           "genuinely welcome; that is how study notes get better.")
-
-views, exps, svgs, quiz = _stats()
-_CARDS = [("s-blue", "🧭", f"{views}", "interactive pages"),
-          ("s-green", "🔬", f"{exps}", "code experiments"),
-          ("s-amber", "📈", f"{svgs}+", "diagrams"),
-          ("s-plum", "❓", f"{quiz}+", "self-check questions")]
-st.markdown(
-    '<div class="ailab-stats">'
-    + "".join(f'<div class="ailab-stat {c}"><div class="ic">{i}</div>'
-              f'<div class="num">{n}</div><div class="lab">{l}</div></div>'
-              for c, i, n, l in _CARDS)
-    + "</div>",
-    unsafe_allow_html=True,
-)
-
 # --------------------------------------------------------------------------- #
-# Everything below the fold lives in tabs: the page carries a lot of material and
-# a single long scroll buries it. Short labels so the row stays usable on a phone,
-# where Streamlit scrolls the tab strip horizontally.
+# Navigation sits immediately under the banner, so the first thing a visitor meets is
+# a choice rather than a wall of prose. Everything that used to run down the page --
+# the welcome, the disclaimer and the counters -- now opens inside "Welcome", which is
+# the tab Streamlit selects by default: nothing became harder to find, and the tabs
+# above the fold say at a glance that there is more here than one long page.
+# Short labels keep the row usable on a phone, where the strip scrolls horizontally.
 # --------------------------------------------------------------------------- #
-tab_start, tab_method, tab_run, tab_terms, tab_fb, tab_about = st.tabs(
-    ["🚀 Start", "🎓 Method", "🖥 Run it", "📜 Terms", "💬 Feedback", "👤 About"]
+(tab_welcome, tab_start, tab_method, tab_run,
+ tab_terms, tab_fb, tab_about) = st.tabs(
+    ["👋 Welcome", "🚀 Start", "🎓 Method", "🖥 Run it",
+     "📜 Terms", "💬 Feedback", "👤 About"]
 )
+
+with tab_welcome:
+    st.markdown(
+        "**Welcome.** These are **my own study notes** — personal notes I curated for myself while "
+        "relearning how modern AI actually works — **neural networks** from a single neuron to a "
+        "small GPT, **classical machine learning**, and the **mathematics** underneath both. "
+        "I learn by "
+        "**doing**, so every note here comes with an interactive playground, worked numeric "
+        "examples, self-check questions with answers, and code that runs. I am publishing them "
+        "as-is, exactly as I use them, in case they are useful to someone else on the same road."
+    )
+
+    st.warning(
+        "**Please read this first — what this is, and what it is not.**\n\n"
+        "This is a **personal study notebook**, curated by **Orhan Gökçöl** while learning, and "
+        "written with heavy use of **Claude** (Anthropic) as an AI assistant. It is **not** a "
+        "textbook, not a course, not peer-reviewed, and not authoritative teaching material. It "
+        "reflects one learner's understanding at one point in time — it may be incomplete, "
+        "simplified, or in places simply **wrong**. Please treat every claim as a starting point "
+        "to verify against the primary sources listed on each page, never as a citation.\n\n"
+        "**There is no guarantee — explicit or implied — that anything here is correct, "
+        "complete, or error-free. The author accepts no liability whatsoever for any "
+        "misinformation, error or omission, nor for any loss or damage arising from the use "
+        "of this material. You use it entirely at your own risk.**",
+        icon=":material/menu_book:")
+
+    st.caption("Source, issues and corrections: "
+               "[github.com/gokcol/AI-LAB](https://github.com/gokcol/AI-LAB) — corrections are "
+               "genuinely welcome; that is how study notes get better.")
+
+    views, exps, svgs, quiz = _stats()
+    _CARDS = [("s-blue", "🧭", f"{views}", "interactive pages"),
+              ("s-green", "🔬", f"{exps}", "code experiments"),
+              ("s-amber", "📈", f"{svgs}+", "diagrams"),
+              ("s-plum", "❓", f"{quiz}+", "self-check questions")]
+    st.markdown(
+        '<div class="ailab-stats">'
+        + "".join(f'<div class="ailab-stat {c}"><div class="ic">{i}</div>'
+                  f'<div class="num">{n}</div><div class="lab">{l}</div></div>'
+                  for c, i, n, l in _CARDS)
+        + "</div>",
+        unsafe_allow_html=True,
+    )
+
 
 with tab_start:
     # --- three tracks ----------------------------------------------------------- #
@@ -277,8 +284,9 @@ with tab_terms:
             "relying on it. This is education, not professional advice.\n"
             "- **Privacy:** no cookies, no third-party analytics, no ad networks, no "
             "accounts. The web server keeps standard access logs, which are reviewed for "
-            "security and simple visitor counts. The feedback form is optional and is "
-            "used only to read your feedback and improve the lab.\n"
+            "security and simple visitor counts. Feedback is optional; your **name and "
+            "email are optional within it**, asked for by consent only, used solely to "
+            "reply to you, and deleted on request.\n"
             "- **Be kind** to the feedback box — it is rate-limited and plain-text only."
         )
         with st.expander("Read the full terms"):
@@ -290,13 +298,11 @@ with tab_terms:
                 "been granted yet, so please ask before commercial reuse or redistribution.\n\n"
                 "**3 · Accuracy & warranty.** Because these are study notes rather than reviewed publications, the content is provided *as is*, with **no warranty** of accuracy, completeness, or availability. Much of it was AI-generated and, although it has been checked and is numerically verified where possible, **it may contain errors and over-simplifications**. Do not cite it; verify against the primary sources referenced on each page before relying on anything. Nothing here is professional, financial, medical, or legal advice.\n\n"
                 "**No guarantee. No liability.** To the fullest extent permitted by law, this material is provided **as is** and **as available**, without warranties or conditions of any kind, whether express, implied or statutory — including, without limitation, any warranty of accuracy, correctness, completeness, currency, merchantability, fitness for a particular purpose, or non-infringement. **No representation is made that the content is free of errors**, and no obligation is accepted to correct or update it. **In no event shall the author be liable for any claim, damage or loss of any kind** — direct, indirect, incidental, consequential, punitive or otherwise, including lost profits, lost data, wasted study time, or decisions taken in reliance on this material — arising from or in connection with this site, its content, or its use, **even if advised of the possibility of such damage**. You alone are responsible for verifying anything you intend to rely on. If you do not accept this, please do not use the site.\n\n"
-                "**4 · Privacy.** The site sets **no cookies**, loads **no third-party scripts or analytics**, runs no advertising and requires no account. Like any web server it does write **standard access logs** — your IP address, the time, the page requested, your browser's user-agent and the referring page — and the author reviews those logs for security and for **basic visitor counts** (how many people came, how often, roughly where from). Nothing is shared with anyone, **no profile is built**, and logs rotate away automatically. The feedback form is optional: the "
-
-                "web-server logs) for security. The feedback form is optional: the message and any "
-                "name/email you choose to include are stored only so the author can read and "
-                "respond to feedback, are never sold or shared, and are deleted on request. Please "
-                "don't submit sensitive personal information. Abusive, automated, or off-topic "
-                "submissions are filtered and discarded.\n\n"
+                "**4 · Privacy & your data.** The site sets **no cookies**, loads **no third-party scripts, fonts or analytics**, runs no advertising and requires no account.\n\n"
+                "*Server logs.* Like any web server it writes **standard access logs** — IP address, time, page requested, browser user-agent, referring page — which the author reviews for security and **basic visitor counts** (how many people came, how often, roughly from where). Legal basis: legitimate interest in keeping the site up and secure. Nothing is shared, **no profile is built**, and logs rotate away automatically.\n\n"
+                "*The feedback form.* The **message** is stored without anything identifying you, alongside a one-way **hash** of your connection, used only to enforce rate limits — the raw IP is never written. **Name, surname and email are entirely optional.** If you fill them in you are asked to tick a consent box first: that tick is the legal basis (GDPR Art. 6(1)(a) / KVKK Art. 5(1), explicit consent), it is never pre-ticked, and leaving the boxes empty sends the note anonymously with no consent needed. Those details are used **only** to reply to you — never published, never shared or sold, never added to any mailing list — and are erased on request or after **" + str(feedback.RETENTION_DAYS) + " days** at the latest.\n\n"
+                "*Where it lives.* Data is held on the author's own server in **" + feedback.DATA_LOCATION + "**; no processor, cloud form service or analytics vendor ever sees it.\n\n"
+                "*Your rights.* Access, rectification, erasure, restriction, objection, and withdrawal of consent at any time — withdrawal is as easy as giving it and does not affect processing already carried out. Ask via [GitHub](https://github.com/gokcol/AI-LAB/issues) or the form itself and it will be done. **Data controller:** Orhan Gökçöl (personal, non-commercial project). Please do not submit sensitive personal data. Abusive, automated or off-topic submissions are filtered and discarded.\n\n"
                 "**5 · External links** point to third-party resources (papers, videos, books) that "
                 "are not under this site's control and are not endorsements.\n\n"
                 "**6 · Availability.** This is a personal server run on a best-effort basis — it "
@@ -374,3 +380,9 @@ st.divider()
 st.caption(f"AI Lab v{VERSION} · personal study notes by Orhan Gökçöl, written with Claude · "
            "source: [github.com/gokcol/AI-LAB](https://github.com/gokcol/AI-LAB) · "
            "hosted at **ai-lab.gokcol.online** 🧠")
+# The disclaimer now opens inside the Welcome tab (the default one), so it is still the
+# first thing a visitor reads — but a reader who lands on another tab must not be able to
+# miss it entirely. This line is outside the tabs and therefore always on screen.
+st.caption("⚠️ Study notes, not a textbook: **no guarantee of accuracy and no liability** "
+           "for any error or omission — verify everything before relying on it. "
+           "See **📜 Terms**.")

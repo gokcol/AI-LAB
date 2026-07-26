@@ -102,6 +102,29 @@ def test_size_cap(fb):
     assert not ok and "full" in err.lower()
 
 
+def test_consent_required_only_when_personal_data_given(fb, monkeypatch):
+    import streamlit as st
+    monkeypatch.setattr(st, "session_state", {}, raising=False)
+    old = time.time() - 30
+
+    def send(**kw):
+        st.session_state.clear()
+        fb._limiter()["events"].clear()   # this probe sends more than the hourly quota
+        return fb.submit(honeypot="", first_seen=old, message="A genuinely useful note.",
+                         **{"name": "", "surname": "", "email": "", "consent": False, **kw})
+
+    # anonymous: nothing to consent to, so no tick is demanded
+    assert send()[0] == "success"
+    # any personal field without consent is refused, and refused as an *error* so the
+    # form keeps what was typed
+    for field in ("name", "surname", "email"):
+        val = "orhan@example.com" if field == "email" else "Orhan"
+        level, text = send(**{field: val})
+        assert level == "error" and "consent" in text.lower(), field
+        # ...and with the tick it goes through
+        assert send(consent=True, **{field: val})[0] == "success", field
+
+
 def test_bot_traps_are_silent(fb, monkeypatch):
     import streamlit as st
     monkeypatch.setattr(st, "session_state", {}, raising=False)

@@ -4,7 +4,7 @@
 #
 #   wget -qO deploy.sh https://raw.githubusercontent.com/gokcol/AI-LAB/main/tools/deploy_ubuntu.sh
 #   chmod +x deploy.sh
-#   DOMAIN=ai-lab.gokcol.online ./deploy.sh
+#   DOMAIN=ai-lab.gokcol.online REGION="Frankfurt, Germany" ./deploy.sh
 #
 # EMAIL is optional: if this server already has a Let's Encrypt account (it does if any
 # other site here uses HTTPS) certbot reuses it. Set EMAIL=you@example.com only if you
@@ -22,6 +22,9 @@ APP_USER="${APP_USER:-ailab}"
 APP_HOME="/opt/ai-lab"
 APP_DIR="$APP_HOME/app"
 PORT="${PORT:-8501}"
+# Printed verbatim in the site's privacy notice, so make it true: the Linode region
+# this server actually sits in. Find it in the Linode dashboard (Linodes -> Region).
+REGION="${REGION:-the European Union}"
 
 say()  { printf '\n\033[1;36m==> %s\033[0m\n' "$*"; }
 ok()   { printf '    \033[32m✓\033[0m %s\n' "$*"; }
@@ -89,6 +92,8 @@ WorkingDirectory=$APP_DIR
 Environment=MPLBACKEND=Agg
 # CRITICAL: the Sandbox runs arbitrary visitor Python. Never enable it here.
 Environment=AILAB_ENABLE_SANDBOX=0
+# Shown in the privacy notice as where visitors' data is held.
+Environment=AILAB_DATA_REGION=$REGION
 # AILAB_FEEDBACK_ADMIN is deliberately absent: the inbox must not be public.
 ExecStart=$APP_DIR/.venv/bin/streamlit run gui/app.py \\
     --server.address 127.0.0.1 \\

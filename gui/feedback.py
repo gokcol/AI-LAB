@@ -59,6 +59,15 @@ IP_DAILY_MAX = 5             # stored entries per client per UTC day (then block
 DAILY_MAX = 50               # stored entries per UTC day, all clients combined
 MAX_FILE_BYTES = 256_000     # hard cap on the feedback file (~1200 entries)
 
+# Data-protection facts stated on the form itself, so the notice and the code cannot
+# drift apart. Personal data is optional; consent is only required when it is given.
+RETENTION_DAYS = 365         # maximum retention for an entry carrying a name/email
+# Where the data physically sits. This appears in a privacy notice, so it must be true:
+# set AILAB_DATA_REGION on the server to the actual Linode region (e.g. "Frankfurt,
+# Germany"). The default only claims what is verifiable from the IP allocation — the
+# address block is registered in the RIPE (European) region.
+DATA_LOCATION = os.environ.get("AILAB_DATA_REGION", "the European Union")
+
 _EMAIL_RE = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
 _URL_RE = re.compile(
     r"(https?\s*:|www\.|://|ftp\.|\.[a-z]{2,6}/"           # scheme / path forms
@@ -324,7 +333,8 @@ _THANKS = "Thank you — your feedback was received! 🧠"
 
 
 def submit(name: str, surname: str, email: str, message: str,
-           honeypot: str, first_seen: float, captcha: str = "") -> tuple[str, str]:
+           honeypot: str, first_seen: float, captcha: str = "",
+           consent: bool = False) -> tuple[str, str]:
     """Run the full protection pipeline. Returns (level, text) where level is one of
     'success' | 'warning' | 'error'. Bot detections return 'success' with nothing
     stored, so automated senders learn nothing."""
@@ -369,7 +379,14 @@ def submit(name: str, surname: str, email: str, message: str,
     if err:
         return "error", err
 
-    # 6 · store (escaped; client key hashed; no raw IP anywhere)
+    # 6 · consent — required only when personal data was actually entered. An anonymous
+    #     note carries nothing to consent to, so it is never blocked by a tick box.
+    if (nm or sn or em) and not consent:
+        return "error", ("You entered a name or email — please tick the consent box under "
+                         "those fields so they may be stored, or clear them to send the "
+                         "message anonymously. Your text is kept either way.")
+
+    # 7 · store (escaped; client key hashed; no raw IP anywhere)
     ok, err = _append({
         "ts": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime(now)),
         "name": nm, "surname": sn, "email": em,
@@ -387,7 +404,23 @@ def submit(name: str, surname: str, email: str, message: str,
 # --------------------------------------------------------------------------- #
 # UI
 # --------------------------------------------------------------------------- #
+_FIELD_KEYS = ("fb_message", "fb_name", "fb_surname", "fb_email", "fb_consent", "fb_hp")
+
+
 def render_form() -> None:
+    # A rejected submission must never cost the visitor their typing. Streamlit can only
+    # clear a widget BEFORE it is instantiated, so the run that handled the submit left a
+    # flag here instead of wiping the form itself:
+    #   "all"     – it was really stored, start a clean form
+    #   "captcha" – rejected; keep every word, but the challenge image has rotated so the
+    #               answer typed against the old one is stale and must not linger.
+    reset = st.session_state.pop("fb_reset", None)
+    if reset:
+        st.session_state.pop("fb_captcha", None)
+    if reset == "all":
+        for k in _FIELD_KEYS:
+            st.session_state.pop(k, None)
+
     st.session_state.setdefault("fb_first_seen", time.time())
     if "fb_captcha_png" not in st.session_state:
         new_captcha()
@@ -406,7 +439,10 @@ def render_form() -> None:
         unsafe_allow_html=True,
     )
 
-    with st.form("fb_form", clear_on_submit=True, border=False):
+    # clear_on_submit stays False on purpose: it clears on EVERY submit, including a
+    # rejected one, so a mistyped email used to cost the visitor their whole message.
+    # Clearing is now conditional on the entry actually being stored (see below).
+    with st.form("fb_form", clear_on_submit=False, border=False):
         message = st.text_area(
             "Your message",
             max_chars=MAX_MSG, height=120, key="fb_message",
@@ -422,6 +458,23 @@ def render_form() -> None:
                                       placeholder="optional")
             email = c[2].text_input("Email", max_chars=MAX_EMAIL, key="fb_email",
                                     placeholder="optional")
+            # Informed consent, and only when there is something to consent to: leave
+            # these three boxes empty and no personal data is processed at all, so no
+            # tick is required. GDPR Art. 4(11)/7 and KVKK Art. 5 both want a specific,
+            # informed, unambiguous, affirmative act — never a pre-ticked box.
+            st.caption(
+                f"**Why this is asked.** If you fill any box above, that name and address "
+                f"are stored on this site's own server (in {DATA_LOCATION}), used **only** "
+                "to reply to you, never shown on the site, never shared, sold or used for "
+                "any mailing, and deleted on request or after "
+                f"{RETENTION_DAYS} days at the latest. Leave them empty and nothing "
+                "identifying you is kept — the note is stored anonymously."
+            )
+            consent = st.checkbox(
+                "I agree that the name and email I entered above may be stored so the "
+                "author can reply to me.",
+                key="fb_consent",
+            )
         # Honeypot — hidden by CSS (.st-key-fb_hp). Humans never see it; anything typed
         # here marks the submission as automated.
         honeypot = st.text_input("Leave this field empty", key="fb_hp",
@@ -450,14 +503,27 @@ def render_form() -> None:
     if submitted:
         before = st.session_state.get("fb_count", 0)
         level, text = submit(name, surname, email, message, honeypot,
-                             st.session_state.get("fb_first_seen", 0.0), captcha)
-        {"success": st.success, "warning": st.warning, "error": st.error}[level](text)
+                             st.session_state.get("fb_first_seen", 0.0), captcha, consent)
         # Celebrate only when something was really stored: the bot traps also report
         # "success" (deliberately), and they must not look different to a machine.
-        if level == "success" and st.session_state.get("fb_count", 0) > before:
-            st.balloons()
+        stored = level == "success" and st.session_state.get("fb_count", 0) > before
         if level != "error":          # errors already refreshed the challenge
             new_captcha()
+        if stored:
+            # Restart the "too fast to be human" clock for the next message. Deliberately
+            # NOT done on a rejection: someone correcting a typo in two seconds would then
+            # trip the bot trap and have their fixed message silently dropped.
+            st.session_state["fb_first_seen"] = time.time()
+        st.session_state["fb_notice"] = (level, text, stored)
+        st.session_state["fb_reset"] = "all" if stored else "captcha"
+        st.rerun()
+
+    notice = st.session_state.pop("fb_notice", None)
+    if notice:
+        level, text, celebrate = notice
+        {"success": st.success, "warning": st.warning, "error": st.error}[level](text)
+        if celebrate:
+            st.balloons()
 
     st.caption("If the image is hard to read for any reason, please open a GitHub issue "
                "instead — the link is in the About tab. ")
