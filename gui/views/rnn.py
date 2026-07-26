@@ -293,7 +293,7 @@ def _bptt():
     st.latex(r"\frac{\partial h_T}{\partial h_t}=\prod_{k=t+1}^{T} w_h\,\tanh'(z_k)"
              r"\;\approx\;\big(w_h\,\tanh'\big)^{T-t}")
     st.markdown("A **product of the same number** repeated — so it is exponential in the lag: "
-                "below 1 it vanishes, above 1 it explodes. There is no middle ground.")
+                "below 1 it vanishes and well above 1 it explodes, and the band in between is narrow. Measured on this demo at lag 30: $w_h=0.5$ gives 9.0e-10, $w_h=1.5$ gives 2.8e-11 — but $w_h=1.0$ gives 0.21, which survives. The knife edge exists; it is just thin, and its position depends on the data.")
     whs = st.multiselect("recurrent weights to race", [0.5, 0.7, 0.9, 1.0, 1.1, 1.3],
                          default=[0.5, 0.9, 1.0, 1.1], key="rnn_bptt_w")
     maxlag = st.slider("maximum lag (steps back in time)", 5, 60, 30, 5, key="rnn_bptt_lag")
@@ -322,9 +322,13 @@ def _bptt():
         st.markdown("| recurrent weight | gradient at lag 1 | at max lag | verdict |\n"
                     "|---|---|---|---|\n" + "\n".join(rows))
         st.info(
-            "**Notice there is no safe setting.** Even at $w_h=1$ the $\\tanh'$ factor is < 1, so "
-            "the gradient still decays; push $w_h$ above 1 and it grows until tanh saturates and "
-            "then collapses anyway. This is the **vanishing/exploding gradient through time**, and "
+            "**The safe band is narrow, not empty.** At $w_h=1$ the $\\tanh'$ factor is < 1 so the "
+            "gradient still decays — but slowly: 0.21 at lag 30 here, which is usable. Move a "
+            "little either way and it goes: 0.030 at $w_h=0.9$, 0.014 at $w_h=1.1$, and by "
+            "$w_h=0.5$ or $1.5$ it is ~1e-10. Push $w_h$ well above 1 and it grows until tanh "
+            "saturates and then collapses anyway. That is the **vanishing/exploding gradient "
+            "through time**: not the absence of a working setting, but a knife edge you would "
+            "have to balance on for every dataset — which is not engineering. And "
             "it is why a plain RNN struggles to connect events more than ~10–20 steps apart. "
             "*Exploding* is the easy half — just **clip** the gradient. *Vanishing* needs an "
             "architectural fix: **gates**.", icon=":material/trending_down:")

@@ -234,8 +234,9 @@ _TASKS = r"""
    at T=1.0 and sample a few times — now you get variety.
 2. Crank **temperature** up to ~1.6 — watch the implausible tail (`idea`, `purple`,
    `banana`) gain probability. Then add **Top-p = 0.9** — they vanish again.
-3. Compare **Top-k = 3** vs **Top-p = 0.9** on this peaked distribution: which keeps fewer
-   candidates? Now imagine a *flat* distribution — which adapts better?
+3. Compare **Top-k = 3** vs **Top-p = 0.9** on the default distribution: which keeps
+   fewer candidates? Count the cumulative mass before you answer — the shape is not
+   what it looks like. Then imagine a *flat* distribution: which adapts?
 
 ### Concept
 4. Explain why greedy decoding can be repetitive yet still not produce the most probable
@@ -329,7 +330,7 @@ with tab_tasks:
 
 **2.** High temperature (~1.6) lifts the implausible tail (`idea`, `purple`, `banana`); adding **Top-p = 0.9** cuts that tail back off by keeping only the smallest set of tokens whose probability sums to 0.9.
 
-**3.** On this **peaked** distribution Top-p = 0.9 may keep just 1–2 tokens (fewer than Top-k = 3). On a **flat** distribution Top-p adapts (keeps many) while Top-k is stuck at 3 — Top-p adjusts to the distribution's shape, Top-k doesn't.""",
+**3.** Measure it rather than guess: this distribution's sorted cumulative mass runs 0.343, 0.525, 0.647, 0.737, 0.808, 0.859, 0.899, **0.929** — so 0.9 is not reached until the **8th** token, and Top-p = 0.9 keeps **8** while Top-k = 3 keeps 3. **Top-k keeps fewer here.** The lesson is the one the numbers actually support: this distribution is far flatter than it looks (the top token holds only 34 % of the mass), and *that* is what Top-p responds to. Lower Top-p to 0.55 and it keeps 2 — fewer than Top-k — while on a genuinely flat distribution it would keep many. Top-p adapts to shape; Top-k is stuck at 3 either way. Which keeps fewer depends entirely on the distribution, which is exactly why one is not a drop-in replacement for the other.""",
         label="Compare tab 1–3",
     )
     lessons.solution(

@@ -82,9 +82,16 @@ with tab_live:
     # Variance-preserving schedule: x_t = sqrt(abar_t) x_0 + sqrt(1-abar_t) eps.
     # The exact posterior mean is available for this toy target, so the "model" here is
     # the true score - which is the point: it isolates the *sampler* from the network.
-    betas = np.linspace(1e-4, 0.02, steps)
-    alphas = 1.0 - betas
-    abar = np.cumprod(alphas)
+    #
+    # The CUMULATIVE schedule is defined first, then betas are derived from it. The usual
+    # betas = linspace(1e-4, 0.02, T) is tuned for T ~ 1000 and does NOT rescale with T:
+    # at T=60 it only reaches abar = 0.54, meaning x_T is still 74% signal, so starting
+    # the reverse walk from N(0,1) would begin from the wrong distribution entirely. A
+    # cosine abar ending at 1e-4 destroys the data for ANY T, which is what makes the
+    # step-count slider mean what the page says it means.
+    abar = np.clip(np.cos(np.linspace(0.0, 1.0, steps + 1) * (np.pi / 2)) ** 2, 1e-4, 1.0)[1:]
+    alphas = abar / np.concatenate([[1.0], abar[:-1]])
+    betas = 1.0 - alphas
 
     def _score(x, t):
         """d/dx log q(x_t) for a two-Gaussian mixture pushed through the forward process."""
@@ -128,9 +135,13 @@ with tab_live:
         "**Turn the bins down to 8.** The autoregressive outline goes visibly blocky — it "
         "cannot represent anything finer than one bin, because it made the variable "
         "*discrete* to get an exact likelihood. That is the same trade a tokenizer makes.\n\n"
-        "**Now set diffusion steps to 2.** The samples collapse toward a single blob: each "
-        "reversal step is only valid when it is *small*, so too few steps and the walk back "
-        "from noise cannot resolve two separate bumps. Raise it to 200 and the bumps sharpen.",
+        "**Now set diffusion steps to 2.** The valley between the two bumps fills in and the "
+        "spread shrinks — measured, the trough is only 50 % deep against 97 % at 60 steps, "
+        "the standard deviation drops from 1.37 to 1.02, and the distance to the target "
+        "distribution is about 18× worse. A reversal step is only approximately Gaussian "
+        "when it is *small*; with two steps each one must undo almost the entire noising "
+        "process at once, and a single Gaussian cannot straddle two modes. Raise it and the "
+        "valley reopens.",
         icon=":material/lightbulb:")
 
 # --------------------------------------------------------------------------- #
@@ -377,11 +388,16 @@ cannot represent structure finer than one bin — with 8 bins the two bumps beco
 plateaus. This is precisely what tokenization does to text: it is the same compromise,
 made invisible by the fact that text was already discrete.
 
-**2.** The reversal is only approximately Gaussian when the forward step is *small*. The
-derivation assumes $\beta_t \to 0$; with $T=2$ each $\beta_t$ is huge, the true reverse
-distribution is strongly multi-modal, and a Gaussian step cannot split into two bumps — so
-the samples pile up between them. The score function is the same at $T=200$; what changes
-is that each step is now small enough for the Gaussian assumption to hold.
+**2.** The reversal is only approximately Gaussian when each step is *small*, and "small"
+means a small change in $\bar\alpha$ — not a small $\beta$ in absolute terms. The schedule
+here always takes $\bar\alpha$ from ~1 down to $10^{-4}$, so with $T=2$ each step must undo
+half of that journey by itself: $\beta$ becomes 0.50 and 0.9998 respectively. Over a jump
+that large the true reverse distribution is strongly bimodal, and one Gaussian cannot
+straddle two modes — so probability mass lands in the valley between them. Measured: the
+trough between the bumps is 50 % deep at $T=2$ against 97 % at $T=60$, and the sample
+standard deviation is 1.02 against 1.37. The score function is identical at $T=200$; what
+changes is only whether each step is small enough for the Gaussian form to be a good
+approximation.
 
 **3.** Autoregressive: the $T$ passes buy an **exact likelihood and a valid ordering** —
 each pass conditions on everything already generated. Diffusion: the $T$ passes buy
