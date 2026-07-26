@@ -318,7 +318,8 @@ def _terms_body(where: str = 'tab'):
     sw = st.columns([0.62, 0.38])
     with sw[1]:
         st.segmented_control(
-            "", ["English", "Türkçe"], key=key, label_visibility="collapsed",
+            "Terms language", ["English", "Türkçe"], key=key,
+            label_visibility="collapsed",
             on_change=_pick_terms_lang, args=(key,),
         )
 

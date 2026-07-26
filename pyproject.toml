@@ -25,3 +25,9 @@ include = ["core*"]
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+# The page-render suite runs 45 full Streamlit scripts, several of which train a model,
+# so it is opt-in: `pytest` stays fast, `pytest -m slow` renders everything.
+markers = ["slow: renders every GUI page (minutes, not seconds)"]
+addopts = "-m 'not slow'"
