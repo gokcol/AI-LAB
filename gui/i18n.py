@@ -66,6 +66,8 @@ TEXT = {
     "page.two_neurons": {"en": "Two neurons", "tr": "İki nöron"},
     "page.neurons_compute": {"en": "Neurons → computer", "tr": "Nöronlar → bilgisayar"},
     "page.worked_numbers": {"en": "Worked examples (numbers)", "tr": "Sayısal örnekler"},
+    "page.worked_numbers2": {"en": "Worked examples II (bigger)", "tr": "Sayısal örnekler II"},
+    "page.activations": {"en": "Activation functions", "tr": "Aktivasyon fonksiyonları"},
     "page.backprop": {"en": "Backprop", "tr": "Backprop"},
     "page.mlp": {"en": "MLP (train it)", "tr": "MLP (eğit)"},
     "page.optimizers": {"en": "Optimizers", "tr": "Optimizasyon algoritmaları"},
