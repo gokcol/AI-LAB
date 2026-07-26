@@ -102,7 +102,8 @@ ExecStart=$APP_DIR/.venv/bin/streamlit run gui/app.py \\
     --browser.gatherUsageStats false \\
     --server.enableCORS false \\
     --server.enableXsrfProtection true \\
-    --server.maxUploadSize 1
+    --server.maxUploadSize 1 \\
+    --client.showErrorDetails none
 Restart=always
 RestartSec=5
 

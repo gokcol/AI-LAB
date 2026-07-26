@@ -71,6 +71,19 @@ def _goto(mod: str, page: str):
 # --------------------------------------------------------------------------- #
 # Page
 # --------------------------------------------------------------------------- #
+# A ?terms=en|tr link (footer) asks for the terms dialog. Handle it HERE, before any
+# widget is created: Streamlit refuses to let session_state write a widget's key once that
+# widget has been instantiated, and the language switch inside the Terms tab is one. The
+# parameter is consumed immediately so a refresh does not reopen the dialog and the address
+# bar stays clean.
+_want = st.query_params.get("terms")
+_open_terms = _want in ("en", "tr")
+if _open_terms:
+    st.session_state["reader_lang"] = _want
+    for _k in ("_terms_pick_tab", "_terms_pick_dialog"):
+        st.session_state[_k] = "Türkçe" if _want == "tr" else "English"
+    del st.query_params["terms"]
+
 st.markdown(_HERO_SVG, unsafe_allow_html=True)
 
 # --------------------------------------------------------------------------- #
@@ -262,10 +275,12 @@ with tab_run:
 TERMS_DIR = GUI / "content"
 
 
-def _pick_terms_lang():
-    """Callback for the Terms language switch."""
-    st.session_state["reader_lang"] = (
-        "tr" if st.session_state.get("_terms_pick") == "Türkçe" else "en")
+def _pick_terms_lang(key: str):
+    """Callback for a Terms language switch (there is one per render site)."""
+    lang = "tr" if st.session_state.get(key) == "Türkçe" else "en"
+    st.session_state["reader_lang"] = lang
+    for k in ("_terms_pick_tab", "_terms_pick_dialog"):   # keep the two switches in step
+        st.session_state[k] = "Türkçe" if lang == "tr" else "English"
 
 
 def terms_lang() -> str:
@@ -284,7 +299,7 @@ def _terms_text(lang: str) -> tuple[str, str]:
     return short.strip(), full.strip()
 
 
-def _terms_body():
+def _terms_body(where: str = 'tab'):
     """Rendered in the Terms tab and in the footer dialog -- one source, two languages."""
     lang = terms_lang()
     # A two-item switch, right-aligned above the text. It appears only here, so the rest
@@ -294,14 +309,17 @@ def _terms_body():
     # that is given BOTH a default and a session-state key fights itself -- on the rerun
     # the stored value wins, flips the language straight back, and the switch appears
     # dead. Seed the key once, then let the callback own the change.
-    want_label = "Türkçe" if lang == "tr" else "English"
-    if "_terms_pick" not in st.session_state:
-        st.session_state["_terms_pick"] = want_label
+    # One key per place this is rendered: the Terms tab and the footer dialog both call
+    # _terms_body(), and a shared widget key raises DuplicateElementKey — which killed the
+    # dialog the moment it opened.
+    key = f"_terms_pick_{where}"
+    if key not in st.session_state:
+        st.session_state[key] = "Türkçe" if lang == "tr" else "English"
     sw = st.columns([0.62, 0.38])
     with sw[1]:
         st.segmented_control(
-            "", ["English", "Türkçe"], key="_terms_pick",
-            label_visibility="collapsed", on_change=_pick_terms_lang,
+            "", ["English", "Türkçe"], key=key, label_visibility="collapsed",
+            on_change=_pick_terms_lang, args=(key,),
         )
 
     short, full = _terms_text(lang)
@@ -312,7 +330,7 @@ def _terms_body():
 
 @st.dialog("📜 Terms of use & privacy", width="large")
 def _terms_dialog():
-    _terms_body()
+    _terms_body(where='dialog')
 
 
 with tab_terms:
@@ -391,11 +409,15 @@ st.caption(f"AI Lab v{VERSION} · personal study notes by Orhan Gökçöl, writt
 # The disclaimer now opens inside the Welcome tab (the default one), so it is still the
 # first thing a visitor reads — but a reader who lands on another tab must not be able to
 # miss it entirely. This line is outside the tabs and therefore always on screen.
-fc = st.columns([0.78, 0.22])
-fc[0].caption("⚠️ Study notes, not a textbook: **no guarantee of accuracy and no liability** "
-              "for any error or omission — verify everything before relying on it.")
-# Streamlit has no API for selecting a tab programmatically, so "see the Terms" cannot be
-# a link to the tab. A dialog reading the very same _terms_body() is the honest fix: one
-# source of truth, reachable from anywhere on the page, and it works on a phone.
-if fc[1].button("📜 Read the Terms", type="tertiary", use_container_width=True):
+# Real links rather than buttons, so they sit inline at the end of the sentence and wrap
+# naturally on a phone. Each carries the language, so the Turkish link opens the Turkish
+# text directly instead of opening English and making the reader hunt for a switch.
+st.caption(
+    "⚠️ Study notes, not a textbook: **no guarantee of accuracy and no liability** for any "
+    "error or omission — verify everything before relying on it. "
+    "**[📜 Terms of use & data](?terms=en)** · "
+    "**[🇹🇷 Kullanım Koşulları ve Veri Kullanımı](?terms=tr)**"
+)
+
+if _open_terms:
     _terms_dialog()

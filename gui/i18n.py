@@ -79,6 +79,8 @@ TEXT = {
     "page.tokenization": {"en": "Tokenization", "tr": "Tokenizasyon"},
     "page.attention": {"en": "Attention (LLMs)", "tr": "Attention (LLM'ler)"},
     "page.tiny_gpt": {"en": "Tiny GPT", "tr": "Küçük GPT"},
+    "page.generative": {"en": "Generative family",
+                        "tr": "Üretken model ailesi"},
     "page.sampling": {"en": "Decoding (sampling)", "tr": "Decoding (sampling)"},
     "page.embeddings": {"en": "Embeddings & RAG", "tr": "Embedding ve RAG"},
     "page.posttraining": {"en": "Post-training (RLHF)", "tr": "Post-training (RLHF)"},

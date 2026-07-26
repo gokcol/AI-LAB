@@ -102,7 +102,7 @@ and wraps both in two stabilizers:
 
 - **Residual connections** — each sub-layer computes $x \leftarrow x + f(x)$, **adding** to
   its input instead of replacing it. That gives gradients a clean "highway" straight back
-  through many layers, so the vanishing-gradient problem (Backprop §10, ANN §6) doesn't kill
+  through many layers, so the vanishing-gradient problem (Backprop §11, ANN §6) doesn't kill
   deep stacks — and it lets each layer learn a small *refinement* rather than a whole new
   representation.
 - **LayerNorm** — re-centers and re-scales each token's vector (to mean 0 / unit variance,
@@ -180,7 +180,48 @@ next-token head, train by cross-entropy, generate by sampling. The whole lab bui
 **neuron → MLP → backprop → optimizers → attention → Transformer → a language model.**
 *(Roadmap Tier 5; experiment e21 trains the real thing.)*
 
-## 9. The block, written out
+## 9. What you just built is a *generative* model
+
+Worth naming, because the word is everywhere and this is it. A **discriminative** model
+learns $p(y\mid x)$ — given an input, which label? That is every classifier in the ML
+track. A **generative** model learns $p(x)$ itself: the distribution the data came from,
+so you can *draw new samples* from it.
+
+A language model looks like it only predicts one token, so where does $p(x)$ come from?
+The **chain rule of probability** — and note this is an identity, not an approximation:
+
+$$ p(x_1,\dots ,x_T)\;=\;\prod_{t=1}^{T} p(x_t \mid x_{<t}) $$
+
+Every joint distribution over a sequence factorises this way, exactly. So a model that is
+good at *one* conditional $p(x_t\mid x_{<t})$, applied at every position, **is** a model of
+the whole sequence. Concretely, for `the cat`:
+
+$$ p(\texttt{the cat}) = p(\texttt{t})\,p(\texttt{h}\mid \texttt{t})\,p(\texttt{e}\mid \texttt{th})\cdots p(\texttt{t}\mid \texttt{the ca}) $$
+
+Which means the training objective from §5 was never merely "guess the next character".
+Minimising cross-entropy summed over positions
+
+$$ \mathcal L = -\sum_{t} \log p(x_t\mid x_{<t}) \;=\; -\log p(x_1,\dots ,x_T) $$
+
+is **maximum likelihood on entire sequences**. Next-token prediction is a generative
+objective wearing a classifier's clothes — and sampling (§6) is drawing from the
+distribution it learned.
+
+Two consequences worth seeing:
+
+- **The causal mask is the enabling structure, not a handicap.** It is what makes each
+  conditional depend only on the past, so the factorisation is valid — and because
+  position $t$ cannot see the future, all $T$ conditionals can be trained *in one forward
+  pass* instead of $T$ of them. The mask is why this is cheap.
+- **A perplexity is a likelihood.** $\exp(\mathcal L/T)$ is the standard LM score, so the
+  benchmark everyone quotes is just "how probable does the model think real text is".
+
+This is the **autoregressive** branch of generative modelling: factorise, then predict one
+piece at a time. It is not the only branch — VAEs, GANs and diffusion models attack $p(x)$
+in completely different ways, and diffusion, not autoregression, is what generates images.
+The **Generative family** page lays the four side by side.
+
+## 10. The block, written out
 
 Every modern block is two sub-layers, each wrapped in a residual connection with
 normalization applied **before** it (*pre-norm*):
@@ -197,7 +238,7 @@ $$ \mathrm{FFN}(x)=W_2\,\varphi(W_1x),\qquad W_1\in\mathbb R^{4d\times d},\; W_2
 with $\varphi$ = GELU (GPT-2/3) or a gated **SwiGLU** (Llama, PaLM). Note the FFN holds
 **twice** the parameters of the attention it follows.
 
-## 10. Counting the parameters
+## 11. Counting the parameters
 
 Per block: $4d^2$ (attention) $+\;8d^2$ (FFN) $=\;\mathbf{12d^2}$. So
 
@@ -212,7 +253,7 @@ Two consequences: parameters grow with $d^2$, so **width is expensive**; and in 
 the *embedding table* is a large share of the total (31 % here), which is why many models
 **tie** the input embedding and output-head weights.
 
-## 11. Training: one objective, a lot of tokens
+## 12. Training: one objective, a lot of tokens
 
 The loss is plain **cross-entropy** on the next token, averaged over every position — one
 sequence of length $n$ yields $n$ training signals at once, which is why self-supervised
@@ -224,7 +265,7 @@ scale *together* — roughly **20 tokens per parameter**. A 7 B model wants ~140
 70 B model ~1.4 T. Earlier models (GPT-3) were badly under-trained by this measure, which is
 why later 7 B models beat them.
 
-## 12. Inference: the KV cache, and why generation is slow
+## 13. Inference: the KV cache, and why generation is slow
 
 Generating token $t{+}1$ re-attends over all previous tokens — but their keys and values were
 already computed, so they are **cached** rather than recomputed. That turns per-token cost
@@ -240,7 +281,7 @@ KV heads) was adopted so quickly.
 Note the asymmetry: **training** processes all positions in parallel, but **generation** is
 inherently sequential — one token at a time, forever.
 
-## 13. Three families from one block
+## 14. Three families from one block
 
 | family | attention | trained to | good at |
 |---|---|---|---|
@@ -251,14 +292,14 @@ inherently sequential — one token at a time, forever.
 The field consolidated on **decoder-only** because one simple objective scales, and because
 generation subsumes the other tasks when the model is large enough (just ask it in words).
 
-## 14. Mixture of Experts — more parameters, same compute
+## 15. Mixture of Experts — more parameters, same compute
 
 The FFN is where most parameters live, so **MoE** replaces it with $E$ expert FFNs plus a
 small router that sends each token to only the top-1 or top-2 experts. Total parameters rise
 enormously while **compute per token stays roughly flat** — a way to buy capacity without
 buying FLOPs. Used in Mixtral, and widely believed to be in the frontier closed models.
 
-## 15. What actually made it work
+## 16. What actually made it work
 
 Worth separating the ideas from the engineering:
 

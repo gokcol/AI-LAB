@@ -16,7 +16,9 @@ textColor = "#172033"
 # means the menu is empty even before the CSS applies.
 [client]
 toolbarMode = "minimal"
-showErrorDetails = "none"
+# showErrorDetails is deliberately NOT set here: this config governs local development
+# too, and hiding tracebacks from the author is how a real bug stays hidden. The
+# public server passes --client.showErrorDetails=none on the command line instead.
 
 [browser]
 gatherUsageStats = false
