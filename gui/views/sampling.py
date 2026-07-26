@@ -180,7 +180,21 @@ several tokens ahead, then has the big model **verify them all in one parallel f
 accepting the longest correct prefix. Because verification is parallel and cheap, this gives
 a 2–3× speedup **with mathematically identical output distribution** — a rare free lunch.
 
-## 14. Decoding is where the model meets the user
+## 14. Producing many answers, and choosing
+
+Everything above produces **one** answer as well as possible. There is a different move:
+produce several and pick. **Self-consistency** samples $n$ independent chains at a
+non-zero temperature and takes the majority final answer; **best-of-$n$** samples $n$ and
+lets a separate verifier or reward model choose. Both trade inference compute for accuracy,
+and both rely on the asymmetry that *checking* an answer is usually much cheaper than
+producing one.
+
+This is why temperature is not simply a quality knob. At $T=0$ every sample is identical and
+$n$ draws buy you nothing — sampling diversity is the raw material these methods consume. It
+is also the bridge from decoding to training: **Post-training §16** covers spending compute
+at inference, and the RL that teaches a model when to keep thinking.
+
+## 15. Decoding is where the model meets the user
 
 A closing perspective: none of this changes a single weight. The same trained network can be
 a careful assistant or a wild storyteller depending purely on these settings — which is why

@@ -123,7 +123,10 @@ this on the lab's `core.nn.MLP` + `core.optim`.
 The weights start **random** (set by the seed). Start them too large and activations
 saturate (dead gradients); start them too symmetric and every unit learns the same thing.
 Principled schemes — **Xavier/He** init (`core/init.py`) — scale the randomness to the layer
-size so both the forward signal and the backward gradient stay healthy. It's also why a
+size so both the forward signal and the backward gradient stay healthy. Neither constant is
+tuned: $\sqrt{1/n}$ is the only scale that leaves the variance unchanged, and He's $\sqrt{2/n}$
+is that same scale with ReLU's missing factor of two put back. Three lines of variance algebra,
+derived in Math **X3 §10** and measured layer-by-layer in its playground. It's also why a
 *bad* seed in the demo can get stuck at 3/4: re-seed and retry.
 
 ## 8. Capacity vs. overfitting
@@ -140,6 +143,65 @@ gradients flow back and weights update, each hidden unit rotates and shifts its 
 their *combination* fences off the two XOR corners. **Features learned from data by gradient
 descent** — repeated, deep, and at scale — is the entire idea behind modern deep learning.
 *(Lab: `core/nn.py`, `core/init.py`; experiment e05.)*
+
+## 10. When it doesn't train — a ladder, in order
+
+The single most useful thing to own here is not another technique, it is an **order**. A
+network that will not learn has failed somewhere in a chain, and each rung below isolates
+one link. Work top to bottom and *do not skip*: almost everyone's instinct is to jump
+straight to the learning rate, which is rung 4, and tuning η against a wiring bug is how
+an afternoon disappears.
+
+**Rung 1 — can it overfit a single batch?** *(seconds, and the highest-yield test there is)*
+Take 8–32 examples, turn off shuffling and any regularisation, and train on **just those**
+for a few hundred steps. The loss must go to essentially zero. It is the one thing a
+correct network with enough capacity can always do — memorising a handful of points needs
+no generalisation at all.
+*If it cannot:* you have a **bug**, not a tuning problem. Something is wired wrong — labels
+misaligned with inputs, the loss reading the wrong axis, gradients not reaching a layer, an
+optimizer stepping a parameter list that does not include your weights. Stop and find it.
+*If it can:* wiring is sound. Every remaining problem is optimisation or generalisation,
+which is a completely different search.
+
+**Rung 2 — is the initial loss the number it must be?** *(free — read it off step 0)*
+An untrained classifier should predict every class equally, and a uniform prediction over
+$C$ classes has a cross-entropy of exactly
+
+$$ -\log\tfrac1C = \log C \qquad\Rightarrow\qquad C=2:\ 0.693,\quad C=3:\ 1.099,\quad C=10:\ 2.303,\quad C=50:\ 3.912 $$
+
+Check it before you check anything else, because it is a *closed-form prediction of your
+first log line*.
+*Too high?* The output layer is not neutral at init — biases set to something odd, weights
+far too large, or a stray activation on the logits. *Suspiciously low?* Label leakage, or
+you are already looking at a batch the model has memorised. *Exactly $\log C$ forever?*
+The gradient is not arriving; go to rung 3.
+
+**Rung 3 — do the analytic gradients match numerical ones?** *(slow, but decisive)*
+Perturb one parameter by $\varepsilon$ and compare $\big(L(w+\varepsilon)-L(w-\varepsilon)\big)/2\varepsilon$
+with the backprop value. On this lab's engine that agreement is ~1e-9 (see `tests/`
+and experiment **e06**). Do this once per new layer or loss you write, never routinely.
+*If it fails:* the derivative is wrong, and no amount of tuning can rescue it. This is why
+rung 1 comes first — a single-batch overfit already catches most gradient bugs in seconds,
+and this test costs minutes.
+
+**Rung 4 — only now, the learning rate.** With wiring, initialisation and gradients
+established, η is the first thing that is genuinely a *choice*. Too high and the loss is
+NaN or sawtooths; too low and it descends in a straight, hopeless line. Move it by factors
+of 3, not 10 %, and change one thing at a time.
+
+**Rung 5 — is the signal reaching the far end at all?** If a deep stack still will not move,
+look at the per-layer gradient norms rather than the loss. The **Activations** page plots
+exactly this and prints a healthy / shrank / vanished verdict, plus the dead-ReLU fraction;
+Math **X3 §10** derives why an initialisation that is merely *reasonable* rather than
+*derived* loses a factor of 0.7071 per layer, which is invisible at depth 3 and fatal at
+depth 12.
+
+**Why this order.** Each rung is cheaper than the one below it and rules out a whole class
+of cause, so the expensive tests are only ever run on a narrowed problem. It is the same
+discipline as debugging anything else — establish that the thing is plugged in before you
+question the physics — and it transfers directly to the point in this lab where runs first
+get long enough to fail quietly: experiment **e12** (MNIST from scratch).
+
 """
 
 _QUIZ = [

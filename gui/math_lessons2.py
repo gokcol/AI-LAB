@@ -405,6 +405,59 @@ mean** of $n$ i.i.d. points has variance $\sigma^2/n$ and **standard error**
 $\sigma/\sqrt n$ — the $1/\sqrt n$ shrinkage you watched in the CLT playground, and the
 reason more data gives steadier estimates.
 
+### The same two rules, applied to a neural network: where Xavier and He come from
+
+Those two identities are enough to derive the initialisation schemes in `core/init.py`,
+which otherwise look like magic constants. A unit computes $z=\sum_{i=1}^{n} w_i x_i$ over
+$n=\text{fan\_in}$ inputs. Take the weights independent of the inputs, both zero-mean.
+Then $\operatorname{Var}(w_ix_i)=\operatorname{Var}(w)\operatorname{Var}(x)$, and because
+the terms are independent the second rule lets you simply add them up $n$ times:
+
+$$ \operatorname{Var}(z)\;=\;n\,\operatorname{Var}(w)\,\operatorname{Var}(x) $$
+
+That is the whole derivation. Now demand that a layer neither amplifies nor shrinks the
+signal — $\operatorname{Var}(z)=\operatorname{Var}(x)$ — and solve:
+
+$$ n\,\operatorname{Var}(w)=1 \quad\Longrightarrow\quad \operatorname{Var}(w)=\frac1n,\qquad \sigma_w=\sqrt{\frac{1}{n}} $$
+
+**That is Xavier/Glorot init.** Not a tuned constant — the only scale that leaves the
+variance unchanged. (Glorot's paper averages fan-in and fan-out, $2/(n_{\text{in}}+n_{\text{out}})$,
+to balance the backward pass too; `core/init.py` uses the fan-in form.)
+
+**Now add ReLU, and you lose exactly half.** For $z$ symmetric about zero, ReLU zeroes the
+negative half and keeps the positive half untouched, so
+
+$$ \mathbb E\big[\mathrm{relu}(z)^2\big] \;=\; \tfrac12\,\mathbb E\big[z^2\big] $$
+
+*(measured: 0.50024 over 2 million samples).* Each layer therefore halves the variance —
+compounding to $2^{-L}$ over $L$ layers. Compensate by doubling the weight variance:
+
+$$ \operatorname{Var}(w)=\frac2n,\qquad \sigma_w=\sqrt{\frac{2}{n}} $$
+
+**That is He/Kaiming init**, and the 2 is the ReLU factor, nothing else.
+
+The prediction is sharp and testable: with ReLU and $\sqrt{1/n}$, the activation standard
+deviation should fall by $1/\sqrt2\approx0.7071$ per layer. Measured over 12 layers of 256
+units: **0.7067**. Four significant figures from three lines of algebra.
+
+| layer | $\sigma_w=0.05$ (a "reasonable" guess) | $\sqrt{1/n}$ (Xavier) | $\sqrt{2/n}$ (He) |
+|---|---|---|---|
+| 1 | 4.7e-01 | 0.583 | 0.825 |
+| 3 | 1.4e-01 | 0.273 | 0.773 |
+| 6 | 2.7e-02 | 0.104 | 0.830 |
+| 9 | 5.2e-03 | 0.039 | 0.880 |
+| 12 | 9.8e-04 | 0.014 | 0.911 |
+
+The middle column is the one to stare at: Xavier is *correct algebra for the wrong
+nonlinearity*, and it still dies — a factor of 0.7 per layer is nearly invisible at depth 3
+and fatal at depth 12. The left column is what picking a round number gets you. Only the
+right column is flat, and it is flat because it was derived to be.
+
+This is the concrete answer to "why did my deep network never start learning": the signal
+was gone before it reached the loss, and the gradient — which obeys the same algebra
+running backwards — was gone before it reached layer 1. Play with it in the **Playground**
+tab, and see the same collapse from the gradient's side on the **Activations** page.
+
 ## 11. Probability vs. likelihood (a crucial distinction)
 
 The same formula $p(x\mid\theta)$ reads two ways: as a function of **$x$** with $\theta$

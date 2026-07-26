@@ -174,13 +174,105 @@ toward its own family's style), **static benchmarks** (MMLU, GSM8K — cheap, bu
 training data), and **red-teaming** for safety. Anyone claiming a single number captures
 post-training quality is selling something.
 
-## 16. Where the frontier is
+## 16. Test-time compute — buying accuracy with inference, not parameters
+
+Everything up to here spends compute **once**, at training time, and then answers in a
+single forward pass. The largest change since is the discovery that you can also spend it
+**at inference**, per question, and that the returns are as predictable as the scaling laws
+from Level 4 — only the x-axis is now *tokens generated while answering* instead of
+parameters trained.
+
+### Why a scratchpad is not a stylistic choice
+
+This is the part with real architecture content, and it connects straight back to
+**Neurons compute**: a transformer of $L$ layers applies a **fixed** number of sequential
+operations to produce one token. It is a wide combinational circuit with a hard depth
+limit. No matter how large you make it, there are problems needing more sequential steps
+than it has layers — and it cannot loop, because there is no feedback path.
+
+Chain of thought removes that ceiling by an almost embarrassing trick: **write the
+intermediate result into the context and read it back.** Each emitted token is another pass
+through all $L$ layers, with everything written so far available, so the model gets
+
+$$ \text{effective serial depth} \;\approx\; L \times (\text{tokens generated}) $$
+
+The scratchpad *is* the recurrence the architecture does not have. That is why "think step
+by step" works on multi-step arithmetic and fails to help on single-lookup recall — one is
+depth-limited, the other is not. Read it as the transformer borrowing, at inference time,
+exactly the capability the RNN had structurally and lost in the trade for parallel
+training.
+
+### The four ways to spend inference compute
+
+| | what it does | cost | needs |
+|---|---|---|---|
+| **Chain of thought** | serial depth, as above | 1 longer answer | prompting alone |
+| **Self-consistency** | sample $n$ chains, take the majority answer | $n\times$ | nothing |
+| **Best-of-$n$** | sample $n$, let a **verifier** pick | $n\times$ + verifier | a reward model |
+| **Long RL-trained reasoning** | the model learns *when* to keep thinking | variable | RLVR training |
+
+The Decoding page covers greedy, temperature, top-k, top-p, beam and speculative decoding —
+every strategy for producing *one* answer well. Self-consistency and best-of-$n$ are the
+missing move: produce **many** and choose. Note the asymmetry that makes it work — checking
+a candidate answer is usually far cheaper than producing it, the same reason NP-style
+problems are easy to verify and hard to solve.
+
+### RLVR — reward the answer, not the human's opinion
+
+§10–§11 trained a reward model on human preferences, and warned it can be gamed. For any
+task with a **checkable** answer, that whole apparatus is unnecessary: a maths problem has a
+right answer, code either passes the tests or does not. So drop the learned reward model and
+score the outcome directly:
+
+$$ r \;=\; \mathbf{1}[\text{answer is correct}] $$
+
+This is **reinforcement learning with verifiable rewards**, and it is a different safety
+profile from RLHF, not just a cheaper one — a reward model can be fooled by an answer that
+merely *looks* good, whereas a unit test cannot be flattered.
+
+**GRPO** is the algorithm that made it practical. PPO (§11) needs a *critic* network
+predicting expected return — roughly a second model to train and hold in memory. GRPO
+deletes it: sample a **group** of $G$ answers to the same prompt, and use the group's own
+mean reward as the baseline each answer is measured against:
+
+$$ A_i \;=\; \frac{r_i - \operatorname{mean}(r_1,\dots ,r_G)}{\operatorname{std}(r_1,\dots ,r_G)} \qquad(\text{no critic anywhere}) $$
+
+An answer better than its siblings gets reinforced, worse gets suppressed. The comparison
+that PPO needed a learned critic for is obtained for free by generating several attempts —
+the "baseline" is just the other answers to the same question. Half the memory, and one
+fewer model that can be wrong.
+
+### Outcome vs. process rewards
+
+Scoring only the final answer (**ORM**) is cheap and honest but rewards a lucky guess
+reached by bad reasoning. Scoring **each step** (**PRM**) gives far denser signal and
+catches reasoning that arrives correctly by accident, but needs step-level labels, which are
+expensive and themselves debatable. The pragmatic middle — outcome rewards for training,
+process rewards as the *verifier* in best-of-$n$ — is where most published systems sit.
+
+### The honest part
+
+The cost is real and it is paid on **every** query, forever, unlike a training cost paid
+once. A long reasoning trace can be tens of thousands of tokens for one answer, which is
+why these models are metered differently and why "should this question get the expensive
+path?" is now a product decision. And more thinking is not monotonically better: past some
+length, accuracy flattens or falls as the model talks itself out of a correct early answer.
+
+Two things worth holding onto. First, none of this is an architecture change — **the block
+from Level 4 is untouched**; this is entirely training and inference procedure. Second, it
+reopened a direction everyone assumed was closed: when parameter scaling got expensive, the
+axis that was still cheap turned out to be *time spent thinking*, and it had been sitting
+there since the first transformer.
+
+*(Frontier labs publish little detail here; treat specific recipes as informed reconstruction.
+See the References tab. Roadmap e24–e26.)*
+
+## 17. Where the frontier is
 
 Post-training used to be a thin polish on a big pretrain; it is now a large fraction of the
-work — and increasingly *is* the product. Two live directions: **reasoning training**
-(rewarding correct chains of thought and letting models spend more compute at inference), and
-**tool use / agents** (training the model to call functions, search and execute code, so it
-can act rather than just answer). Both are post-training problems, not architecture problems
+work — and increasingly *is* the product. Beyond reasoning (§16), the other live direction is
+**tool use / agents** — training the model to call functions, search and execute code, so it
+can act rather than just answer. Both are post-training problems, not architecture problems
 — the block from Level 4 has not changed.
 
 *(Roadmap e24–e26.)*
@@ -211,6 +303,34 @@ _QUIZ = [
         "Need the model to cite fresh, proprietary facts. Best tool?",
         ["fine-tuning", "RAG (retrieve facts into the prompt)", "a bigger learning rate", "dropout"], 1,
         "RAG supplies knowledge at query time; fine-tuning is for behaviour/style. They complement each other."),
+    lessons.Question(
+        "Why does a chain of thought give a transformer capability it structurally lacks?",
+        ["It makes the model larger",
+         "Each generated token is another pass through all L layers, so writing intermediate "
+         "results into the context turns a fixed-depth circuit into a variable-depth one",
+         "It changes the attention pattern",
+         "It retrains the weights"], 1,
+        "A transformer applies a fixed number of sequential ops per token and has no feedback "
+        "path. The scratchpad is the recurrence the architecture gave up for parallel training "
+        "(§16, and the Neurons compute page)."),
+    lessons.Question(
+        "What does GRPO remove compared with PPO, and what replaces it?",
+        ["The reward model; replaced by human labels",
+         "The critic network; replaced by the mean reward of a group of answers to the same prompt",
+         "The policy gradient; replaced by supervised learning",
+         "Nothing — they are the same algorithm"], 1,
+        "PPO needs a learned critic for its baseline. Sampling G answers to one prompt gives a "
+        "baseline for free, so the second network disappears (§16)."),
+    lessons.Question(
+        "RLVR replaces the learned reward model with a verifier. Why is that a safety "
+        "improvement and not only a cost saving?",
+        ["Verifiers are faster",
+         "A reward model can be fooled by an answer that merely looks good; a unit test or a "
+         "checked numeric answer cannot be flattered",
+         "It removes the need for training data",
+         "It prevents overfitting"], 1,
+        "Reward hacking is the failure mode of §10's learned reward model. A verifiable reward "
+        "has no opinion to game — though it only exists for checkable tasks."),
 ]
 
 _TASKS = r"""
@@ -236,6 +356,15 @@ _REFS = r"""
 - Hinton, Vinyals & Dean (2015) — *Distilling the Knowledge in a Neural Network* ("dark knowledge").
 - **Geoffrey Hinton** — *Neural Networks for Machine Learning* (his lectures on YouTube): the two
   paradigms of intelligence, the family-tree net, and much of this lab's framing come from here.
+- Wei et al. (2022) — *Chain-of-Thought Prompting Elicits Reasoning in LLMs*.
+- Wang et al. (2022) — *Self-Consistency Improves Chain of Thought Reasoning*.
+- Cobbe et al. (2021) — *Training Verifiers to Solve Math Word Problems* (best-of-n, GSM8K).
+- Lightman et al. (2023) — *Let's Verify Step by Step* (process vs outcome reward models).
+- Shao et al. (2024) — *DeepSeekMath* (**GRPO**: the group baseline that removes the critic).
+- DeepSeek-AI (2025) — *DeepSeek-R1* (RL with verifiable rewards at scale, openly described).
+- Snell et al. (2024) — *Scaling LLM Test-Time Compute Optimally*.
+- Merrill & Sabharwal (2024) — *The Expressive Power of Transformers with Chain of Thought*
+  (the formal version of the serial-depth argument in §16).
 - Hugging Face — *TRL* (SFT/DPO/PPO) and *PEFT* libraries.
 - In this lab: **Tiny GPT** / **e21 nanoGPT** (pretraining), **Embeddings & RAG**
   (facts vs behaviour), Math **X5** (cross-entropy / KL).

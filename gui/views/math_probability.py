@@ -334,10 +334,103 @@ def _mle():
             icon=":material/insights:")
 
 
+
+def _init_variance():
+    """Variance algebra (§10) applied to a deep net: where sqrt(1/n) and sqrt(2/n) come
+    from, and what happens when you guess instead. Same experiment as e10, live."""
+    st.markdown("**Two variance rules, one consequence.** A unit computes "
+                "$z=\\sum_i w_i x_i$ over `fan_in` inputs, so §10 gives "
+                "$\\operatorname{Var}(z)=n\\,\\operatorname{Var}(w)\\,"
+                "\\operatorname{Var}(x)$. Demand that a layer neither grows nor shrinks "
+                "the signal and the initialisation scale is forced — there is nothing to "
+                "tune. Watch what a wrong choice does with depth.")
+
+    c = st.columns(4)
+    depth = c[0].slider("layers", 2, 30, 12, 1, key="iv_depth")
+    width = c[1].slider("units per layer (fan_in)", 16, 512, 256, 16, key="iv_width")
+    act_name = c[2].selectbox("nonlinearity", ["ReLU", "tanh", "none (linear)"], key="iv_act")
+    manual = c[3].slider("your guess for σ_w", 0.01, 0.60, 0.05, 0.01, key="iv_manual",
+                         help="A 'reasonable-looking' constant, chosen without the algebra.")
+
+    act = {"ReLU": lambda z: np.maximum(z, 0),
+           "tanh": np.tanh,
+           "none (linear)": lambda z: z}[act_name]
+
+    # Plot the ROOT MEAN SQUARE, not the standard deviation. The algebra preserves the
+    # second moment E[a^2]; for ReLU the two differ, because the output has a positive
+    # mean (std = sqrt(1/2 - 1/2pi)*s = 0.5838*s while RMS = 0.7071*s). Plotting std put
+    # correctly-initialised He at 0.826 against a "healthy = 1" line, making right look
+    # 17% wrong. Averaging a few seeds removes the random-walk scatter that a single
+    # draw of W shows at finite width.
+    SEEDS = 5
+
+    def run(sigma):
+        acc = np.zeros(depth)
+        for seed in range(SEEDS):
+            rng = np.random.default_rng(seed)
+            a = rng.normal(0, 1, (1024, width))
+            for k in range(depth):
+                W = rng.normal(0, sigma(width), (width, width))
+                a = act(a @ W)
+                acc[k] += float(np.sqrt(np.mean(a.astype(np.float64) ** 2)))
+        return list(acc / SEEDS)
+
+    curves = {
+        f"your guess  σ={manual:.2f}": run(lambda n: manual),
+        "Xavier  √(1/n)": run(lambda n: math.sqrt(1.0 / n)),
+        "He  √(2/n)": run(lambda n: math.sqrt(2.0 / n)),
+    }
+
+    fig, ax = plt.subplots(figsize=(7.4, 3.2))
+    for (lab, ys), col in zip(curves.items(), ("#C0507A", "#2F7BEA", "#1D9E75")):
+        ax.semilogy(range(1, depth + 1), np.maximum(ys, 1e-300), "o-", ms=3.5, lw=1.9,
+                    color=col, label=lab)
+    ax.axhline(1.0, color="#9C9B95", ls="--", lw=1, label="healthy (RMS = 1)")
+    ax.set_xlabel("layer"); ax.set_ylabel("activation RMS  √E[a²]  (log scale)")
+    ax.legend(fontsize=8, frameon=False); ax.spines[["top", "right"]].set_visible(False)
+    fig.tight_layout()
+    st.pyplot(fig)
+
+    he_last, xa_last, my_last = curves["He  √(2/n)"][-1], curves["Xavier  √(1/n)"][-1], \
+        curves[f"your guess  σ={manual:.2f}"][-1]
+    m = st.columns(3)
+    m[0].metric(f"your guess, layer {depth}", f"{my_last:.3g}")
+    m[1].metric(f"Xavier, layer {depth}", f"{xa_last:.4f}")
+    m[2].metric(f"He, layer {depth}", f"{he_last:.4f}")
+
+    if act_name == "ReLU":
+        ratio = (xa_last / curves["Xavier  √(1/n)"][0]) ** (1 / max(depth - 1, 1))
+        st.success(
+            f"**Predicted from the algebra:** ReLU keeps exactly half the second moment, so "
+            f"Xavier's √(1/n) must lose a factor of 1/√2 = **{1/math.sqrt(2):.4f}** per layer. "
+            f"**Measured here: {ratio:.4f}.** He's √(2/n) puts the missing factor of 2 back and "
+            f"sits on 1 — which is all that constant ever was.",
+            icon=":material/check_circle:")
+        st.caption("The curve is the **RMS**, √E[a²] — the quantity the algebra actually "
+                   "preserves. For ReLU that is not the standard deviation: the output has a "
+                   "positive mean, so std = 0.584·s while RMS = 0.707·s. Plotting std would "
+                   "park a correctly-initialised He at 0.826 and make right look 17 % wrong. "
+                   f"Averaged over {SEEDS} seeds — a single draw of W random-walks by roughly "
+                   "±√(2/n) per layer, which at this width is visible but is noise, not decay.")
+    elif act_name == "tanh":
+        st.info("**tanh is ≈ linear near zero**, so Xavier's √(1/n) is the right scale here and "
+                "He's √(2/n) slightly over-drives it into the saturating region. This is why the "
+                "scheme follows the nonlinearity, not taste. (tanh is symmetric, so RMS and std "
+                "agree here — unlike ReLU.)", icon=":material/lightbulb:")
+    else:
+        st.info("**With no nonlinearity, Xavier holds the RMS exactly at 1** — that is the case "
+                "the algebra was solved for. Every other curve is the correction for what the "
+                "activation function does to it.", icon=":material/lightbulb:")
+
+    st.caption("Same experiment as `experiments/tier2_training/e10`, and the constants are "
+               "the ones in `core/init.py`. Full derivation in the Theory tab, §10.")
+
+
 with tab_play:
     mode = st.radio("playground",
                     ["Distribution explorer", "Central Limit Theorem",
-                     "🧪 Bayes' rule", "📈 Maximum likelihood"],
+                     "🧪 Bayes' rule", "📈 Maximum likelihood",
+                     "🏗 Init & variance"],
                     horizontal=True, key="p_mode")
     st.divider()
     if mode == "Distribution explorer":
@@ -346,6 +439,8 @@ with tab_play:
         _clt()
     elif mode.startswith("🧪"):
         _bayes()
+    elif mode.startswith("🏗"):
+        _init_variance()
     else:
         _mle()
 
