@@ -16,10 +16,8 @@ Design goals — a public, anonymous-friendly comment box that is hard to abuse:
     back through st.text/st.code (never markdown/HTML), so stored text can't execute
 
 Storage location can be overridden with AILAB_FEEDBACK_DIR (used by tests). On a
-self-hosted server (ai-lab.gokcol.online) the feedback file persists on disk; read it
-over SSH with  tools/feedback_report.py  (daily/weekly/monthly reports). The in-app
-admin view requires AILAB_FEEDBACK_ADMIN=1 — set it ONLY for a local run, never on
-the public server, or the inbox becomes public.
+self-hosted server the feedback file persists on disk. There is deliberately no
+in-app message viewer; operational access remains private to the server owner.
 
 Self-hosting notes: app-level limits complement (not replace) a reverse proxy —
 put nginx/caddy rate limiting and HTTPS in front, firewall the Streamlit port so
@@ -605,25 +603,3 @@ def render_form() -> None:
     st.caption("Your note is stored on the site's own server and read only by the author. "
                "No links, code or HTML — plain text keeps the box safe for everyone. "
                "Ask any time (via GitHub) and it will be deleted. Rate limits apply.")
-
-    # Local-only admin view (env var is never set on the public deploy).
-    if os.environ.get("AILAB_FEEDBACK_ADMIN") == "1":
-        with st.expander("🗂 Feedback inbox (admin — local only)"):
-            f = _file()
-            if not f.exists():
-                st.caption("No feedback yet.")
-            else:
-                lines = f.read_text(encoding="utf-8").strip().splitlines()
-                st.caption(f"{len(lines)} entr{'y' if len(lines) == 1 else 'ies'} · "
-                           f"{f.stat().st_size:,} bytes")
-                for line in lines[-50:][::-1]:
-                    try:
-                        r = json.loads(line)
-                        who = " ".join(x for x in (r.get("name"), r.get("surname")) if x) or "anonymous"
-                        st.text(f"[{r.get('ts','?')}] {who}"
-                                + (f" <{r['email']}>" if r.get("email") else "")
-                                + f"\n  {r.get('message','')}")
-                    except json.JSONDecodeError:
-                        st.text(f"(unparseable line) {line[:120]}")
-                st.download_button("Download feedback.jsonl", f.read_bytes(),
-                                   file_name="feedback.jsonl", mime="application/jsonl")
