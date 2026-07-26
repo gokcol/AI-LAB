@@ -227,8 +227,8 @@ with tab_run:
             st.markdown(
                 "**What you additionally get locally**\n\n"
                 "- 🐍 **The Python Sandbox** — a live scratchpad with `numpy` and the lab's own "
-                "`core` preloaded, so you can test every idea immediately. *Disabled here* (see "
-                "below).\n"
+                "`core` preloaded, so you can test every idea immediately. **Not available on this "
+                "site.**\n"
                 "- 🔬 **The code experiments** — `e01`–`e21` actually execute, including the real "
                 "**PyTorch nanoGPT** you can train on your own GPU/Apple-Silicon.\n"
                 "- ✅ **The test suite** — `pytest` proves the autograd engine's gradients are "
@@ -258,58 +258,52 @@ with tab_run:
             st.caption("`./stop.sh` stops it. On Windows, run "
                        "`streamlit run gui/app.py` instead of `./start.sh`.")
 
-        with st.expander("🔒 Why the Sandbox is disabled on this server"):
-            st.markdown(
-                "The Sandbox executes **arbitrary Python that the visitor types**, inside the "
-                "application's own process. On your own laptop that is exactly what makes it "
-                "useful — it is *your* code on *your* machine.\n\n"
-                "On a public server it would be a **remote code execution** hole: any visitor could "
-                "read private files, steal credentials, install malware, or attack other systems "
-                "from this server's address. No amount of filtering makes "
-                "*\"run whatever Python you like\"* safe for the open internet.\n\n"
-                "So the page is **switched off here by design** — the server runs with "
-                "`AILAB_ENABLE_SANDBOX=0`, and the Sandbox does not even appear in the sidebar. "
-                "Everything else on the site is fully interactive; only the free-form code runner is "
-                "withheld. Clone the repository and you get it back instantly."
-            )
+
+def _terms_body():
+    """Rendered both in the Terms tab and in the footer dialog — one source."""
+    st.markdown("### 📜 Terms of use & privacy — the short version")
+    st.markdown(
+        "- **Free** for personal learning and teaching. Non-commercial project, no ads, no accounts.\n"
+        "- **No warranty.** Content is AI-assisted and may contain mistakes — verify before "
+        "relying on it. This is education, not professional advice.\n"
+        "- **Privacy:** no cookies, no third-party analytics, no ad networks, no "
+        "accounts. The web server keeps standard access logs, which are reviewed for "
+        "security and simple visitor counts. Feedback is optional; your **name and "
+        "email are optional within it**, asked for by consent only, used solely to "
+        "reply to you, and deleted on request.\n"
+        "- **Be kind** to the feedback box — it is rate-limited and plain-text only."
+    )
+    with st.expander("Read the full terms"):
+        st.markdown(
+            "**1 · What this is — and is not.** AI Lab (ai-lab.gokcol.online) is a set of **personal study notes** curated by Orhan Gökçöl while learning how artificial neural networks, classical machine learning, and their mathematics work. It is a private, non-commercial learning notebook that happens to be published; it was written with heavy use of Claude (Anthropic) as an AI assistant. It is **not** a textbook, a course, a certification, peer-reviewed material, or professional teaching content, and it carries no institutional endorsement. It represents one learner's notes at one moment in time.\n\n"
+            "**2 · Use.** You are welcome to use the site freely for personal learning, "
+            "teaching, and sharing with attribution. The source code is public on "
+            "[GitHub](https://github.com/gokcol/AI-LAB) for reading and personal study; no open-source license has "
+            "been granted yet, so please ask before commercial reuse or redistribution.\n\n"
+            "**3 · Accuracy & warranty.** Because these are study notes rather than reviewed publications, the content is provided *as is*, with **no warranty** of accuracy, completeness, or availability. Much of it was AI-generated and, although it has been checked and is numerically verified where possible, **it may contain errors and over-simplifications**. Do not cite it; verify against the primary sources referenced on each page before relying on anything. Nothing here is professional, financial, medical, or legal advice.\n\n"
+            "**No guarantee. No liability.** To the fullest extent permitted by law, this material is provided **as is** and **as available**, without warranties or conditions of any kind, whether express, implied or statutory — including, without limitation, any warranty of accuracy, correctness, completeness, currency, merchantability, fitness for a particular purpose, or non-infringement. **No representation is made that the content is free of errors**, and no obligation is accepted to correct or update it. **In no event shall the author be liable for any claim, damage or loss of any kind** — direct, indirect, incidental, consequential, punitive or otherwise, including lost profits, lost data, wasted study time, or decisions taken in reliance on this material — arising from or in connection with this site, its content, or its use, **even if advised of the possibility of such damage**. You alone are responsible for verifying anything you intend to rely on. If you do not accept this, please do not use the site.\n\n"
+            "**4 · Privacy & your data.** The site sets **no cookies**, loads **no third-party scripts, fonts or analytics**, runs no advertising and requires no account.\n\n"
+            "*Server logs.* Like any web server it writes **standard access logs** — IP address, time, page requested, browser user-agent, referring page — which the author reviews for security and **basic visitor counts** (how many people came, how often, roughly from where). Legal basis: legitimate interest in keeping the site up and secure. Nothing is shared, **no profile is built**, and logs rotate away automatically.\n\n"
+            "*The feedback form.* The **message** is stored without anything identifying you, alongside a one-way **hash** of your connection, used only to enforce rate limits — the raw IP is never written. **Name, surname and email are entirely optional.** If you fill them in you are asked to tick a consent box first: that tick is the legal basis (GDPR Art. 6(1)(a) / KVKK Art. 5(1), explicit consent), it is never pre-ticked, and leaving the boxes empty sends the note anonymously with no consent needed. Those details are used **only** to reply to you — never published, never shared or sold, never added to any mailing list — and are erased on request or after **" + str(feedback.RETENTION_DAYS) + " days** at the latest.\n\n"
+            "*Where it lives.* Data is held on the author's own server in **" + feedback.DATA_LOCATION + "**; no processor, cloud form service or analytics vendor ever sees it.\n\n"
+            "*Your rights.* Access, rectification, erasure, restriction, objection, and withdrawal of consent at any time — withdrawal is as easy as giving it and does not affect processing already carried out. Ask via [GitHub](https://github.com/gokcol/AI-LAB/issues) or the form itself and it will be done. **Data controller:** Orhan Gökçöl (personal, non-commercial project). Please do not submit sensitive personal data. Abusive, automated or off-topic submissions are filtered and discarded.\n\n"
+            "**5 · External links** point to third-party resources (papers, videos, books) that "
+            "are not under this site's control and are not endorsements.\n\n"
+            "**6 · Availability.** This is a personal server run on a best-effort basis — it "
+            "may be down, slow, or change without notice.\n\n"
+            "**7 · Contact.** Questions, corrections, and removal requests: open an issue on "
+            "[GitHub](https://github.com/gokcol/AI-LAB/issues) or use the feedback form below."
+        )
+
+
+@st.dialog("📜 Terms of use & privacy", width="large")
+def _terms_dialog():
+    _terms_body()
 
 
 with tab_terms:
-    # --- terms of use ----------------------------------------------------------- #
     with st.container(border=True):
-        st.markdown("### 📜 Terms of use & privacy — the short version")
-        st.markdown(
-            "- **Free** for personal learning and teaching. Non-commercial project, no ads, no accounts.\n"
-            "- **No warranty.** Content is AI-assisted and may contain mistakes — verify before "
-            "relying on it. This is education, not professional advice.\n"
-            "- **Privacy:** no cookies, no third-party analytics, no ad networks, no "
-            "accounts. The web server keeps standard access logs, which are reviewed for "
-            "security and simple visitor counts. Feedback is optional; your **name and "
-            "email are optional within it**, asked for by consent only, used solely to "
-            "reply to you, and deleted on request.\n"
-            "- **Be kind** to the feedback box — it is rate-limited and plain-text only."
-        )
-        with st.expander("Read the full terms"):
-            st.markdown(
-                "**1 · What this is — and is not.** AI Lab (ai-lab.gokcol.online) is a set of **personal study notes** curated by Orhan Gökçöl while learning how artificial neural networks, classical machine learning, and their mathematics work. It is a private, non-commercial learning notebook that happens to be published; it was written with heavy use of Claude (Anthropic) as an AI assistant. It is **not** a textbook, a course, a certification, peer-reviewed material, or professional teaching content, and it carries no institutional endorsement. It represents one learner's notes at one moment in time.\n\n"
-                "**2 · Use.** You are welcome to use the site freely for personal learning, "
-                "teaching, and sharing with attribution. The source code is public on "
-                "[GitHub](https://github.com/gokcol/AI-LAB) for reading and personal study; no open-source license has "
-                "been granted yet, so please ask before commercial reuse or redistribution.\n\n"
-                "**3 · Accuracy & warranty.** Because these are study notes rather than reviewed publications, the content is provided *as is*, with **no warranty** of accuracy, completeness, or availability. Much of it was AI-generated and, although it has been checked and is numerically verified where possible, **it may contain errors and over-simplifications**. Do not cite it; verify against the primary sources referenced on each page before relying on anything. Nothing here is professional, financial, medical, or legal advice.\n\n"
-                "**No guarantee. No liability.** To the fullest extent permitted by law, this material is provided **as is** and **as available**, without warranties or conditions of any kind, whether express, implied or statutory — including, without limitation, any warranty of accuracy, correctness, completeness, currency, merchantability, fitness for a particular purpose, or non-infringement. **No representation is made that the content is free of errors**, and no obligation is accepted to correct or update it. **In no event shall the author be liable for any claim, damage or loss of any kind** — direct, indirect, incidental, consequential, punitive or otherwise, including lost profits, lost data, wasted study time, or decisions taken in reliance on this material — arising from or in connection with this site, its content, or its use, **even if advised of the possibility of such damage**. You alone are responsible for verifying anything you intend to rely on. If you do not accept this, please do not use the site.\n\n"
-                "**4 · Privacy & your data.** The site sets **no cookies**, loads **no third-party scripts, fonts or analytics**, runs no advertising and requires no account.\n\n"
-                "*Server logs.* Like any web server it writes **standard access logs** — IP address, time, page requested, browser user-agent, referring page — which the author reviews for security and **basic visitor counts** (how many people came, how often, roughly from where). Legal basis: legitimate interest in keeping the site up and secure. Nothing is shared, **no profile is built**, and logs rotate away automatically.\n\n"
-                "*The feedback form.* The **message** is stored without anything identifying you, alongside a one-way **hash** of your connection, used only to enforce rate limits — the raw IP is never written. **Name, surname and email are entirely optional.** If you fill them in you are asked to tick a consent box first: that tick is the legal basis (GDPR Art. 6(1)(a) / KVKK Art. 5(1), explicit consent), it is never pre-ticked, and leaving the boxes empty sends the note anonymously with no consent needed. Those details are used **only** to reply to you — never published, never shared or sold, never added to any mailing list — and are erased on request or after **" + str(feedback.RETENTION_DAYS) + " days** at the latest.\n\n"
-                "*Where it lives.* Data is held on the author's own server in **" + feedback.DATA_LOCATION + "**; no processor, cloud form service or analytics vendor ever sees it.\n\n"
-                "*Your rights.* Access, rectification, erasure, restriction, objection, and withdrawal of consent at any time — withdrawal is as easy as giving it and does not affect processing already carried out. Ask via [GitHub](https://github.com/gokcol/AI-LAB/issues) or the form itself and it will be done. **Data controller:** Orhan Gökçöl (personal, non-commercial project). Please do not submit sensitive personal data. Abusive, automated or off-topic submissions are filtered and discarded.\n\n"
-                "**5 · External links** point to third-party resources (papers, videos, books) that "
-                "are not under this site's control and are not endorsements.\n\n"
-                "**6 · Availability.** This is a personal server run on a best-effort basis — it "
-                "may be down, slow, or change without notice.\n\n"
-                "**7 · Contact.** Questions, corrections, and removal requests: open an issue on "
-                "[GitHub](https://github.com/gokcol/AI-LAB/issues) or use the feedback form below."
-            )
+        _terms_body()
 
 
 with tab_fb:
@@ -383,6 +377,11 @@ st.caption(f"AI Lab v{VERSION} · personal study notes by Orhan Gökçöl, writt
 # The disclaimer now opens inside the Welcome tab (the default one), so it is still the
 # first thing a visitor reads — but a reader who lands on another tab must not be able to
 # miss it entirely. This line is outside the tabs and therefore always on screen.
-st.caption("⚠️ Study notes, not a textbook: **no guarantee of accuracy and no liability** "
-           "for any error or omission — verify everything before relying on it. "
-           "See **📜 Terms**.")
+fc = st.columns([0.78, 0.22])
+fc[0].caption("⚠️ Study notes, not a textbook: **no guarantee of accuracy and no liability** "
+              "for any error or omission — verify everything before relying on it.")
+# Streamlit has no API for selecting a tab programmatically, so "see the Terms" cannot be
+# a link to the tab. A dialog reading the very same _terms_body() is the honest fix: one
+# source of truth, reachable from anywhere on the page, and it works on a phone.
+if fc[1].button("📜 Read the Terms", type="tertiary", use_container_width=True):
+    _terms_dialog()

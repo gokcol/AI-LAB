@@ -103,26 +103,32 @@ shared box can lock out your other services — see Step 6.
 curl -sI https://ai-lab.gokcol.online | head -3
 ```
 
+
+Then, **on the server**, the check that actually matters:
+
 ```bash
-curl -s https://ai-lab.gokcol.online | grep -ci sandbox
+systemctl show ai-lab -p Environment --value | tr ' ' '\n' | grep -E 'AILAB_'
 ```
 
-**That second one must print `0`.** It is the single most important check on this whole page:
-the Sandbox executes visitor-supplied Python in the app's own process. On a public server
-that is a remote-code-execution endpoint, so the systemd unit sets
-`AILAB_ENABLE_SANDBOX=0` and the app only registers the page when the value is exactly `"1"`.
-Never export that variable in a shell profile on this machine.
+Expect exactly `AILAB_ENABLE_SANDBOX=0` plus your `AILAB_DATA_REGION`, and **no**
+`AILAB_FEEDBACK_ADMIN` (that one would publish the feedback inbox). The Sandbox executes
+visitor-supplied Python in the app's own process — on a public server that is a
+remote-code-execution endpoint, and the app only registers the page when the value is
+exactly `"1"`. Never export it in a shell profile on this machine.
 
-On the server:
+> ⚠️ Do **not** verify this with `curl … | grep -i sandbox`. Streamlit serves a static
+> shell and streams the page over a websocket, so that grep prints `0` **even when the
+> Sandbox is fully enabled** — a false all-clear. I tested it. Check the unit
+> environment above, then confirm by eye that the sidebar has no **Tools → Sandbox**.
+
+Also check the service itself:
 
 ```bash
-systemctl status ai-lab --no-pager; ss -tlnp | grep 8501; systemctl show ai-lab -p Environment
+systemctl status ai-lab --no-pager; ss -tlnp | grep 8501
 ```
 
 - status **active (running)**
 - 8501 bound to **`127.0.0.1`** only — never `0.0.0.0`
-- `Environment` shows `AILAB_ENABLE_SANDBOX=0`, your `AILAB_DATA_REGION`, and **no**
-  `AILAB_FEEDBACK_ADMIN` (that variable would publish the feedback inbox)
 
 Then in a browser: open the site, send yourself one test feedback, and confirm it arrives:
 

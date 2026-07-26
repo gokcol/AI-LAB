@@ -33,9 +33,14 @@ AILAB_ENABLE_SANDBOX=0 ./start.sh
 - Verify after every deploy: the sidebar must have **no "Tools → Sandbox"** entry.
 
 ```bash
-# quick check from your laptop
-curl -s https://ai-lab.gokcol.online | grep -ci sandbox   # expect 0
+# on the server — the only check that can actually see the setting
+systemctl show ai-lab -p Environment --value | tr ' ' '\n' | grep -E 'AILAB_'
 ```
+
+> ⚠️ Do **not** verify this with `curl … | grep -i sandbox`. Streamlit serves a static
+> shell and streams the page over a websocket, so that grep prints `0` **even when the
+> Sandbox is fully enabled** — a false all-clear. I tested it. Check the unit
+> environment above, then confirm by eye that the sidebar has no **Tools → Sandbox**.
 
 If you ever *do* want a public scratchpad, it must run in a locked-down container
 (gVisor/Firejail, no network, read-only FS, CPU/memory caps) — a separate project, not a flag.
@@ -238,13 +243,10 @@ cd /opt/ai-lab/app
 sudo -u ailab git pull
 sudo -u ailab .venv/bin/pip install -r requirements.txt
 sudo systemctl restart ai-lab
-# verify the sandbox is still hidden
-curl -s https://ai-lab.gokcol.online | grep -ci sandbox   # expect 0
 ```
 
 ## 8. Post-deploy checklist
 
-- [ ] `curl -s https://ai-lab.gokcol.online | grep -ci sandbox` → **0**
 - [ ] `systemctl show ai-lab -p Environment` shows `AILAB_ENABLE_SANDBOX=0` and **no** `AILAB_FEEDBACK_ADMIN`
 - [ ] `ss -tlnp | grep 8501` → bound to **127.0.0.1** only
 - [ ] HTTPS valid; HTTP redirects
