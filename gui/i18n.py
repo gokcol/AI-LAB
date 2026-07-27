@@ -132,16 +132,16 @@ def select_language() -> str:
     if not MULTILINGUAL:  # selector hidden — English only
         return DEFAULT_LANG
     current = lang()
-    labels = list(LANGUAGES.values())
-    codes = list(LANGUAGES.keys())
-    default_index = codes.index(current) if current in codes else 0
-    label = st.segmented_control(
-        t("app.language", language=current),
-        labels,
-        default=labels[default_index],
-        key="language_selector",
+    codes = list(LANGUAGES)
+    compact_labels = {"en": "EN", "tr": "TR"}
+    selected = st.selectbox(
+        "Language selector",
+        codes,
+        index=codes.index(current) if current in codes else 0,
+        format_func=compact_labels.get,
+        key="app_language_dropdown",
+        label_visibility="collapsed",
     )
-    selected = codes[labels.index(label or labels[default_index])]
     set_lang(selected)
     return selected
 

@@ -10,6 +10,7 @@ Launch:
     streamlit run gui/app.py
 """
 
+import importlib
 import os
 import pathlib
 import sys
@@ -21,6 +22,11 @@ os.environ.setdefault("MPLBACKEND", "Agg")
 import streamlit as st
 import i18n
 import ui
+
+# Streamlit can reload the entrypoint before imported helpers after a rapid save.
+# Reload the two small shared modules explicitly so controls cannot mix old and new APIs.
+i18n = importlib.reload(i18n)
+ui = importlib.reload(ui)
 
 TURKISH_TRANSLATION_NOTICE = (
     "**Türkçe sürüm notu:** Şu anda menü ve sınırlı arayüz etiketleri "
@@ -34,13 +40,23 @@ TURKISH_TRANSLATION_NOTICE = (
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
 st.set_page_config(page_title="AI Lab", page_icon="🧠", layout="wide")
-ui.inject_theme()
 i18n.install_localization()  # transparently localizes static UI text when lang == "tr"
 
-# --- sidebar: brand + language/module selectors pinned to the TOP ----------
+# --- app controls: visible even while the sidebar is collapsed on mobile -----
+_control_space, _control_cluster = st.columns([0.56, 0.44])
+with _control_cluster:
+    _zoom_control, _theme_control, _language_control = st.columns([0.39, 0.25, 0.36], gap="small")
+    with _zoom_control:
+        ui.select_zoom()
+    with _theme_control:
+        ui.select_theme()
+    with _language_control:
+        i18n.select_language()
+ui.inject_theme(ui.theme(), ui.zoom_percent())
+
+# --- sidebar: brand + module selector pinned to the TOP ---------------------
 with st.sidebar:
     st.markdown(f"## 🧠 {i18n.t('app.brand')}")
-    i18n.select_language()
     track_blurb = {
         "ANN": i18n.t("track.ann"),
         "ML": i18n.t("track.ml"),

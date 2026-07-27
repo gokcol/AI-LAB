@@ -4,8 +4,111 @@ from __future__ import annotations
 
 import streamlit as st
 
+THEMES = {
+    "browser": "Browser default",
+    "light": "Light",
+    "dark": "Dark",
+    "accessible": "Color-blind safe",
+}
+DEFAULT_THEME = "browser"
+DEFAULT_ZOOM = 100
+MIN_ZOOM = 50
+MAX_ZOOM = 150
+ZOOM_STEP = 10
 
-def inject_theme() -> None:
+
+def theme() -> str:
+    """The selected visual profile; browser default follows ``prefers-color-scheme``."""
+    return st.session_state.get("theme", DEFAULT_THEME)
+
+
+def select_theme() -> str:
+    """Render the compact, app-wide theme picker."""
+    current = theme()
+    icons = {
+        "light": "☀︎",
+        "dark": "☾",
+        "browser": "◐",
+        "accessible": "◉",
+    }
+    selected = st.selectbox(
+        "Theme selector",
+        list(THEMES),
+        index=list(THEMES).index(current) if current in THEMES else 0,
+        format_func=icons.get,
+        key="app_theme_dropdown",
+        label_visibility="collapsed",
+        help="Choose Light, Dark, Browser default, or Color-blind safe.",
+    )
+    st.session_state["theme"] = selected
+    return selected
+
+
+def zoom_percent() -> int:
+    return int(st.session_state.get("zoom_percent", DEFAULT_ZOOM))
+
+
+def select_zoom() -> int:
+    """Render a bounded lesson-zoom dropdown without touching browser zoom."""
+    current = zoom_percent()
+    options = list(range(MIN_ZOOM, MAX_ZOOM + ZOOM_STEP, ZOOM_STEP))
+    current = st.selectbox(
+        "Lesson zoom", options,
+        index=options.index(current) if current in options else options.index(DEFAULT_ZOOM),
+        format_func=lambda value: f"{value}%",
+        key="app_zoom_dropdown",
+        label_visibility="collapsed",
+        help="Lesson zoom: 50% to 150%.",
+    )
+    st.session_state["zoom_percent"] = current
+    return current
+
+
+def _theme_overrides(selected: str) -> str:
+    """Small overrides layered after the shared light-first lab styling."""
+    dark = """
+        :root { color-scheme: dark; --ailab-ink:#edf3fc; --ailab-muted:#b6c3d4;
+          --ailab-border:#34445b; --ailab-panel:rgba(25,35,50,.94); --ailab-blue:#72a7ff;
+          --ailab-green:#50c9a3; --ailab-amber:#f1b85b; --ailab-coral:#ff8b8b; }
+        .stApp, [data-testid="stAppViewContainer"] { background:#111926 !important; color:var(--ailab-ink) !important; }
+        h1, h2, h3, p, li, [data-testid="stMarkdownContainer"], [data-testid="stMarkdownContainer"] * { color:var(--ailab-ink); }
+        [data-testid="stSidebar"] { background:#172231 !important; border-right-color:var(--ailab-border) !important; }
+        [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3,
+        [data-testid="stSidebar"] [data-testid="stMarkdownContainer"],
+        [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] * { color:var(--ailab-ink) !important; }
+        [data-testid="stSidebar"] a { color:#dceaff !important; }
+        [data-testid="stSidebar"] a:hover { background:rgba(114,167,255,.16); color:#ffffff !important; }
+        div[data-testid="stMetric"], div[data-testid="stVerticalBlockBorderWrapper"], .ailab-step,
+        .st-key-fb_form { background:#1b2839 !important; border-color:var(--ailab-border) !important; box-shadow:none !important; }
+        button[data-baseweb="tab"] { background:#1b2839 !important; border-color:#40536d !important; color:#dce7f5 !important; }
+        button[data-baseweb="tab"]:hover { background:#24344a !important; border-color:#72a7ff !important; }
+        button[data-baseweb="tab"][aria-selected="true"] { background:#285fae !important; border-color:#72a7ff !important; }
+        .ailab-hero, .ailab-fb-head { background:#1b2839 !important; border-color:var(--ailab-border) !important; box-shadow:none !important; }
+        .ailab-hero p, .ailab-fb-head p, .ailab-chip { color:var(--ailab-muted) !important; }
+        .ailab-chip { background:#223149 !important; border-color:#40536d !important; }
+        input, textarea, [data-baseweb="select"] > div { background:#1b2839 !important; color:#edf3fc !important; }
+    """
+    accessible = """
+        :root { --ailab-ink:#172033; --ailab-muted:#4b5b70; --ailab-border:#b8c9dc;
+          --ailab-panel:rgba(255,255,255,.97); --ailab-blue:#0072b2; --ailab-green:#009e73;
+          --ailab-amber:#e69f00; --ailab-coral:#d55e00; }
+        .stApp { background:linear-gradient(180deg,#ffffff 0%,#f5f8fb 100%) !important; }
+        [data-testid="stSidebar"] { background:#f6f8fb !important; }
+        .stButton > button[kind="primary"], button[data-baseweb="tab"][aria-selected="true"] {
+          background:#0072b2 !important; border-color:#0072b2 !important;
+        }
+        .ailab-callout { border-left-color:#009e73; background:#e8f5f0; color:#123d33; }
+    """
+    if selected == "dark":
+        return dark
+    if selected == "accessible":
+        return accessible
+    if selected == "browser":
+        return f"@media (prefers-color-scheme: dark) {{{dark}}}"
+    return ""
+
+
+def inject_theme(selected: str = DEFAULT_THEME, zoom: int = DEFAULT_ZOOM) -> None:
     st.markdown(
         """
         <style>
@@ -37,6 +140,19 @@ def inject_theme() -> None:
             display: flex !important;
             visibility: visible !important;
         }
+        /* Matching compact dropdowns in the top-right app controls. */
+        .st-key-app_zoom_dropdown [data-baseweb="select"] > div,
+        .st-key-app_theme_dropdown [data-baseweb="select"] > div,
+        .st-key-app_language_dropdown [data-baseweb="select"] > div {
+            border-radius: 10px;
+            border-color: var(--ailab-border);
+            background: var(--ailab-panel);
+            font-weight: 650;
+            min-height: 2.35rem;
+        }
+        .st-key-app_zoom_dropdown { max-width: 5.9rem; margin-left: auto; }
+        .st-key-app_theme_dropdown { max-width: 4.2rem; margin-left: auto; }
+        .st-key-app_language_dropdown { max-width: 4.8rem; margin-left: auto; }
         /* The header and toolbar keep their layout role -- they hold the sidebar toggle --
            so they are made plain, not removed. */
         .stAppHeader, [data-testid="stHeader"] {
@@ -350,6 +466,19 @@ def inject_theme() -> None:
         }
         </style>
         """,
+        unsafe_allow_html=True,
+    )
+    st.markdown(f"<style>{_theme_overrides(selected)}</style>", unsafe_allow_html=True)
+    zoom = max(MIN_ZOOM, min(MAX_ZOOM, int(zoom)))
+    st.markdown(
+        f"""<style>
+        @supports (zoom: 1) {{
+            [data-testid="stMainBlockContainer"] {{ zoom: {zoom / 100:.2f}; }}
+        }}
+        @supports not (zoom: 1) {{
+            [data-testid="stMainBlockContainer"] {{ font-size: {zoom}%; }}
+        }}
+        </style>""",
         unsafe_allow_html=True,
     )
 
