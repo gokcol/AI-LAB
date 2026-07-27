@@ -18,8 +18,16 @@ import feedback
 GUI = pathlib.Path(__file__).resolve().parents[1]
 ROOT = GUI.parent
 
-VERSION = "1.0"
+VERSION = "1.01"
 VERSION_HISTORY = [
+    ("27.07.2026", "1.01", "Four new step-by-step training labs are now live: delivery-time "
+                             "regression, factory-failure classification, an XOR neural network, "
+                             "and a next-character text model. Each lets you inspect the same "
+                             "forward → loss → backward → update loop, follow one example, compare "
+                             "learning rates, and check results against held-out data or a baseline. "
+                             "The Turkish menu and selected interface labels are also being tested "
+                             "as an AI-generated preview; full, human-reviewed Turkish lesson "
+                             "translations are in progress. Please use English where accuracy matters."),
     ("26.07.2026", "1.0", "Initial release — the ANN track (single neuron → a small GPT), "
                           "classical ML (M0–M8), Math foundations (X1–X6), worked numeric "
                           "examples, an activation-functions deep dive, live playgrounds "

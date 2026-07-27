@@ -68,6 +68,26 @@ for title, intro, items, math in ROADMAP:
                 col.page_link(path, label=label, icon=icon)
         st.caption("➕ **Math you'll lean on:** " + math + "  *(Math module in the sidebar)*")
 
+st.subheader("🏋 Training journey — the same loop, four models")
+st.markdown("Start with a line, then a classifier. Continue in the ANN track to inspect "
+            "backprop in an XOR network, then finish with next-token training. Every stop uses "
+            "the same loop: **forward → loss → gradients → update**.")
+
+
+def _open_ann_training(path: str):
+    st.session_state["module"] = "ANN"
+    st.session_state["_goto_page"] = path
+    st.rerun()
+
+
+journey = st.columns(4)
+journey[0].page_link("views/ml_regression.py", label="1 · Train a line", icon=":material/timeline:")
+journey[1].page_link("views/ml_classification.py", label="2 · Train a classifier", icon=":material/scatter_plot:")
+if journey[2].button("3 · Train a network", key="ml_journey_network", icon=":material/network_node:"):
+    _open_ann_training("views/mlp.py")
+if journey[3].button("4 · Train a text model", key="ml_journey_text", icon=":material/smart_toy:"):
+    _open_ann_training("views/transformer.py")
+
 st.divider()
 
 st.subheader("Where ML meets ANN")

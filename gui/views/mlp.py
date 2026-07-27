@@ -19,8 +19,10 @@ import streamlit as st
 from matplotlib.colors import ListedColormap
 
 import lessons
+import training_ui
 from core.nn import MLP
 from core.optim import SGD, Adam, Momentum
+from core import training as training_core
 
 # XOR with bipolar targets — tanh output in (-1, 1), predict by sign.
 DATA = [([0, 0], -1.0), ([0, 1], 1.0), ([1, 0], 1.0), ([1, 1], -1.0)]
@@ -275,9 +277,142 @@ lessons.predict(
     'New **features**. The hidden units learn intermediate combinations (an AND-like unit, an OR-like unit) that make XOR linearly separable for the output neuron — the same move as the *Two neurons* page, but here **discovered by backprop** instead of set by hand.',
 )
 
-tab_train, tab_theory, tab_quiz, tab_tasks, tab_ref = st.tabs(
-    ["🏋 Train it", "📖 Theory", "❓ Self-check", "🛠 Tasks", "📚 References"]
+tab_micro, tab_train, tab_theory, tab_quiz, tab_tasks, tab_ref = st.tabs(
+    ["🔬 Training microscope", "🏋 Explore training", "📖 Theory", "❓ Self-check", "🛠 Tasks", "📚 References"]
 )
+
+with tab_micro:
+    st.markdown("### The story")
+    st.info("Imagine a warehouse alarm with two independent sensors. It should sound when **exactly "
+            "one** sensor is active: a door is open *or* a motion sensor fires, but not when both "
+            "are in their normal combined test state. One straight decision line cannot learn that "
+            "rule. This little network discovers the intermediate features it needs from four examples.")
+    st.markdown("Follow one complete update of a small **2 → 2 → 1** XOR network. It has nine "
+                "parameters—small enough to inspect, but it is still a real multilayer network.")
+    controls = st.columns(3)
+    lr_micro = controls[0].select_slider("learning rate η", [.03, .05, .10, .20], value=.10,
+                                          key="tr_xor_lr")
+    seed_micro = controls[1].select_slider("initial-weight seed", list(range(1, 11)), value=1,
+                                            key="tr_xor_seed")
+    controls[2].caption("Model: 2 inputs → 2 tanh units → 1 tanh output")
+    with st.expander("Peek at the dataset (all 4 XOR rows)"):
+        st.dataframe(pd.DataFrame({"door sensor": training_core.XOR_X[:, 0],
+                                   "motion sensor": training_core.XOR_X[:, 1],
+                                   "alarm target": training_core.XOR_Y}),
+                     hide_index=True, width="stretch")
+        st.caption("`+1` means sound the alarm: exactly one sensor is active. `−1` means remain quiet.")
+    focus_index = st.selectbox(
+        "Focus on one alarm test", range(4), key="tr_xor_focus",
+        format_func=lambda i: f"test {i + 1}: door={int(training_core.XOR_X[i, 0])}, motion={int(training_core.XOR_X[i, 1])}",
+    )
+    with st.expander("Reveal the hidden rule"):
+        st.markdown("The target is **XOR**: sound the alarm only when the two sensors disagree. "
+                    "The network is not given that rule as code; it sees only the four labelled tests.")
+    config = (float(lr_micro), int(seed_micro))
+    state_key = "training_xor"
+    state = st.session_state.get(state_key)
+    if state is None or state["config"] != config:
+        state = {"config": config, "parameters": training_core.xor_init(int(seed_micro)),
+                 "history": [], "epoch": 0}
+        st.session_state[state_key] = state
+    action = training_ui.action_bar("tr_xor")
+    if action == "reset":
+        state = {"config": config, "parameters": training_core.xor_init(int(seed_micro)),
+                 "history": [], "epoch": 0}
+    elif action:
+        count = {"one": 1, "epoch": 1, "ten": 10, "all": 900}[action]
+        for _ in range(count):
+            step = training_core.xor_step(state["parameters"], lr=float(lr_micro), epoch=state["epoch"])
+            state["history"].append(step)
+            state["parameters"] = step.parameters_after
+            state["epoch"] += 1
+    st.session_state[state_key] = state
+    if state["history"]:
+        selected = training_ui.checkpoint_picker("tr_xor", state["history"])
+    else:
+        selected = training_core.xor_step(state["parameters"], lr=float(lr_micro))
+        st.info("Each training step is one full batch: all four XOR rows contribute to every one "
+                "of the nine gradients.")
+    phase = training_ui.phase_picker("tr_xor")
+    values = training_core.xor_values(training_core.XOR_X, training_core.XOR_Y,
+                                      selected.parameters_before)
+    if phase == "1 · Forward":
+        st.latex(r"z^{(1)}=W^{(1)}x+b^{(1)},\ h=\tanh(z^{(1)}),\ "
+                 r"\hat y=\tanh(W^{(2)}h+b^{(2)})")
+        st.dataframe(pd.DataFrame({
+            "focus": ["← chosen" if i == focus_index else "" for i in range(4)],
+            "x₁": training_core.XOR_X[:, 0], "x₂": training_core.XOR_X[:, 1],
+            "h₁": values["hidden"][:, 0], "h₂": values["hidden"][:, 1],
+            "prediction": values["predictions"], "target": training_core.XOR_Y,
+        }).round(5), hide_index=True, width="stretch")
+    elif phase == "2 · Loss":
+        st.latex(r"L=\frac{1}{4}\sum_i(\hat y_i-y_i)^2")
+        st.dataframe(pd.DataFrame({"focus": ["← chosen" if i == focus_index else "" for i in range(4)],
+                                   "prediction": values["predictions"], "target": training_core.XOR_Y,
+                                   "squared error": values["terms"]}).round(6),
+                     hide_index=True, width="stretch")
+        st.metric("batch MSE", f"{selected.loss:.6f}")
+    elif phase == "3 · Backward":
+        st.latex(r"\frac{\partial L}{\partial z_o}=\frac{2}{n}(\hat y-y)(1-\hat y^2)")
+        st.markdown("The output gradients pass back through the two output weights, then through "
+                    "each hidden tanh derivative. The full gradient table appears in the next phase.")
+        st.dataframe(pd.DataFrame({"output z": values["z2"], "prediction": values["predictions"],
+                                   "per-example loss": values["terms"]}).round(6), hide_index=True,
+                     width="stretch")
+    elif phase == "4 · Update":
+        training_ui.parameter_ledger(training_core.XOR_PARAMETER_NAMES, selected)
+        st.info(f"**What changed?** The focused alarm test has prediction "
+                f"{values['predictions'][focus_index]:.3f} for target "
+                f"{training_core.XOR_Y[focus_index]:+.0f}. Its error joins the other three tests "
+                "and flows backward through both hidden units before every parameter is updated.")
+        training_ui.check_number("tr_xor_param", "Your new output bias", selected.parameters_after[-1])
+    else:
+        after = training_core.xor_values(training_core.XOR_X, training_core.XOR_Y,
+                                         selected.parameters_after)
+        correct = int(((after["predictions"] >= 0) == (training_core.XOR_Y >= 0)).sum())
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("current loss", f"{after['loss']:.4f}")
+        c2.metric("XOR correct", f"{correct}/4")
+        c3.metric("completed epochs", state["epoch"])
+        c4.metric("constant-guess baseline", "2/4", help="Always sounding or always staying quiet gets half the cases.")
+        mistakes = np.flatnonzero((after["predictions"] >= 0) != (training_core.XOR_Y >= 0))
+        if len(mistakes):
+            hard = int(mistakes[np.argmin(np.abs(after["predictions"][mistakes]))])
+            st.info(f"**The current hard case:** door={int(training_core.XOR_X[hard, 0])}, "
+                    f"motion={int(training_core.XOR_X[hard, 1])} should be "
+                    f"{training_core.XOR_Y[hard]:+.0f}, but the network outputs "
+                    f"{after['predictions'][hard]:.3f}. Watch this row as training continues.")
+        grid = np.linspace(-.3, 1.3, 70)
+        xx, yy = np.meshgrid(grid, grid)
+        grid_pred = training_core.xor_values(np.c_[xx.ravel(), yy.ravel()], np.zeros(xx.size),
+                                             selected.parameters_after)["predictions"].reshape(xx.shape)
+        fig, ax = plt.subplots(figsize=(5.5, 3.8))
+        ax.contourf(xx, yy, grid_pred, levels=[-1.1, 0, 1.1], colors=["#FAECE7", "#E6F1FB"], alpha=.9)
+        ax.contour(xx, yy, grid_pred, levels=[0], colors="black", linewidths=1.4)
+        for x, y in zip(training_core.XOR_X, training_core.XOR_Y):
+            ax.scatter(x[0], x[1], color="#185FA5" if y > 0 else "#A32D2D", edgecolor="black", s=95)
+        ax.set(xlabel="x₁", ylabel="x₂", title="Decision boundary at this checkpoint")
+        st.pyplot(fig, width="stretch")
+    with st.expander("Compare two learning rates"):
+        compare_lr = st.select_slider("comparison η", [.03, .05, .10, .20], value=.20,
+                                      key="tr_xor_compare_lr")
+        def _losses(rate):
+            p, out = training_core.xor_init(int(seed_micro)), []
+            for epoch in range(120):
+                s = training_core.xor_step(p, lr=float(rate), epoch=epoch)
+                out.append(s.loss); p = s.parameters_after
+            return out
+        st.line_chart(pd.DataFrame({f"current η={lr_micro}": _losses(lr_micro),
+                                    f"comparison η={compare_lr}": _losses(compare_lr)}), height=220)
+        st.caption("Both runs start from identical weights. That makes the learning rate—not lucky "
+                   "initialization—the changing factor.")
+    numeric = training_core.finite_difference(
+        lambda p: training_core.xor_values(training_core.XOR_X, training_core.XOR_Y, p)["loss"],
+        selected.parameters_before,
+    )
+    training_ui.verification_panel(selected.loss, selected.gradients, numeric,
+                                   ("All four XOR rows are in this full-batch update.",
+                                    "This compact model uses the same forward → loss → backward → update loop as the explorer."))
 
 with tab_train:
     st.markdown("A 2-input MLP with one hidden layer learns **XOR** (targets ±1, tanh output, "

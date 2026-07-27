@@ -37,6 +37,12 @@ COPY = {
         "metric_deferred": "Deferred",
         "metric_remaining": "Remaining",
         "view_roadmap": "View ROADMAP.md",
+        "journey_title": "Training journey — see the same loop grow",
+        "journey_body": "Follow one idea across the lab: fit a line, classify a machine, train an XOR network, then predict the next character. Each stop exposes forward pass → loss → gradients → update.",
+        "journey_regression": "1 · Train a line",
+        "journey_classification": "2 · Train a classifier",
+        "journey_network": "3 · Train a network",
+        "journey_text": "4 · Train a text model",
         "levels": [
             (
                 "Level 1 · The neuron — foundations",
@@ -106,6 +112,12 @@ COPY = {
         "metric_deferred": "Ertelenen",
         "metric_remaining": "Kalan",
         "view_roadmap": "ROADMAP.md dosyasını göster",
+        "journey_title": "Eğitim yolculuğu — aynı döngünün büyümesini gör",
+        "journey_body": "Laboratuvar boyunca tek bir fikri izle: bir doğru uydur, bir makineyi sınıflandır, XOR ağı eğit, sonra sonraki karakteri tahmin et. Her durak ileri geçiş → loss → gradyan → güncellemeyi açar.",
+        "journey_regression": "1 · Bir doğruyu eğit",
+        "journey_classification": "2 · Sınıflandırıcıyı eğit",
+        "journey_network": "3 · Bir ağı eğit",
+        "journey_text": "4 · Bir metin modelini eğit",
         "levels": [
             (
                 "Seviye 1 · Nöron — temeller",
@@ -176,6 +188,24 @@ for title, intro, items, math in C["levels"]:
             for col, (path, label, icon) in zip(cols, row):
                 col.page_link(path, label=label, icon=icon)
         st.caption(f"➕ **{C['math_caption']}** {math}  *{C['math_suffix']}*")
+
+st.subheader(f"🏋 {C['journey_title']}")
+st.markdown(C["journey_body"])
+
+
+def _open_training_track(module: str, path: str):
+    st.session_state["module"] = module
+    st.session_state["_goto_page"] = path
+    st.rerun()
+
+
+journey = st.columns(4)
+if journey[0].button(C["journey_regression"], key="journey_regression", icon=":material/timeline:"):
+    _open_training_track("ML", "views/ml_regression.py")
+if journey[1].button(C["journey_classification"], key="journey_classification", icon=":material/scatter_plot:"):
+    _open_training_track("ML", "views/ml_classification.py")
+journey[2].page_link("views/mlp.py", label=C["journey_network"], icon=":material/network_node:")
+journey[3].page_link("views/transformer.py", label=C["journey_text"], icon=":material/smart_toy:")
 
 st.divider()
 

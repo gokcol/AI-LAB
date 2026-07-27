@@ -17,9 +17,9 @@ LANGUAGES = {
 
 DEFAULT_LANG = "en"
 
-# Turkish is fully built (catalog_tr.py + *.tr.md) but hidden for now. Flip this to
-# True to bring back the in-app language selector and Turkish rendering.
-MULTILINGUAL = False
+# The training journey is now maintained in both tracks, so expose the existing
+# Turkish catalog and language selector again.
+MULTILINGUAL = True
 
 TEXT = {
     "app.brand": {"en": "AI Lab", "tr": "AI Lab"},
@@ -233,4 +233,3 @@ def install_localization() -> None:
             setattr(st, name, wrap_list(getattr(st, name)))
 
     setattr(st, _LOCALIZED_FLAG, True)
-

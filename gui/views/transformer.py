@@ -16,6 +16,8 @@ import streamlit as st
 from sklearn.neural_network import MLPClassifier
 
 import lessons
+import training_ui
+from core import training as training_core
 
 CORPUS = (
     "the cat sat on the mat and the dog sat on the log. "
@@ -374,9 +376,152 @@ lessons.predict(
     "Predict the **next token** (softmax + cross-entropy over the vocabulary). Generation is sampling that distribution, appending the choice, and repeating. A GPT uses the same objective and loop, but replaces this live demo's fixed-window MLP with stacked causal Transformer blocks.",
 )
 
-tab_live, tab_theory, tab_quiz, tab_tasks, tab_ref = st.tabs(
-    ["⌨ Generate", "📖 Theory", "❓ Self-check", "🛠 Tasks", "📚 References"]
+tab_train, tab_live, tab_theory, tab_quiz, tab_tasks, tab_ref = st.tabs(
+    ["🏋 Train next-token model", "⌨ Generate", "📖 Theory", "❓ Self-check", "🛠 Tasks", "📚 References"]
 )
+
+with tab_train:
+    st.markdown("### The story")
+    st.info("A tiny text apprentice has read four short sentences about a cat and a dog. Pause it "
+            "after one character and ask, “What character usually comes next?” At first it has no "
+            "idea. Each correction changes only a small row of numbers, until its expectations begin "
+            "to mirror the patterns in the text. That humble prediction game is the training objective "
+            "behind language models at every scale.")
+    st.markdown("Start with the smallest transparent language model: a **bigram softmax**. Given "
+                "one character, it learns probabilities for the character that follows. This is "
+                "not a Transformer; it isolates the next-token training objective.")
+    vocab, train_pairs, valid_pairs = training_core.text_pairs()
+    controls = st.columns(3)
+    lr_text = controls[0].select_slider("learning rate η", [.1, .25, .5, .8], value=.5, key="tr_text_lr")
+    controls[1].metric("vocabulary", len(vocab))
+    controls[2].metric("training pairs", len(train_pairs))
+    with st.expander("Peek at the dataset (first 16 character pairs)"):
+        pairs_preview = np.vstack((train_pairs, valid_pairs))
+        split_preview = ["train"] * len(train_pairs) + ["validation"] * len(valid_pairs)
+        st.dataframe(pd.DataFrame({"split": split_preview[:16],
+                                   "context": [repr(vocab[c]) for c in pairs_preview[:16, 0]],
+                                   "target next character": [repr(vocab[t]) for t in pairs_preview[:16, 1]]}),
+                     hide_index=True, width="stretch")
+        st.caption("The last chronological character pairs are validation data: they measure the "
+                   "model but never update its weights.")
+    focus_index = st.selectbox(
+        "Focus on one training character pair", range(len(train_pairs)), key="tr_text_focus",
+        format_func=lambda i: f"pair {i + 1}: {repr(vocab[train_pairs[i, 0]])} → {repr(vocab[train_pairs[i, 1]])}",
+    )
+    with st.expander("Reveal the source of the pattern"):
+        st.code(training_core.TEXT_CORPUS, language=None)
+        st.caption("There is no hidden grammar rule. The model can only copy statistical patterns "
+                   "from these character transitions; it cannot understand cats or dogs.")
+    config = (float(lr_text), tuple(vocab))
+    state_key = "training_text"
+    state = st.session_state.get(state_key)
+    if state is None or state["config"] != config:
+        state = {"config": config, "weights": np.zeros((len(vocab), len(vocab))), "history": [], "epoch": 0}
+        st.session_state[state_key] = state
+    action = training_ui.action_bar("tr_text")
+    if action == "reset":
+        state = {"config": config, "weights": np.zeros((len(vocab), len(vocab))), "history": [], "epoch": 0}
+    elif action:
+        count = {"one": 1, "epoch": 1, "ten": 10, "all": 160}[action]
+        for _ in range(count):
+            step = training_core.bigram_step(state["weights"], train_pairs[:, 0], train_pairs[:, 1],
+                                             lr=float(lr_text), epoch=state["epoch"])
+            state["history"].append(step)
+            state["weights"] = step.parameters_after
+            state["epoch"] += 1
+    st.session_state[state_key] = state
+    if state["history"]:
+        selected = training_ui.checkpoint_picker("tr_text", state["history"])
+    else:
+        selected = training_core.bigram_step(state["weights"], train_pairs[:, 0], train_pairs[:, 1],
+                                             lr=float(lr_text))
+        st.info("The initial logits are all zero, so every possible next character begins equally likely.")
+    phase = training_ui.phase_picker("tr_text")
+    context_id, target_id = train_pairs[focus_index]
+    logits, probs, terms, _, _ = training_core.bigram_values(
+        selected.parameters_before, train_pairs[:, 0], train_pairs[:, 1]
+    )
+    focus_logits, focus_probs = logits[focus_index], probs[focus_index]
+    context_label, target_label = repr(vocab[context_id]), repr(vocab[target_id])
+    if phase == "1 · Forward":
+        st.latex(r"p=\operatorname{softmax}(W_c)")
+        st.caption(f"Focus pair: context {context_label} → target {target_label}")
+        st.dataframe(pd.DataFrame({"next character": [repr(ch) for ch in vocab], "logit": focus_logits,
+                                   "probability": focus_probs}).round(6), hide_index=True, width="stretch")
+    elif phase == "2 · Loss":
+        st.latex(r"L=-\log p_{\mathrm{target}}")
+        st.metric("focus-pair cross-entropy", f"{-np.log(focus_probs[target_id] + 1e-12):.6f}")
+        st.dataframe(pd.DataFrame({"focus": ["← chosen" if i == focus_index else "" for i in range(len(train_pairs))],
+                                   "context": [repr(vocab[c]) for c in train_pairs[:, 0]],
+                                   "target": [repr(vocab[t]) for t in train_pairs[:, 1]],
+                                   "cross-entropy": terms}).round(5), hide_index=True, width="stretch")
+    elif phase == "3 · Backward":
+        per_example_grad = focus_probs.copy(); per_example_grad[target_id] -= 1.0
+        st.latex(r"\frac{\partial L}{\partial W_c}=p-\operatorname{onehot}(y)")
+        st.dataframe(pd.DataFrame({"next character": [repr(ch) for ch in vocab],
+                                   "p − one_hot(target)": per_example_grad}).round(6),
+                     hide_index=True, width="stretch")
+        st.caption("The batch gradient averages these contributions over all training pairs that "
+                   "share each context character.")
+    elif phase == "4 · Update":
+        old = selected.parameters_before[context_id]
+        grad = selected.gradients[context_id]
+        delta = selected.delta[context_id]
+        new = selected.parameters_after[context_id]
+        st.markdown("**Updated logits for the focus context**")
+        st.dataframe(pd.DataFrame({"next character": [repr(ch) for ch in vocab], "before": old,
+                                   "gradient": grad, "change": delta, "after": new}).round(6),
+                     hide_index=True, width="stretch")
+        direction = "up" if delta[target_id] > 0 else "down"
+        st.info(f"**What changed?** The target character {target_label} moved {direction} by "
+                f"{delta[target_id]:.4f}. Its predicted probability was {focus_probs[target_id]:.1%}; "
+                "the update makes the focused transition less surprising next time.")
+        training_ui.check_number("tr_text_target", "Your new target-character logit", new[target_id])
+    else:
+        _, _, _, train_ce, _ = training_core.bigram_values(selected.parameters_after,
+                                                            train_pairs[:, 0], train_pairs[:, 1])
+        _, _, _, valid_ce, _ = training_core.bigram_values(selected.parameters_after,
+                                                            valid_pairs[:, 0], valid_pairs[:, 1])
+        uniform_ce = float(np.log(len(vocab)))
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("training cross-entropy", f"{train_ce:.3f}")
+        c2.metric("validation cross-entropy", f"{valid_ce:.3f}")
+        c3.metric("validation perplexity", f"{np.exp(valid_ce):.2f}")
+        c4.metric("uniform baseline CE", f"{uniform_ce:.3f}",
+                  help="Give every possible next character the same probability.")
+        _, valid_prob, _, _, _ = training_core.bigram_values(selected.parameters_after,
+                                                              valid_pairs[:, 0], valid_pairs[:, 1])
+        target_prob = valid_prob[np.arange(len(valid_pairs)), valid_pairs[:, 1]]
+        hard = int(np.argmin(target_prob))
+        st.info(f"**A surprising validation transition:** after {repr(vocab[valid_pairs[hard, 0]])}, "
+                f"the true next character is {repr(vocab[valid_pairs[hard, 1]])}, but the model gives "
+                f"it only {target_prob[hard]:.1%}. It has not seen this exact held-out transition enough.")
+        if state["history"]:
+            st.line_chart(pd.DataFrame({"training CE": [s.loss for s in state["history"]]}), height=220)
+        st.caption("Validation pairs are the final chronological part of the tiny corpus; they are "
+                   "not used in the update.")
+    with st.expander("Compare two learning rates"):
+        compare_lr = st.select_slider("comparison η", [.1, .25, .5, .8], value=.8,
+                                      key="tr_text_compare_lr")
+        def _losses(rate):
+            weights = np.zeros((len(vocab), len(vocab)))
+            out = []
+            for epoch in range(80):
+                s = training_core.bigram_step(weights, train_pairs[:, 0], train_pairs[:, 1],
+                                              lr=float(rate), epoch=epoch)
+                out.append(s.loss); weights = s.parameters_after
+            return out
+        st.line_chart(pd.DataFrame({f"current η={lr_text}": _losses(lr_text),
+                                    f"comparison η={compare_lr}": _losses(compare_lr)}), height=220)
+        st.caption("Both models read the same pairs in the same order. The chart isolates how their "
+                   "step size changes the speed and stability of learning.")
+    numeric = training_core.finite_difference(
+        lambda w: training_core.bigram_values(w, train_pairs[:, 0], train_pairs[:, 1])[3],
+        selected.parameters_before,
+    )
+    training_ui.verification_panel(selected.loss, selected.gradients, numeric,
+                                   ("Each softmax row sums to one.",
+                                    "The validation character pairs are never used for updates."))
 
 with tab_live:
     st.markdown("A tiny **character-level** language model trained on a few sentences — it "

@@ -22,6 +22,13 @@ import streamlit as st
 import i18n
 import ui
 
+TURKISH_TRANSLATION_NOTICE = (
+    "**Türkçe sürüm notu:** Şu anda menü ve sınırlı arayüz etiketleri "
+    "Türkçeleştirilmiştir; ders içeriğinin Türkçe çevirileri hazırlanmaktadır ve yakında "
+    "sunulacaktır. Mevcut çeviriler yapay zekâ tarafından oluşturulmuştur, insan tarafından "
+    "gözden geçirilmemiştir ve doğrulukları garanti edilmez. Mümkünse İngilizce sürümü kullanın."
+)
+
 # Make the lab root importable so `import core` works without `pip install -e .`
 # (e.g. on Streamlit Community Cloud, which only installs requirements.txt).
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
@@ -82,8 +89,8 @@ ANN = {
         page("views/worked_numbers.py", "page.worked_numbers", ":material/functions:"),
         page("views/worked_numbers2.py", "page.worked_numbers2", ":material/grid_on:"),
         page("views/activations.py", "page.activations", ":material/ssid_chart:"),
-        page("views/mlp.py", "page.mlp", ":material/network_node:"),
         page("views/optimizers.py", "page.optimizers", ":material/trending_down:"),
+        page("views/mlp.py", "page.mlp", ":material/network_node:"),
         page("views/deep_playground.py", "page.deep_nets", ":material/blur_on:"),
         page("views/regularization.py", "page.regularization", ":material/tune:"),
     ],
@@ -178,7 +185,8 @@ TRACK_HOME = {"ANN": "views/dashboard.py",
 _prev = st.session_state.get("_prev_module")
 st.session_state["_prev_module"] = module
 if _prev is not None and _prev != module:
-    st.session_state["_goto_page"] = TRACK_HOME[module]
+    # A cross-track journey button may already have chosen a specific destination.
+    st.session_state.setdefault("_goto_page", TRACK_HOME[module])
 
 # A page can also ask to jump to a page in ANOTHER module (Home links to ANN pages while
 # ML/Math is selected). By the time we get here the nav has been rebuilt for the new
@@ -187,6 +195,12 @@ _pending = st.session_state.get("_goto_page")
 if _pending:
     del st.session_state["_goto_page"]
     st.switch_page(_pending)
+
+# Keep the Turkish selector useful without presenting incomplete, AI-generated
+# translations as reviewed course material. This lives in the main pane so it
+# remains visible when the sidebar is collapsed on a phone.
+if i18n.lang() == "tr":
+    st.warning(TURKISH_TRANSLATION_NOTICE, icon="⚠️")
 
 with st.sidebar:
     for section, pages in MODULES[module].items():
