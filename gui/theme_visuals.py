@@ -12,6 +12,7 @@ import functools
 import io
 import re
 import threading
+import textwrap
 import uuid
 import xml.etree.ElementTree as ET
 
@@ -160,6 +161,48 @@ def diagram_html(body: str, selected: str) -> str:
     return _SVG.sub(adapt, body)
 
 
+def _legend_rows(fig, legends, temporary):
+    """Lay legends below all plot ink, wrapping into rows within figure width.
+
+    The source legends are hidden by the caller. Separate figure-level rows
+    avoid covering bars, reference lines, labels, or another subplot. They are
+    included by bbox_inches='tight' without shrinking any data axes.
+    """
+    if not legends:
+        return
+    fig.draw_without_rendering()
+    renderer = fig.canvas.get_renderer()
+    available = fig.bbox.width * .94
+    bottom = fig.get_tightbbox(renderer).y0 * fig.dpi - 10 * fig.dpi / 72
+    for index, (ax, original) in enumerate(legends):
+        labels = [text.get_text() for text in original.get_texts()]
+        font = original.get_texts()[0].get_fontproperties().copy()
+        # Wrap prose without breaking mathematical expressions or long words.
+        width = max(16, int(available / (font.get_size_in_points() * fig.dpi / 72 * .62)) - 7)
+        labels = [textwrap.fill(label, width, break_long_words=False, break_on_hyphens=False)
+                  if '$' not in label else label for label in labels]
+        title = original.get_title().get_text()
+        if len(legends) > 1 and ax is not None:
+            title = ax.get_title() or title or f"Plot {index + 1}"
+        if '$' not in title:
+            title = textwrap.fill(title, width, break_long_words=False, break_on_hyphens=False)
+        for columns in range(min(4, len(labels)), 0, -1):
+            row = fig.legend(original.legend_handles, labels, title=title or None,
+                             prop=font, title_fontsize=font.get_size_in_points(),
+                             loc="upper center", bbox_to_anchor=(.5, bottom / fig.bbox.height),
+                             bbox_transform=fig.transFigure, ncols=columns,
+                             borderaxespad=0, frameon=False,
+                             handlelength=original.handlelength,
+                             handler_map=original.get_legend_handler_map())
+            temporary.append(row)
+            bounds = row.get_window_extent(renderer)
+            if bounds.width <= available or columns == 1:
+                bottom = bounds.y0 - 10 * fig.dpi / 72
+                break
+            row.remove()
+            temporary.pop()
+
+
 def figure_svg(fig, *, selected="light", **save_options) -> str:
     """Export a sharp plot with themed furniture and readable series colors.
 
@@ -171,6 +214,7 @@ def figure_svg(fig, *, selected="light", **save_options) -> str:
     from matplotlib import rc_context
 
     saved = []
+    temporary_legends = []
     signal_ids = set()
     overlay_ids = set()
     tokens = {"#010203": "var(--ailab-panel)", "#020304": "var(--ailab-ink)",
@@ -181,6 +225,13 @@ def figure_svg(fig, *, selected="light", **save_options) -> str:
 
     with _LOCK:
         try:
+            legends = [(ax, ax.get_legend()) for ax in fig.axes if ax.get_legend() is not None]
+            legends += [(None, legend) for legend in fig.legends]
+            legends = [(ax, legend) for ax, legend in legends
+                       if legend.get_visible() and legend.get_texts()]
+            for _, legend in legends:
+                set_prop(legend, "visible", False)
+            _legend_rows(fig, legends, temporary_legends)
             set_prop(fig.patch, "facecolor", "#010203")
             for ax in fig.axes:
                 # Mark series and annotation arrows independently of plot
@@ -238,12 +289,22 @@ def figure_svg(fig, *, selected="light", **save_options) -> str:
                         set_prop(line, "color", "#030405")
             for text in fig.texts:
                 set_prop(text, "color", "#020304")
+            for legend in temporary_legends:
+                for text in legend.findobj(Text):
+                    set_prop(text, "color", "#020304")
+                for handle in legend.legend_handles:
+                    if handle is not None:
+                        gid = "signal-" + uuid.uuid4().hex
+                        signal_ids.add(gid)
+                        set_prop(handle, "gid", gid)
             buf = io.StringIO()
             options = {"bbox_inches": "tight", **save_options, "format": "svg"}
             options.pop("dpi", None)
             with rc_context({"svg.fonttype": "none"}):
                 fig.savefig(buf, **options)
         finally:
+            for legend in temporary_legends:
+                legend.remove()
             for artist, prop, value in reversed(saved):
                 getattr(artist, "set_" + prop)(value)
     svg = buf.getvalue()

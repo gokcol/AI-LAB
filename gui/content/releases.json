@@ -1,6 +1,16 @@
 [
   {
     "version": "1.14",
+    "revision": 7,
+    "date": "2026-10-16",
+    "title": "Plot legends without overlaps",
+    "changes": [
+      "**Unobstructed plots:** legends now sit in a separate row below Matplotlib charts, so bars, curves and reference lines remain visible. This fixes the [high-dimensional distance histogram](/math_vectors) and [probability distributions](/math_probability) and applies across the lab.",
+      "**Clearer comparisons:** longer legends wrap into rows, and charts with multiple panels keep separate, labelled legend groups. The layout works in light and dark themes."
+    ]
+  },
+  {
+    "version": "1.14",
     "revision": 6,
     "date": "2026-10-16",
     "title": "Brighter plot lines and arrows",

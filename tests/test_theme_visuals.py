@@ -10,6 +10,54 @@ import pytest
 from gui.theme_visuals import diagram_html, figure_svg, plot_color
 
 
+@pytest.mark.parametrize('example', ['bernoulli', 'distances', 'subplots'])
+def test_legend_rows_do_not_cover_data_or_axis_labels_and_restore_the_figure(example, monkeypatch):
+    fig, axes = plt.subplots(1, 2 if example == 'subplots' else 1,
+                             figsize=(7.2 if example == 'subplots' else 4.7, 3.2))
+    axes = np.atleast_1d(axes)
+    for index, ax in enumerate(axes):
+        if example == 'bernoulli':
+            ax.bar([0, 1], [.5, .5], color='#185fa5')
+            ax.axvline(.5, color='#c0507a', label='mean = 0.50')
+            ax.axvspan(0, 1, color='#c0507a', alpha=.08, label='±1 std')
+        else:
+            ax.hist([1, 1, 2, 2, 2, 3], color='#185fa5')
+            ax.axvline(.9, color='#c0507a', label='min 0.90')
+            ax.axvline(9.63, color='#1d9e75', label='max 9.63')
+        ax.set(xlabel='pairwise distance' if example != 'bernoulli' else 'outcome',
+               ylabel='count', title=f'Distribution {index + 1}')
+        ax.legend(frameon=example != 'distances', fontsize=8)
+    fig.tight_layout()
+    fig.canvas.draw()
+    source = [(ax.get_legend(), ax.get_legend().get_bbox_to_anchor().bounds,
+               ax.get_position().bounds) for ax in axes]
+    save = fig.savefig
+    observed = []
+    def checked_save(*args, **kwargs):
+        fig.draw_without_rendering()
+        renderer = fig.canvas.get_renderer()
+        data_bottom = min(ax.get_tightbbox(renderer).y0 for ax in axes)
+        rows = [legend.get_window_extent(renderer) for legend in fig.legends]
+        assert len(rows) == len(axes)
+        assert all(row.y1 < data_bottom for row in rows)
+        assert all(row.x0 >= 0 and row.x1 <= fig.bbox.width for row in rows)
+        assert all(not a.overlaps(b) for i, a in enumerate(rows) for b in rows[i + 1:])
+        assert all(not legend.get_visible() for legend, _, _ in source)
+        observed.append(rows)
+        return save(*args, **kwargs)
+    monkeypatch.setattr(fig, 'savefig', checked_save)
+    for selected in ('light', 'dark'):
+        svg = figure_svg(fig, selected=selected)
+        ET.fromstring(svg)
+        assert not fig.legends
+        for ax, (legend, anchor, position) in zip(axes, source):
+            assert ax.get_legend() is legend and legend.get_visible()
+            assert legend.get_bbox_to_anchor().bounds == anchor
+            assert ax.get_position().bounds == position
+    assert len(observed) == 2
+    plt.close(fig)
+
+
 @pytest.mark.parametrize('color', ['#185fa5', '#1d6fb8', '#c0507a', '#1d9e75', '#a32d2d', '#000000', '#0000ff'])
 def test_series_palette_has_clear_contrast_against_dark_panels(color):
     from matplotlib.colors import to_rgb
