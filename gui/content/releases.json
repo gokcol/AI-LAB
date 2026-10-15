@@ -1,6 +1,15 @@
 [
   {
     "version": "1.14",
+    "revision": 4,
+    "date": "2026-10-15",
+    "title": "A timeline that follows your theme",
+    "changes": [
+      "**Consistent About colors:** the author’s career timeline now uses your selected theme for its background, labels, connecting lines and milestones, including Dark, Browser default and Color-blind safe."
+    ]
+  },
+  {
+    "version": "1.14",
     "revision": 3,
     "date": "2026-10-15",
     "title": "Clearer visit statistics",
