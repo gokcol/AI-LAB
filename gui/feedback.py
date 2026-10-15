@@ -276,6 +276,9 @@ def reader_lang() -> str:
     extra -- which matters, because these very notices promise no profiling. The Terms
     panel writes the same key, so switching there switches the consent text too.
     """
+    from gui import i18n
+    if not i18n.MULTILINGUAL:
+        return "en"
     if "reader_lang" not in st.session_state:
         loc = (getattr(st.context, "locale", None) or "en").lower() \
             if AUTODETECT_LANGUAGE else "en"
@@ -555,7 +558,7 @@ def render_form() -> None:
 
         cap_l, cap_r = st.columns([0.44, 0.56])
         with cap_l:
-            st.markdown("<div style='font-size:.83rem;color:#56697F;margin-bottom:.25rem'>"
+            st.markdown("<div class='ailab-muted' style='font-size:.83rem;margin-bottom:.25rem'>"
                         "Type the characters you see:</div>", unsafe_allow_html=True)
             st.image(st.session_state["fb_captcha_png"])
         with cap_r:
@@ -567,7 +570,7 @@ def render_form() -> None:
         # NOTE: keep this at the form's top level. Nesting a form_submit_button inside
         # st.columns makes the submission untestable via AppTest, and an unverifiable
         # submit path is not worth a nicer row.
-        st.markdown("<div style='font-size:.82rem;color:#7A8A99;margin:-.2rem 0 .5rem'>"
+        st.markdown("<div class='ailab-muted' style='font-size:.82rem;margin:-.2rem 0 .5rem'>"
                     "Anonymous is completely fine — just write the message.</div>",
                     unsafe_allow_html=True)
         submitted = st.form_submit_button("Send feedback", icon=":material/send:",

@@ -13,6 +13,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))   # gui/
 import numpy as np
 import pandas as pd
 import streamlit as st
+from gui.resource_guard import limited_training
 from sklearn.neural_network import MLPClassifier
 
 import lessons
@@ -28,7 +29,8 @@ CORPUS = (
 K = 5   # context window (characters)
 
 
-@st.cache_resource(show_spinner=False)
+@st.cache_resource(show_spinner=False, max_entries=16)
+@limited_training
 def train_lm():
     vocab = sorted(set(CORPUS))
     c2i = {c: i for i, c in enumerate(vocab)}

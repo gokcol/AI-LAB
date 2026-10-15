@@ -18,6 +18,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))   # gui/
 import matplotlib.pyplot as plt
 import numpy as np
 import streamlit as st
+from gui.resource_guard import limited_training
 from scipy.stats import wasserstein_distance
 
 import lessons
@@ -34,7 +35,7 @@ _MAP_SVG = '''<div style="text-align:center;margin:0.4rem 0 1rem"><svg viewBox="
 _TARGET = "two bumps"
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, max_entries=64)
 def _target_samples(n=4000, seed=0):
     """A 1-D two-bump distribution: small enough to see, hard enough to be interesting
     (a single Gaussian would let every method look equally good)."""
@@ -43,7 +44,8 @@ def _target_samples(n=4000, seed=0):
     return np.where(pick, rng.normal(-1.6, 0.35, n), rng.normal(1.1, 0.55, n))
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, max_entries=64)
+@limited_training
 def _diffusion_samples(steps, nsamp, seed=11):
     """Sample the toy mixture with a deterministic, step-count-independent RNG."""
     rng = np.random.default_rng(seed)

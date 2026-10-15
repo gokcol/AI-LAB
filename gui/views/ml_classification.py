@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import streamlit as st
+from gui.resource_guard import limited_training
 
 import lessons
 import ml_lessons
@@ -21,6 +22,7 @@ def _sigmoid(z):
     return 1.0 / (1.0 + np.exp(-np.clip(z, -30, 30)))
 
 
+@limited_training
 def _fit_logreg(X, y, lr=0.3, steps=800):
     """Logistic regression via gradient descent; returns a proba(X) function."""
     mu, sd = X.mean(0), X.std(0) + 1e-9

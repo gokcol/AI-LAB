@@ -1,0 +1,23 @@
+name: Learning lab checks
+on: [push, pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      MPLBACKEND: Agg
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      AILAB_ENABLE_SANDBOX: '0'
+      AILAB_ENABLE_TESTS: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -r requirements-release.txt
+      - run: pip install --no-deps -e '.[gui,dev]'
+      - run: pip check
+      - run: python tools/check_release_notes.py
+      - run: python -m pytest -q
+      - run: python -m pytest -q -m slow tests/test_pages_render.py

@@ -33,7 +33,7 @@ Opens at http://localhost:8501. `start.sh` writes a PID to `.gui.pid` and logs t
 - **Playgrounds** — interactive neuron, MLP, optimizer, regularization, attention,
   tokenization, and tiny-GPT lessons wired to the lab's reusable concepts.
 - **Experiments** — per-experiment Overview (README), Code, and Run (captures stdout).
-  The public UI is read-only; personal notes stay in local files, not browser-editable forms.
+  Experiment source stays read-only; learning notes and checkpoints are saved in the visitor's browser, with JSON export/import.
 - **Infobase** — renders the `infobase/*.md` notes.
 - **Tests** — local-only; runs `pytest -q` and shows passed/skipped/failed. Enabled by
   `./start.sh` through `AILAB_ENABLE_TESTS=1`.
@@ -73,3 +73,39 @@ gui/
 Adding an experiment under `experiments/tierN_*/eNN_*/` makes it appear
 automatically (Dashboard, Experiments). New `infobase/*.md` notes appear in the
 Infobase screen with no code change.
+
+
+Every public route is registered independently of the selected sidebar track, so shared
+links work in fresh sessions. The private Sandbox and Tests routes remain opt-in.
+Activation tabs execute lazily and cache bounded simulation results.
+
+The learning store is versioned and validated, capped at 500 KB and 100 notebook entries.
+Do not put credentials or personal information in notes. JSON import is data only: the
+app never executes uploaded code. Progress is self-assessed, not a certificate or grade.
+
+### Reproduce the deployed environment
+
+For **Linux x86_64 and Python 3.12**, `requirements-release.txt` pins the complete
+production package set, including indirect dependencies and scikit-learn:
+
+```bash
+python3.12 -m venv .venv
+. .venv/bin/activate
+pip install -r requirements-release.txt
+pip install --no-deps -e .
+pip check
+streamlit run gui/app.py
+```
+
+For other supported Python/platform combinations, use the portable `.[gui]` extra.
+PyTorch is optional and separate (`requirements-dl.txt`); e12/e13 use the same
+MNIST data, initial parameters and minibatch order. Dataset downloads require
+`--download`. These training runs stay local on the public website.
+
+The [four-session beginner path](https://ai-lab.gokcol.online/beginner_path) is
+complete in English and Turkish; human review is pending. Other lessons show
+partial translation status. Challenge runs now require a recorded prediction
+before a separate Run action. Results and explanations finish the same notebook
+entry, preserving its original seed, settings and prediction. Export JSON from
+My learning to back up browser storage; this is a self-study record, not an exam
+integrity system.

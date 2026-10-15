@@ -1,0 +1,119 @@
+[
+  {
+    "version": "1.13",
+    "date": "2026-09-20",
+    "title": "Readable expandable sections",
+    "changes": [
+      "**Dark-mode reading:** expandable headings now stay readable when opened, closed, hovered or focused with the keyboard. This applies to release history, lesson explanations, hints and worked solutions across the lab."
+    ]
+  },
+  {
+    "version": "1.12",
+    "date": "2026-09-20",
+    "title": "Readable dark mode",
+    "changes": [
+      "**Clearer dark-mode controls:** buttons, module choices, menus, form fields and alerts now use contrasting text and dark backgrounds. Panels, tabs and keyboard-focus indicators are easier to see. The same improvements apply when Browser default follows a dark system theme."
+    ]
+  },
+  {
+    "version": "1.11",
+    "date": "2026-09-20",
+    "title": "Clearer language availability",
+    "changes": [
+      "**EN and TR are visible in the language selector:** English is selected by default. Choosing TR keeps the English content and shows a Turkish notice at the top of Home explaining that translations are in progress."
+    ]
+  },
+  {
+    "version": "1.10",
+    "date": "2026-09-20",
+    "title": "English-only for now",
+    "changes": [
+      "**Language availability:** the Turkish preview is temporarily disabled. Lessons, navigation, terms and feedback notices are currently shown in English."
+    ]
+  },
+  {
+    "version": "1.09",
+    "date": "2026-09-20",
+    "title": "Helping learners discover AI Lab",
+    "changes": [
+      "**Search-engine discovery:** public learning pages now have a sitemap and crawler guidance to help search engines find the lab and its lessons."
+    ]
+  },
+  {
+    "version": "1.08",
+    "date": "2026-09-20",
+    "title": "A clearer release history",
+    "changes": [
+      "**Updates for learners:** What’s new focuses on changes to lessons, exercises and the learning experience."
+    ]
+  },
+  {
+    "version": "1.07",
+    "date": "2026-09-20",
+    "title": "Reliable training journey links",
+    "changes": [
+      "**Move between training lessons without an error:** the ANN and ML overview shortcuts now open regression, classification, neural-network and text-model lessons directly, including when the lesson belongs to another track."
+    ]
+  },
+  {
+    "version": "1.05",
+    "date": "2026-09-20",
+    "title": "Predict, rebuild and compare",
+    "changes": [
+      "**A complete bilingual beginner path:** four short sessions connect [one neuron, learning an update, XOR and evaluation](/beginner_path), with numeric answers and implementation checks. Translation and human-review status are explicit.",
+      "**Record before running:** [bridge experiments](/bridge_lab), [debugging](/debugging_lab) and [evaluation challenges](/evaluation_lab) save your prediction and settings before revealing results. Add an explanation and compare runs in [My learning](/my_learning).",
+      "**Find the runnable exercise from the lesson:** direct links open the matching NumPy/PyTorch MNIST, attention, multihead or Transformer-block experiment. Quizzes now offer progressive hints.",
+      "**Clearer scope for every curriculum lesson:** specific simplifying assumptions, guide dates and human-review status appear alongside prerequisites and correction links.",
+      "**Reproducible deployment:** all production dependencies, including scikit-learn and indirect dependencies, are pinned to the tested Python 3.12 environment."
+    ]
+  },
+  {
+    "version": "1.04",
+    "date": "2026-09-20",
+    "title": "A more resilient public learning lab",
+    "changes": [
+      "**Fair access to calculations:** shared computation limits and short training cooldowns help keep the lab responsive. If the lab is busy, a retry message explains when to try again.",
+      "**Stronger protection against automated probes:** sensitive-file requests are rejected before reaching the app, and excessive web requests receive a clear 429 response.",
+      "**Normal learning stays open:** lessons, notebooks and interactive experiments remain available, with browsing allowances designed for shared networks."
+    ]
+  },
+  {
+    "version": "1.03",
+    "date": "2026-09-20",
+    "title": "Follow what changes in the lab",
+    "changes": [
+      "**What’s new is now on the homepage.** See the latest changes on Welcome and browse every release in the What’s new tab.",
+      "**Catch up on the learning tools:** try the [20-minute introduction](/start_here), [saved checkpoints and notebook](/my_learning), or [debugging challenges](/debugging_lab).",
+      "**Release notes stay with each update.** Every future deployment must include a new dated entry describing what changed."
+    ]
+  },
+  {
+    "version": "1.02",
+    "date": "2026-09-20",
+    "title": "A guided learning journey",
+    "changes": [
+      "**Start here:** a [20-minute introduction](/start_here) to one neuron, in English and Turkish.",
+      "**Your learning, saved:** [checkpoints, bookmarks and a notebook](/my_learning) persist in your browser, with run comparisons and JSON export/import.",
+      "**A clearer next step:** the [Study Coach](/study_coach) uses your progress; lessons show goals, prerequisites and next steps.",
+      "**Practise before revealing answers:** predictions, quiz hints, [debugging](/debugging_lab) and [evaluation challenges](/evaluation_lab).",
+      "**Five new code experiments:** NumPy and PyTorch MNIST, single-head and multihead attention, and a Transformer block. Explore [Build the bridges](/bridge_lab); MNIST training runs locally.",
+      "**Fixes:** reliable direct lesson links and activation simulations that compute only the selected tab."
+    ]
+  },
+  {
+    "version": "1.01",
+    "date": "2026-07-27",
+    "title": "Step-by-step training labs",
+    "changes": [
+      "Four new step-by-step training labs are now live: delivery-time regression, factory-failure classification, an XOR neural network, and a next-character text model. Each lets you inspect the same forward → loss → backward → update loop, follow one example, compare learning rates, and check results against held-out data or a baseline. The Turkish menu and selected interface labels are also being tested as an AI-generated preview; full, human-reviewed Turkish lesson translations are in progress. Please use English where accuracy matters."
+    ]
+  },
+  {
+    "version": "1.0",
+    "date": "2026-07-26",
+    "title": "The lab opens to everyone",
+    "changes": [
+      "Initial release — the ANN track (single neuron → a small GPT), classical ML (M0–M8), Math foundations (X1–X6), worked numeric examples, an activation-functions deep dive, live playgrounds throughout, and this feedback form."
+    ]
+  }
+]

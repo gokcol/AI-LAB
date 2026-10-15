@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import streamlit as st
+from gui.resource_guard import limited_training
 from matplotlib.colors import ListedColormap
 
 import lessons
@@ -36,7 +37,8 @@ def _make_opt(name, params, lr):
     return SGD(params, lr=lr)
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, max_entries=64)
+@limited_training
 def train(hidden: int, lr: float, opt_name: str, epochs: int, seed: int):
     model = MLP(2, [hidden, 1], nonlin="tanh", out_nonlin="tanh", seed=seed)
     opt = _make_opt(opt_name, model.parameters(), lr)

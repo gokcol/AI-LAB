@@ -6,6 +6,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))  # gui/
 import matplotlib.pyplot as plt
 import numpy as np
 import streamlit as st
+from gui.resource_guard import limited_training
 
 import lessons
 import ml_lessons2
@@ -20,6 +21,7 @@ def _kernel(A, B, kind, gamma):
     return np.exp(-gamma * np.maximum(sq, 0.0))
 
 
+@limited_training
 def _fit(K, y, C, lr=0.3, iters=500):
     """Kernel soft-margin classifier: min mean hinge + (λ/2) aᵀKa, via (sub)gradient descent."""
     n = len(y)

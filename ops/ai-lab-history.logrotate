@@ -1,0 +1,22 @@
+# Install as /etc/logrotate.d/ai-lab-history (before the generic nginx rule).
+# First-match ownership plus ignoreduplicates keeps other sites on their own policy.
+/var/log/nginx/ai-lab.access.log {
+    daily
+    missingok
+    rotate 366
+    maxage 366
+    compress
+    delaycompress
+    notifempty
+    create 0640 www-data adm
+    ignoreduplicates
+    sharedscripts
+    prerotate
+        if [ -d /etc/logrotate.d/httpd-prerotate ]; then \
+            run-parts /etc/logrotate.d/httpd-prerotate; \
+        fi
+    endscript
+    postrotate
+        invoke-rc.d nginx rotate >/dev/null 2>&1
+    endscript
+}

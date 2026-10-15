@@ -14,6 +14,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))   # gui/
 import matplotlib.pyplot as plt
 import numpy as np
 import streamlit as st
+from gui.resource_guard import limited_training
 from matplotlib.colors import ListedColormap
 from sklearn.datasets import make_circles, make_moons
 from sklearn.model_selection import train_test_split
@@ -45,7 +46,8 @@ def _dataset(name, noise, seed):
     return _spiral(260, noise, seed)
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, max_entries=64)
+@limited_training
 def fit(name, arch_key, activation, noise, seed):
     X, y = _dataset(name, noise, seed)
     Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.3, random_state=0, stratify=y)
@@ -232,6 +234,7 @@ lessons.predict(
 )
 
 
+@limited_training
 def _double_descent():
     """Ridgeless regression on random ReLU features: the cleanest reproduction of double
     descent that runs in a second. Minimum-norm (pinv) is essential — the second descent

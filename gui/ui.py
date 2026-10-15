@@ -68,25 +68,106 @@ def _theme_overrides(selected: str) -> str:
     """Small overrides layered after the shared light-first lab styling."""
     dark = """
         :root { color-scheme: dark; --ailab-ink:#edf3fc; --ailab-muted:#b6c3d4;
-          --ailab-border:#34445b; --ailab-panel:rgba(25,35,50,.94); --ailab-blue:#72a7ff;
+          --ailab-border:#40536d; --ailab-panel:#1b2839; --ailab-blue:#91baff;
           --ailab-green:#50c9a3; --ailab-amber:#f1b85b; --ailab-coral:#ff8b8b; }
         .stApp, [data-testid="stAppViewContainer"] { background:#111926 !important; color:var(--ailab-ink) !important; }
-        h1, h2, h3, p, li, [data-testid="stMarkdownContainer"], [data-testid="stMarkdownContainer"] * { color:var(--ailab-ink); }
+        h1, h2, h3, h4, h5, h6, p, li, label, [data-testid="stMarkdownContainer"] { color:var(--ailab-ink); }
+        [data-testid="stMarkdownContainer"] a, [data-testid="stCaptionContainer"] a { color:var(--ailab-blue) !important; }
+        [data-testid="stCaptionContainer"] { opacity:1 !important; }
+        [data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] p,
+        .stCaptionContainer, .stCaptionContainer p { color:var(--ailab-muted) !important; }
         [data-testid="stSidebar"] { background:#172231 !important; border-right-color:var(--ailab-border) !important; }
-        [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3,
-        [data-testid="stSidebar"] [data-testid="stMarkdownContainer"],
-        [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] * { color:var(--ailab-ink) !important; }
+        [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] { color:var(--ailab-ink) !important; }
         [data-testid="stSidebar"] a { color:#dceaff !important; }
-        [data-testid="stSidebar"] a:hover { background:rgba(114,167,255,.16); color:#ffffff !important; }
-        div[data-testid="stMetric"], div[data-testid="stVerticalBlockBorderWrapper"], .ailab-step,
-        .st-key-fb_form { background:#1b2839 !important; border-color:var(--ailab-border) !important; box-shadow:none !important; }
-        button[data-baseweb="tab"] { background:#1b2839 !important; border-color:#40536d !important; color:#dce7f5 !important; }
-        button[data-baseweb="tab"]:hover { background:#24344a !important; border-color:#72a7ff !important; }
-        button[data-baseweb="tab"][aria-selected="true"] { background:#285fae !important; border-color:#72a7ff !important; }
-        .ailab-hero, .ailab-fb-head { background:#1b2839 !important; border-color:var(--ailab-border) !important; box-shadow:none !important; }
+        [data-testid="stSidebar"] a:hover { background:#24344a; color:#ffffff !important; }
+        [data-testid="stSidebar"] a [data-testid="stIconMaterial"] { color:inherit !important; }
+
+        /* Current Streamlit uses React Aria; do not rely on old Base Web selectors. */
+        button, [role="tab"], summary { color:var(--ailab-ink) !important; }
+        button *, [role="tab"] *, summary * { color:inherit !important; }
+        .stButton > button, .stDownloadButton > button, .stFormSubmitButton > button,
+        .stLinkButton > a, button[data-variant] {
+          background:var(--ailab-panel) !important; border-color:var(--ailab-border) !important;
+          color:var(--ailab-ink) !important; box-shadow:none !important;
+        }
+        .stLinkButton > a * { color:inherit !important; }
+        .stButton > button:hover, .stDownloadButton > button:hover,
+        .stFormSubmitButton > button:hover, .stLinkButton > a:hover,
+        button[data-variant]:hover { background:#2b3e58 !important; border-color:#91baff !important; }
+        button[kind="primary"], button[kind="primaryFormSubmit"],
+        button[data-variant][aria-checked="true"], button[data-variant][aria-pressed="true"] {
+          background:#285fae !important; color:#ffffff !important; border-color:#91baff !important;
+        }
+        button[kind="tertiary"], button[kind="tertiaryFormSubmit"] { background:transparent !important; }
+        button:disabled, button[data-disabled="true"] {
+          background:#182333 !important; color:#9eacc0 !important; border-color:#34445b !important; opacity:1;
+        }
+        button:focus-visible, a:focus-visible, [role="tab"]:focus-visible,
+        input:focus-visible, textarea:focus-visible, summary:focus-visible {
+          outline:2px solid #91baff !important; outline-offset:3px;
+        }
+        [data-testid="stTab"] { border-radius:8px; padding:0.5rem 0.75rem; }
+        [data-testid="stTab"][aria-selected="true"] { background:#243c5d; color:#ffffff !important; }
+        [data-testid="stTab"]:hover { background:#24344a; }
+        [data-testid="stTabsScrollRight"] { background:linear-gradient(90deg,transparent,#111926 65%) !important; }
+        [data-testid="stTabsScrollLeft"] { background:linear-gradient(270deg,transparent,#111926 65%) !important; }
+
+        input, textarea, select, [data-testid="stSelectbox"] [role="group"],
+        [data-testid="stMultiSelect"] [role="group"], [data-baseweb="select"] > div,
+        [data-testid="stNumberInputContainer"] {
+          background:var(--ailab-panel) !important; color:var(--ailab-ink) !important;
+          border-color:var(--ailab-border) !important; caret-color:var(--ailab-ink);
+        }
+        input::placeholder, textarea::placeholder { color:var(--ailab-muted) !important; opacity:1; }
+        [role="listbox"], [role="option"], [role="tooltip"], [data-rac][data-placement] {
+          background:var(--ailab-panel) !important; color:var(--ailab-ink) !important;
+          border-color:var(--ailab-border) !important;
+        }
+        [role="option"] * { color:inherit !important; }
+        [role="option"][data-focused], [role="option"]:hover { background:#2b3e58 !important; }
+        [role="option"][aria-selected="true"] { background:#285fae !important; color:#ffffff !important; }
+        [data-testid="stDialog"] [role="dialog"], [role="dialog"] {
+          background:#172231 !important; color:var(--ailab-ink) !important;
+        }
+        [data-testid="stVerticalBlock"], [data-testid="stVerticalBlockBorderWrapper"],
+        [data-testid="stExpander"] details, hr { border-color:var(--ailab-border) !important; }
+        /* Expanded headers paint their own light surface, separate from details. */
+        [data-testid="stExpander"] summary {
+          background:var(--ailab-panel) !important; color:var(--ailab-ink) !important;
+        }
+        [data-testid="stExpander"] details[open] > summary { background:#24344a !important; }
+        [data-testid="stExpander"] details > summary:hover,
+        [data-testid="stExpander"] details > summary:focus-visible { background:#2b3e58 !important; }
+        [data-testid="stVerticalBlock"][data-test-scroll-behavior],
+        [data-testid="stMetric"], [data-testid="stExpander"] details,
+        .ailab-step, .ailab-hero, .ailab-fb-head, .st-key-fb_form {
+          background:#1b2839 !important; border-color:var(--ailab-border) !important; box-shadow:none !important;
+        }
         .ailab-hero p, .ailab-fb-head p, .ailab-chip { color:var(--ailab-muted) !important; }
-        .ailab-chip { background:#223149 !important; border-color:#40536d !important; }
-        input, textarea, [data-baseweb="select"] > div { background:#1b2839 !important; color:#edf3fc !important; }
+        .ailab-hero h2, .ailab-fb-head h4 { color:var(--ailab-ink) !important; }
+        .ailab-chip { background:#223149 !important; border-color:var(--ailab-border) !important; }
+        .ailab-callout { background:#16382e; color:#d5f4e6; }
+        [data-testid="stAlertContainer"] { background:#20324a !important; color:#e0edff !important; border:1px solid #405b7c; }
+        [data-testid="stAlertContainer"]:has([data-testid="stAlertContentWarning"]) {
+          background:#352d20 !important; color:#ffe1a3 !important; border-color:#806533;
+        }
+        [data-testid="stAlertContainer"]:has([data-testid="stAlertContentError"]) {
+          background:#3c242a !important; color:#ffc3ca !important; border-color:#89505a;
+        }
+        [data-testid="stAlertContainer"]:has([data-testid="stAlertContentSuccess"]) {
+          background:#18372e !important; color:#bcebd8 !important; border-color:#3c7561;
+        }
+        [data-testid="stAlertContainer"] [data-testid="stMarkdownContainer"],
+        [data-testid="stAlertContainer"] p, [data-testid="stAlertContainer"] li { color:inherit !important; }
+        [data-testid="stCode"], [data-testid="stCode"] pre, [data-testid="stCode"] code {
+          background:#101b2b !important; color:#edf3fc !important;
+        }
+        [data-testid="stCode"] .token { color:#b9d7ff !important; }
+        [data-testid="stCode"] .token.comment { color:#9fafc5 !important; }
+        [data-testid="stMarkdownContainer"] :not(pre) > code,
+        [data-testid="stCaptionContainer"] code { background:#24344a; color:#d9e8ff; }
+        [data-testid="stMarkdownContainer"] table, [data-testid="stMarkdownContainer"] th,
+        [data-testid="stMarkdownContainer"] td { background:#1b2839; color:var(--ailab-ink); border-color:var(--ailab-border); }
     """
     accessible = """
         :root { --ailab-ink:#172033; --ailab-muted:#4b5b70; --ailab-border:#b8c9dc;
@@ -182,6 +263,8 @@ def inject_theme(selected: str = DEFAULT_THEME, zoom: int = DEFAULT_ZOOM) -> Non
             --ailab-amber: #c47a18;
             --ailab-coral: #e05f5f;
         }
+
+        .ailab-muted { color:var(--ailab-muted); }
 
         .stApp {
             background:

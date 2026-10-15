@@ -14,25 +14,23 @@ import os
 import streamlit as st
 
 import feedback
+from gui import i18n
 
 GUI = pathlib.Path(__file__).resolve().parents[1]
 ROOT = GUI.parent
 
-VERSION = "1.01"
-VERSION_HISTORY = [
-    ("27.07.2026", "1.01", "Four new step-by-step training labs are now live: delivery-time "
-                             "regression, factory-failure classification, an XOR neural network, "
-                             "and a next-character text model. Each lets you inspect the same "
-                             "forward → loss → backward → update loop, follow one example, compare "
-                             "learning rates, and check results against held-out data or a baseline. "
-                             "The Turkish menu and selected interface labels are also being tested "
-                             "as an AI-generated preview; full, human-reviewed Turkish lesson "
-                             "translations are in progress. Please use English where accuracy matters."),
-    ("26.07.2026", "1.0", "Initial release — the ANN track (single neuron → a small GPT), "
-                          "classical ML (M0–M8), Math foundations (X1–X6), worked numeric "
-                          "examples, an activation-functions deep dive, live playgrounds "
-                          "throughout, and this feedback form."),
-]
+# One source for the public notes and displayed app version.
+import json
+
+RELEASES = json.loads((GUI / "content" / "releases.json").read_text(encoding="utf-8"))
+VERSION = RELEASES[0]["version"]
+
+
+def _release_notes(release):
+    st.markdown(f"#### v{release['version']} · {release['title']}")
+    st.caption(release["date"])
+    st.markdown("\n\n".join(f"- {change}" for change in release["changes"]))
+
 
 # --------------------------------------------------------------------------- #
 # Graphics
@@ -92,11 +90,16 @@ def _request_terms(lang: str):
 _want = st.session_state.pop("_terms_request", None) or st.query_params.get("terms")
 _open_terms = _want in ("en", "tr")
 if _open_terms:
+    if not i18n.MULTILINGUAL:
+        _want = "en"
     st.session_state["reader_lang"] = _want
     for _k in ("_terms_pick_tab", "_terms_pick_dialog"):
         st.session_state[_k] = "Türkçe" if _want == "tr" else "English"
     if "terms" in st.query_params:
         del st.query_params["terms"]
+
+if not i18n.MULTILINGUAL and i18n.requested_lang() == "tr":
+    st.warning(i18n.TURKISH_UNAVAILABLE_NOTICE, icon="⚠️")
 
 st.markdown(_HERO_SVG, unsafe_allow_html=True)
 
@@ -108,13 +111,19 @@ st.markdown(_HERO_SVG, unsafe_allow_html=True)
 # above the fold say at a glance that there is more here than one long page.
 # Short labels keep the row usable on a phone, where the strip scrolls horizontally.
 # --------------------------------------------------------------------------- #
-(tab_welcome, tab_start, tab_method, tab_run,
+(tab_welcome, tab_news, tab_start, tab_method, tab_run,
  tab_terms, tab_fb, tab_about) = st.tabs(
-    ["👋 Welcome", "🚀 Start", "🎓 Method", "🖥 Run it",
+    ["👋 Welcome", "✨ What’s new", "🚀 Start", "🎓 Method", "🖥 Run it",
      "📜 Terms", "💬 Feedback", "👤 About"]
 )
 
 with tab_welcome:
+    st.page_link("views/start_here.py", label="Start here: understand one neuron in 20 minutes", icon=":material/flag:")
+    st.page_link("views/my_learning.py", label="Continue learning · saved checkpoints and notebook", icon=":material/bookmarks:")
+    with st.container(border=True):
+        st.markdown("### ✨ What’s new")
+        _release_notes(RELEASES[0])
+        st.caption("Open the What’s new tab above for earlier updates.")
     st.markdown(
         "**Welcome.** These are **my own study notes** — personal notes I curated for myself while "
         "relearning how modern AI actually works — **neural networks** from a single neuron to a "
@@ -156,6 +165,14 @@ with tab_welcome:
         + "</div>",
         unsafe_allow_html=True,
     )
+
+
+with tab_news:
+    st.markdown("### ✨ What’s new in AI Lab")
+    st.write("New lessons, learning tools and fixes, newest first. Updated with every release.")
+    for index, release in enumerate(RELEASES):
+        with st.expander(f"v{release['version']} · {release['date']} · {release['title']}", expanded=index < 2):
+            _release_notes(release)
 
 
 with tab_start:
@@ -326,16 +343,17 @@ def _terms_body(where: str = 'tab'):
     # One key per place this is rendered: the Terms tab and the footer dialog both call
     # _terms_body(), and a shared widget key raises DuplicateElementKey — which killed the
     # dialog the moment it opened.
-    key = f"_terms_pick_{where}"
-    if key not in st.session_state:
-        st.session_state[key] = "Türkçe" if lang == "tr" else "English"
-    sw = st.columns([0.62, 0.38])
-    with sw[1]:
-        st.segmented_control(
-            "Terms language", ["English", "Türkçe"], key=key,
-            label_visibility="collapsed",
-            on_change=_pick_terms_lang, args=(key,),
-        )
+    if i18n.MULTILINGUAL:
+        key = f"_terms_pick_{where}"
+        if key not in st.session_state:
+            st.session_state[key] = "Türkçe" if lang == "tr" else "English"
+        sw = st.columns([0.62, 0.38])
+        with sw[1]:
+            st.segmented_control(
+                "Terms language", ["English", "Türkçe"], key=key,
+                label_visibility="collapsed",
+                on_change=_pick_terms_lang, args=(key,),
+            )
 
     short, full = _terms_text(lang)
     st.markdown(short)
@@ -419,14 +437,6 @@ with tab_about:
         )
 
 
-    # --- version history -------------------------------------------------------- #
-    with st.container(border=True):
-        vh = st.columns([0.72, 0.28])
-        vh[0].markdown("### 🗓 Version history")
-        vh[1].link_button("⭐ Source on GitHub", "https://github.com/gokcol/AI-LAB",
-                          use_container_width=True)
-        for date, ver, notes in VERSION_HISTORY:
-            st.markdown(f"**v{ver}** · {date} — {notes}")
 
 
 st.divider()
@@ -443,7 +453,10 @@ st.caption(
     "⚠️ Study notes, not a textbook: **no guarantee of accuracy and no liability** for any "
     "error or omission — verify everything before relying on it."
 )
-terms_en, terms_tr = st.columns(2)
+if i18n.MULTILINGUAL:
+    terms_en, terms_tr = st.columns(2)
+else:
+    terms_en = st.container()
 terms_en.button(
     "📜 Terms of use & data",
     key="_open_terms_en",
@@ -452,14 +465,16 @@ terms_en.button(
     on_click=_request_terms,
     args=("en",),
 )
-terms_tr.button(
-    "🇹🇷 Kullanım Koşulları ve Veri Kullanımı",
-    key="_open_terms_tr",
-    type="tertiary",
-    use_container_width=True,
-    on_click=_request_terms,
-    args=("tr",),
-)
+if i18n.MULTILINGUAL:
+    terms_tr.button(
+        "🇹🇷 Kullanım Koşulları ve Veri Kullanımı",
+        key="_open_terms_tr",
+        type="tertiary",
+        use_container_width=True,
+        on_click=_request_terms,
+        args=("tr",),
+    )
+
 
 if _open_terms:
     _terms_dialog()

@@ -11,7 +11,7 @@ dependencies = [
 # Tier 0-1 need only numpy. matplotlib is for visualization helpers.
 viz = ["matplotlib>=3.8"]
 # The lab GUI (Streamlit dashboard over experiments/, infobase/, core/).
-gui = ["streamlit>=1.36", "matplotlib>=3.8", "pandas>=2.0", "watchdog>=4.0"]
+gui = ["streamlit>=1.58,<2", "matplotlib>=3.8", "pandas>=2.0", "watchdog>=4.0", "scikit-learn>=1.4", "scipy>=1.11", "threadpoolctl>=3.1"]
 # Tiers 3+ (PyTorch). NOTE: pin these in a Python 3.12 venv if 3.14 wheels lag.
 dl = ["torch>=2.2", "torchvision>=0.17"]
 # Tier 5

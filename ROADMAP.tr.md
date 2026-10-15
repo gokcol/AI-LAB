@@ -29,9 +29,9 @@ Durum: `[ ]` yapılacak · `[~]` devam ediyor · `[x]` tamam.
 - [ ] e17 — Seq2seq + attention bottleneck.
 
 ## Seviye 4 — Attention ve Transformers
-- [ ] e18 — Attention from scratch.
-- [ ] e19 — Multi-head self-attention.
-- [ ] e20 — Full Transformer block.
+- [x] e18 — Attention from scratch.
+- [x] e19 — Multi-head self-attention.
+- [x] e20 — Full Transformer block.
 - [x] e21 — nanoGPT-style char-level GPT.
 - [ ] e22 — BPE tokenization.
 

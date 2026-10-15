@@ -15,6 +15,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))   # gui/
 import matplotlib.pyplot as plt
 import numpy as np
 import streamlit as st
+from gui.resource_guard import limited_training
 from matplotlib.colors import ListedColormap
 from sklearn.datasets import make_moons
 from sklearn.model_selection import train_test_split
@@ -44,7 +45,8 @@ def _model(alpha, seed):
                                        alpha=alpha, max_iter=2500, random_state=seed))
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, max_entries=64)
+@limited_training
 def fit_alpha(alpha, seed):
     Xtr, Xval, Xte, ytr, yval, yte = _data(seed)
     clf = _model(alpha, seed).fit(Xtr, ytr)
@@ -61,7 +63,8 @@ def fit_alpha(alpha, seed):
             "test": clf.score(Xte, yte)}
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, max_entries=64)
+@limited_training
 def sweep(seed):
     Xtr, Xval, _Xte, ytr, yval, _yte = _data(seed)
     tr, val = [], []

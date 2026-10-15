@@ -83,4 +83,6 @@ def check_number(key: str, prompt: str, answer: float, tolerance=1e-3):
         if abs(float(guess) - float(answer)) <= tolerance:
             st.success("Correct within the displayed rounding tolerance.")
         else:
-            st.info(f"Not quite. Full-precision answer: `{answer:.6f}`.")
+            st.info("Not quite. Check the sign, units and the update rule before trying again.")
+            if st.button("Reveal the numeric answer", key=f"{key}_reveal"):
+                st.write(f"Full-precision answer: `{answer:.6f}`.")

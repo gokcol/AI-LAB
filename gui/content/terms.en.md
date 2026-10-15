@@ -30,3 +30,13 @@
 **6 · Availability.** This is a personal server run on a best-effort basis — it may be down, slow, or change without notice.
 
 **7 · Contact.** Questions, corrections, and removal requests: open an issue on [GitHub](https://github.com/gokcol/AI-LAB/issues) or use the feedback form below.
+
+
+### Learning checkpoints and notebook
+
+Checkpoints, bookmarks and notebook entries are saved in local storage in your browser.
+They are transmitted to and processed by the app during your active session so it can
+show your progress, but are not written to a server-side learner database. Importing a
+JSON learning file sends that file to the app for validation and temporary session use.
+Do not include sensitive information. Export a backup before clearing browser data;
+local storage is specific to this browser and this site's address.

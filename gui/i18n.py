@@ -17,11 +17,21 @@ LANGUAGES = {
 
 DEFAULT_LANG = "en"
 
-# The training journey is now maintained in both tracks, so expose the existing
-# Turkish catalog and language selector again.
-MULTILINGUAL = True
+# Set to True to re-enable Turkish throughout the site; translations are retained.
+MULTILINGUAL = False
+
+TURKISH_UNAVAILABLE_NOTICE = (
+    "**Türkçe çeviriler üzerinde çalışıyoruz.** Türkçe sürüm henüz kullanıma açık değil. "
+    "Şimdilik İngilizce sürümü görüntülüyorsunuz."
+)
 
 TEXT = {
+    "page.beginner_path": {"en": "Beginner path · 4 sessions", "tr": "Başlangıç yolu · 4 oturum"},
+    "page.start_here": {"en": "Start here · 20 minutes", "tr": "Buradan başla · 20 dakika"},
+    "page.my_learning": {"en": "My learning & notebook", "tr": "Öğrenme günlüğüm"},
+    "page.debugging_lab": {"en": "Debugging challenges", "tr": "Hata bulma alıştırmaları"},
+    "page.evaluation_lab": {"en": "Evaluation challenges", "tr": "Değerlendirme alıştırmaları"},
+    "page.bridge_lab": {"en": "Build the bridges", "tr": "Adım adım modeller"},
     "app.brand": {"en": "AI Lab", "tr": "AI Lab"},
     "app.language": {"en": "Language", "tr": "Dil"},
     "app.module": {"en": "Module", "tr": "Modül"},
@@ -117,7 +127,13 @@ def lang() -> str:
 
 
 def set_lang(value: str) -> None:
-    st.session_state["lang"] = value if value in LANGUAGES else DEFAULT_LANG
+    st.session_state["lang"] = value if MULTILINGUAL and value in LANGUAGES else DEFAULT_LANG
+
+
+def requested_lang() -> str:
+    """Keep the visitor's selection separate from the available content language."""
+    selected = st.session_state.get("app_language_dropdown", DEFAULT_LANG)
+    return selected if selected in LANGUAGES else DEFAULT_LANG
 
 
 def t(key: str, *, language: str | None = None) -> str:
@@ -129,9 +145,7 @@ def t(key: str, *, language: str | None = None) -> str:
 
 
 def select_language() -> str:
-    if not MULTILINGUAL:  # selector hidden — English only
-        return DEFAULT_LANG
-    current = lang()
+    current = requested_lang()
     codes = list(LANGUAGES)
     compact_labels = {"en": "EN", "tr": "TR"}
     selected = st.selectbox(
@@ -141,9 +155,10 @@ def select_language() -> str:
         format_func=compact_labels.get,
         key="app_language_dropdown",
         label_visibility="collapsed",
+        help=None if MULTILINGUAL else "Türkçe çeviriler devam ediyor; içerik şimdilik İngilizce gösterilir.",
     )
     set_lang(selected)
-    return selected
+    return lang()
 
 
 # --------------------------------------------------------------------------- #

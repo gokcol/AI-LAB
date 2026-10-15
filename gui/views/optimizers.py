@@ -14,6 +14,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))   # repo ro
 import matplotlib.pyplot as plt
 import numpy as np
 import streamlit as st
+from gui.resource_guard import limited_training
 
 import lessons
 from core.engine import Value
@@ -31,7 +32,8 @@ def _make_opt(name, params, lr):
     return SGD(params, lr=lr)
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, max_entries=64)
+@limited_training
 def run(name: str, lr: float, steps: int, A: float):
     """Minimize f(x,y) = A·x² + y² with the real engine + optimizer; record the path."""
     x, y = Value(START[0]), Value(START[1])

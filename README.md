@@ -74,3 +74,39 @@ uses the `.tr.md` file when present and falls back to English otherwise.
    can reconstruct the idea from memory.
 
 See [`ROADMAP.md`](ROADMAP.md) for the full plan and your progress checklist.
+
+
+## Guided learning (v1.02)
+
+Open **Start here** for a bilingual 20-minute introduction, then save a checkpoint
+on any lesson: explored, explained, or rebuilt. **My learning** contains bookmarks,
+notes, a comparison notebook, and JSON export/import. Records persist in your browser's
+local storage and are processed during your app session; no learner database is created.
+Use export before clearing browser data or changing devices.
+
+**Study Coach** suggests your next topic and a recall exercise from your saved progress.
+**Debugging challenges** cover divergence, leakage, saturation and wrong gradients.
+**Evaluation challenges** cover imbalance, retrieval misses and insufficient evidence.
+**Build the bridges** connects NumPy/PyTorch MNIST (e12/e13) to attention, multiple
+heads and a Transformer block (e18–e20). Heavy experiments run locally; the public
+server never downloads MNIST or launches PyTorch jobs from a visitor request.
+
+```bash
+pip install -e '.[gui,dev]'
+python -m pytest -q
+python -m pytest -q -m slow tests/test_pages_render.py
+```
+
+The GUI requires Streamlit 1.58+ and scikit-learn. The fast test suite covers learning
+imports and mathematical invariants; the slow suite renders every view. Check shared
+links in a fresh browser session as part of each release.
+
+## What's new and future updates
+
+The homepage shows the latest release on **Welcome**, with a dedicated **What's new**
+tab for the full history. Maintain `gui/content/releases.json` for every update:
+prepend a higher version, release date, title and learner-facing changes (including
+useful lesson links). Preserve published entries. The displayed app version comes
+from this same file. Run `python tools/check_release_notes.py` before deploying;
+`tools/release_update.sh` also compares against the live release and refuses updates
+without a new entry.

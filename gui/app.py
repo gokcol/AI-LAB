@@ -22,6 +22,7 @@ os.environ.setdefault("MPLBACKEND", "Agg")
 import streamlit as st
 import i18n
 import ui
+from urllib.parse import urlsplit
 
 # Streamlit can reload the entrypoint before imported helpers after a rapid save.
 # Reload the two small shared modules explicitly so controls cannot mix old and new APIs.
@@ -29,15 +30,16 @@ i18n = importlib.reload(i18n)
 ui = importlib.reload(ui)
 
 TURKISH_TRANSLATION_NOTICE = (
-    "**Türkçe sürüm notu:** Şu anda menü ve sınırlı arayüz etiketleri "
-    "Türkçeleştirilmiştir; ders içeriğinin Türkçe çevirileri hazırlanmaktadır ve yakında "
-    "sunulacaktır. Mevcut çeviriler yapay zekâ tarafından oluşturulmuştur, insan tarafından "
-    "gözden geçirilmemiştir ve doğrulukları garanti edilmez. Mümkünse İngilizce sürümü kullanın."
+    "**Türkçe önizleme:** Başlangıç rehberi Türkçe sunulur; diğer derslerde çeviri "
+    "kısmi olabilir. Çeviriler yapay zekâ tarafından üretilmiştir ve henüz insan "
+    "tarafından gözden geçirilmemiştir."
 )
 
 # Make the lab root importable so `import core` works without `pip install -e .`
 # (e.g. on Streamlit Community Cloud, which only installs requirements.txt).
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+
+from gui import curriculum, learning_ui, progress
 
 st.set_page_config(page_title="AI Lab", page_icon="🧠", layout="wide")
 i18n.install_localization()  # transparently localizes static UI text when lang == "tr"
@@ -65,6 +67,13 @@ with st.sidebar:
     # Seeded in session_state (rather than passing default=) so pages can switch tracks
     # programmatically without Streamlit warning about a widget that has both a default
     # and an API-set value.
+    route = urlsplit(st.context.url or "http://localhost/").path.rstrip("/").split("/")[-1]
+    route_changed = route != st.session_state.get("_route_seen", "")
+    st.session_state["_route_seen"] = route
+    if route_changed and route in curriculum.CATALOG:
+        st.session_state["module"] = curriculum.CATALOG[route].track
+    elif route_changed and route in {"ml_overview", "math_overview"}:
+        st.session_state["module"] = "ML" if route == "ml_overview" else "Math"
     st.session_state.setdefault("module", "ANN")
     module = st.segmented_control(
         i18n.t("app.module"), ["ANN", "ML", "Math"], key="module",
@@ -74,8 +83,14 @@ with st.sidebar:
     st.divider()
 
 
+_pages = {}
+
 def page(path: str, title_key: str, icon: str, *, default: bool = False):
-    return st.Page(path, title=i18n.t(title_key), icon=icon, default=default)
+    # Every route is registered on every request. Only Home owns the root URL.
+    if path not in _pages:
+        _pages[path] = st.Page(path, title=i18n.t(title_key), icon=icon,
+                               default=path == "views/home.py")
+    return _pages[path]
 
 
 # Shared across modules — a Python scratchpad with numpy + the lab's core preloaded.
@@ -172,6 +187,18 @@ MATH = {
     ],
 }
 MODULES = {"ANN": ANN, "ML": ML, "Math": MATH}
+for sections in MODULES.values():
+    sections[i18n.t("section.tools")] = [
+        page("views/beginner_path.py", "page.beginner_path", ":material/route:"),
+        page("views/start_here.py", "page.start_here", ":material/flag:"),
+        page("views/my_learning.py", "page.my_learning", ":material/bookmarks:"),
+        COACH,
+        page("views/debugging_lab.py", "page.debugging_lab", ":material/bug_report:"),
+        page("views/evaluation_lab.py", "page.evaluation_lab", ":material/fact_check:"),
+        page("views/bridge_lab.py", "page.bridge_lab", ":material/account_tree:"),
+    ]
+# Coach has one shared home in the tools group.
+ANN[i18n.t("section.overview")].remove(COACH)
 
 # Running pytest from a web request consumes substantial CPU and exposes developer
 # diagnostics. Keep it local-only unless an operator explicitly opts in.
@@ -187,10 +214,15 @@ if TESTS_ENABLED:
 SANDBOX_ENABLED = os.environ.get("AILAB_ENABLE_SANDBOX") == "1"
 if SANDBOX_ENABLED:
     for _sections in MODULES.values():
-        _sections[i18n.t("section.tools")] = [SANDBOX]
+        _sections[i18n.t("section.tools")].append(SANDBOX)
 
 # position="hidden": we render our own grouped links below, so the Module selector sits on top.
-nav = st.navigation(MODULES[module], position="hidden")
+registered = {}
+for sections in MODULES.values():
+    for pages in sections.values():
+        for p in pages:
+            registered[p.url_path] = p
+nav = st.navigation(list(registered.values()), position="hidden")
 
 # Selecting a *different* track opens that track's own overview — so clicking "ANN" lands
 # on the Dashboard rather than sitting on Home. On the very first run there is no previous
@@ -200,7 +232,7 @@ TRACK_HOME = {"ANN": "views/dashboard.py",
               "Math": "views/math_overview.py"}
 _prev = st.session_state.get("_prev_module")
 st.session_state["_prev_module"] = module
-if _prev is not None and _prev != module:
+if _prev is not None and _prev != module and not route_changed:
     # A cross-track journey button may already have chosen a specific destination.
     st.session_state.setdefault("_goto_page", TRACK_HOME[module])
 
@@ -230,4 +262,12 @@ with st.sidebar:
     st.divider()
     st.caption(f"{i18n.t('app.footer')} 🧠")
 
-nav.run()
+active_key = nav.url_path
+st.session_state["active_topic"] = active_key
+learning_ui.orientation(active_key)
+from gui.resource_guard import page_budget
+
+with page_budget():
+    nav.run()
+learning_ui.checkpoint(active_key)
+progress.sync_browser()

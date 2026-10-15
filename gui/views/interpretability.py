@@ -19,6 +19,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))   # gui/
 import matplotlib.pyplot as plt
 import numpy as np
 import streamlit as st
+from gui.resource_guard import limited_training
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
 
@@ -31,7 +32,7 @@ st.caption("Probe it, break it, and understand why one neuron rarely means one t
 N, K, DIM = 3000, 6, 12
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, max_entries=64)
 def _world(seed: int = 0):
     """Data with KNOWN generative factors, so 'did the model learn feature j' has a
     ground truth. Six independent bits drive twelve noisy observed inputs; the label is
@@ -43,7 +44,8 @@ def _world(seed: int = 0):
     return X, Z, y
 
 
-@st.cache_resource(show_spinner=False)
+@st.cache_resource(show_spinner=False, max_entries=16)
+@limited_training
 def _fit(width: int, seed: int = 0):
     X, Z, y = _world(seed)
     net = MLPClassifier((width,), max_iter=1200, random_state=0).fit(X[:2000], y[:2000])

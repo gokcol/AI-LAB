@@ -13,7 +13,7 @@ it. Rewrite these in your own words as you learn — that rewriting *is* the lea
 - [backpropagation.md](00_foundations/backpropagation.md) — the chain rule on a graph (e04, e06)
 
 ## 01 — Training  ·  02 — Architectures  ·  03 — LLM
-Stubs for now — fill them in as you reach Tiers 2–5.
+Concise concept maps connect the GUI lessons to runnable experiments and identify the remaining planned work.
 
 ## 04 — Derivations
 - [04_derivations/](04_derivations/) — rebuild the core math from memory.

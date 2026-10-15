@@ -46,11 +46,9 @@ def _run(path: pathlib.Path, tmp_path: pathlib.Path, timeout: float = 300.0):
     st.page_link is stubbed out. It resolves against the *active navigation*, which only
     exists when a page is reached through app.py, so a standalone render of dashboard /
     the_chain / ml_overview dies inside Streamlit with KeyError: 'url_pathname' — a
-    property of the harness, not of the page. AppTest cannot drive st.navigation, so the
-    choice is to stub the call or to leave three pages untested; stubbing keeps the other
-    ~200 lines of each page under test. The thing stubbing would hide — a link pointing at
-    a page that is not registered — is caught statically instead, in
-    test_page_link_targets_exist, which is a stronger check than a render anyway.
+    property of the isolated harness, not of the page. Stubbing keeps the remaining page
+    content under test. Static target checks cover all views; the training-journey test
+    below runs through app.py with real navigation to check cross-track link resolution.
     """
     from streamlit.elements.widgets.button import ButtonMixin
     from streamlit.testing.v1 import AppTest
@@ -101,6 +99,39 @@ def test_app_entrypoint_renders(tmp_path):
     at = _run(GUI / "app.py", tmp_path)
     assert not at.exception, at.exception
     assert at.get("tab"), "home page rendered no tabs"
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("overview,module", [("dashboard", "ANN"), ("ml_overview", "ML")])
+def test_training_journey_resolves_across_tracks(overview, module, tmp_path, monkeypatch):
+    """Use real navigation: isolated renders cannot catch broken cross-track shortcuts.
+
+    Journey links must resolve to registered lessons, without button handlers that
+    mutate the module widget after it has already been instantiated.
+    """
+    from streamlit.testing.v1 import AppTest
+    import lab
+    from gui import progress
+
+    monkeypatch.setenv("AILAB_FEEDBACK_DIR", str(tmp_path))
+    # Each AppTest owns a fresh component registry, unlike a running server.
+    monkeypatch.setattr(progress, "_component", None)
+    # Experiment execution is unrelated to navigation and tested separately.
+    monkeypatch.setattr(lab, "list_tiers", lambda: {})
+    at = AppTest.from_file(str(GUI / "app.py"), default_timeout=60)
+    at.session_state["module"] = module
+    at.switch_page(f"views/{overview}.py").run()
+    assert not at.exception, at.exception
+    journey = {link.proto.label: link.proto for link in at.get("page_link")
+               if " · Train a " in link.proto.label}
+    expected = {
+        "1 · Train a line": "ml_regression",
+        "2 · Train a classifier": "ml_classification",
+        "3 · Train a network": "mlp",
+        "4 · Train a text model": "transformer",
+    }
+    assert {label: link.page for label, link in journey.items()} == expected
+    assert all(link.page_script_hash for link in journey.values())
 
 
 def test_every_view_is_registered_or_deliberately_not():

@@ -11,6 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 import streamlit as st
+from gui import i18n
 
 
 @dataclass
@@ -19,6 +20,8 @@ class Question:
     options: list[str]
     answer: int          # index into options
     explanation: str
+    hint: str = ""
+    hints: tuple[str, ...] = ()
 
 
 @dataclass
@@ -33,28 +36,40 @@ class Lesson:
 
 
 def render_quiz(questions: list[Question], prefix: str) -> None:
-    """Immediate-feedback quiz. Picking an option reveals correct/explanation."""
+    """Optional deliberate practice with progressive hints and explicit reveal."""
+    from gui.practice import hints
     top = st.container()
     if st.button("Reset answers", key=f"{prefix}_reset"):
         for i in range(len(questions)):
             st.session_state.pop(f"{prefix}_q{i}", None)
+            st.session_state.pop(f"{prefix}_q{i}_hint_level", None)
         st.rerun()
 
+    practice = st.toggle("Try again with hints before revealing answers", value=True, key=f"{prefix}_practice")
     correct = answered = 0
     for i, q in enumerate(questions):
         st.markdown(f"**Q{i + 1}. {q.prompt}**")
         choice = st.radio(
-            "Your answer:", q.options, index=None,
+            "Your answer:", list(range(len(q.options))), index=None,
+            format_func=lambda n: i18n.localize(q.options[n]),
             key=f"{prefix}_q{i}", label_visibility="collapsed",
         )
         if choice is not None:
             answered += 1
-            if q.options.index(choice) == q.answer:
+            if choice == q.answer:
                 correct += 1
                 st.success(f"Correct — {q.explanation}")
             else:
                 right = q.options[q.answer]
-                st.error(f"Not quite. Answer: **{right}**. {q.explanation}")
+                if practice:
+                    st.info("Not quite. Try another explanation before revealing the answer.")
+                    hints(f"{prefix}_q{i}", q.hints or (
+                        "Name the inputs, operation and output. Which quantity does the question ask for?",
+                        q.hint or "Try a two-input numeric example and eliminate options that contradict its result."))
+                    if st.button("Reveal worked answer", key=f"{prefix}_reveal_{i}"):
+                        st.write(f"**{right}**. {q.explanation}")
+                else:
+                    st.error(f"Not quite. Answer: **{right}**. {q.explanation}")
         st.divider()
 
     with top:
@@ -84,8 +99,17 @@ def predict(prompt: str, reveal: str) -> None:
     learner commits to a guess *before* seeing the result. The wrong guesses are what
     make the idea stick (the generation effect). Reusable across every page."""
     st.markdown(f"🔮 **Predict first —** {prompt}")
-    with st.expander("Reveal the answer"):
-        st.markdown(reveal)
+    import hashlib
+    key = "prediction_" + hashlib.sha256(prompt.encode()).hexdigest()[:12]
+    guess = st.text_input("My prediction (before revealing)", key=key, max_chars=1000)
+    if st.button("Record my prediction", key=key + "_commit", disabled=not guess.strip()):
+        st.session_state[key + "_recorded"] = guess
+    if st.session_state.get(key + "_recorded"):
+        st.caption("Recorded before reveal: " + st.session_state[key + "_recorded"])
+        with st.expander("Reveal the answer"):
+            st.markdown(reveal)
+    else:
+        st.caption("Write a guess to unlock the explanation. It is fine to be wrong.")
 
 
 def solution(body: str, *, label: str = "Show worked solution") -> None:

@@ -30,3 +30,12 @@
 **6 · Erişilebilirlik.** Burası, elden geldiğince ayakta tutulan kişisel bir sunucudur — kapalı olabilir, yavaşlayabilir veya önceden haber verilmeksizin değişebilir.
 
 **7 · İletişim.** Sorular, düzeltmeler ve silme talepleri için: [GitHub](https://github.com/gokcol/AI-LAB/issues) üzerinden bir konu açın ya da aşağıdaki geri bildirim formunu kullanın.
+
+
+### Öğrenme kayıtları ve deney günlüğü
+
+İlerleme, yer imleri ve günlük kayıtları tarayıcının yerel depolamasında saklanır.
+İlerlemeyi göstermek için aktif oturum sırasında uygulamaya gönderilir ve işlenir;
+sunucuda kalıcı bir öğrenci veritabanına yazılmaz. JSON içe aktarma dosyayı doğrulama
+ve geçici oturum kullanımı için uygulamaya gönderir. Hassas bilgi eklemeyin. Tarayıcı
+verisini silmeden önce dışa aktararak yedek alın. Kayıtlar tarayıcıya ve site adresine özeldir.

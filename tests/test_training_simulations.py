@@ -98,11 +98,23 @@ def test_checkpoint_replay_is_exact():
     assert second.parameters_before == pytest.approx(first.parameters_after)
 
 
-def test_training_controls_have_active_turkish_ui_coverage():
-    assert i18n.MULTILINGUAL is True
+def test_turkish_can_be_disabled_without_losing_translations(monkeypatch):
+    from pathlib import Path
+    from gui import feedback
+
+    # Match Streamlit's app-directory import path for the retained catalog.
+    monkeypatch.syspath_prepend(str(Path(i18n.__file__).parent))
+    monkeypatch.setattr(i18n.st, "session_state", {"lang": "tr", "reader_lang": "tr"})
+    assert i18n.lang() == "en"
+    assert feedback.reader_lang() == "en"
+    assert i18n.localize("One training step") == "One training step"
     for label in ("🏋 Train step by step", "🔬 Training microscope", "One training step",
                   "🏋 Train next-token model"):
         assert label in TR
+    monkeypatch.setattr(i18n, "MULTILINGUAL", True)
+    assert i18n.lang() == "tr"
+    assert feedback.reader_lang() == "tr"
+    assert i18n.localize("One training step") == TR["One training step"]
 
 
 def test_bigram_invariants_and_training_beats_uniform_baseline():

@@ -79,8 +79,22 @@ st.divider()
 tab_today, tab_questions, tab_checks, tab_derivations, tab_template = st.tabs(C["tabs"])
 
 with tab_today:
+    from gui import curriculum, progress
     st.subheader(C["suggested_order"])
-    st.markdown(C["today"])
+    track = st.selectbox("Choose today's track", ["ANN", "ML", "Math"])
+    candidates = [t for t in curriculum.TOPICS if t.track == track]
+    records = progress.state()["topics"]
+    recommended = next((t for t in candidates if records.get(t.key, {}).get("stage") != "Rebuilt"), candidates[0])
+    st.page_link(recommended.path, label=f"Today: {recommended.title}")
+    st.write(recommended.objective)
+    st.caption(f"About {recommended.minutes} minutes. Suggested from your saved self-assessments; you can skip ahead.")
+    st.write("Predict one outcome, run the example, explain the result, then rebuild the smallest version without looking. Save a checkpoint at the bottom of the lesson.")
+    st.page_link("views/my_learning.py", label="Review my notes and experiment notebook")
+    explained = [t for t in candidates if records.get(t.key, {}).get("stage") in {"Explained", "Rebuilt"}]
+    if explained:
+        oldest = min(explained, key=lambda t: records[t.key].get("updated", ""))
+        st.page_link(oldest.path, label=f"Recall practice: {oldest.title}")
+        st.caption("Your least recently saved explained/rebuilt topic. Explain it again from memory before opening your notes.")
     st.markdown(
         f"<div class='ailab-callout'>{C['callout']}</div>",
         unsafe_allow_html=True,

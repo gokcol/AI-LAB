@@ -25,8 +25,8 @@ items off as you go. Status legend: `[ ]` todo · `[~]` in progress · `[x]` don
 - [x] e09 — Optimizers: SGD → Momentum → Adam on the same loss surface.
 - [x] e10 — Initialization (Xavier/He) & signal-scale effects.
 - [x] e11 — Regularization: L2, over/underfitting.
-- [ ] e12 — **MNIST from scratch** (pure-NumPy MLP).
-- [ ] e13 — Reproduce e12 in **PyTorch**; compare.
+- [x] e12 — **MNIST from scratch** (pure-NumPy MLP).
+- [x] e13 — Reproduce e12 in **PyTorch**; compare.
 
 ## Tier 3 — Architectures  *(PyTorch)*
 - [ ] e14 — CNN (LeNet) on MNIST.
@@ -35,9 +35,9 @@ items off as you go. Status legend: `[ ]` todo · `[~]` in progress · `[x]` don
 - [ ] e17 — Seq2seq + the attention bottleneck.
 
 ## Tier 4 — Attention & Transformers
-- [ ] e18 — Attention from scratch (single head, by hand).
-- [ ] e19 — Multi-head self-attention.
-- [ ] e20 — A full Transformer block (residual + LayerNorm + MLP).
+- [x] e18 — Attention from scratch (single head, by hand).
+- [x] e19 — Multi-head self-attention.
+- [x] e20 — A full Transformer block (residual + LayerNorm + MLP).
 - [x] e21 — **nanoGPT-style char-level GPT** on a tiny corpus.
 - [ ] e22 — BPE tokenization.
 

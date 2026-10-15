@@ -1,9 +1,11 @@
+import os
 import pathlib
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))  # gui/
 
 import streamlit as st
+from gui.resource_guard import limited_training
 
 import i18n
 import lab
@@ -193,17 +195,9 @@ st.subheader(f"🏋 {C['journey_title']}")
 st.markdown(C["journey_body"])
 
 
-def _open_training_track(module: str, path: str):
-    st.session_state["module"] = module
-    st.session_state["_goto_page"] = path
-    st.rerun()
-
-
 journey = st.columns(4)
-if journey[0].button(C["journey_regression"], key="journey_regression", icon=":material/timeline:"):
-    _open_training_track("ML", "views/ml_regression.py")
-if journey[1].button(C["journey_classification"], key="journey_classification", icon=":material/scatter_plot:"):
-    _open_training_track("ML", "views/ml_classification.py")
+journey[0].page_link("views/ml_regression.py", label=C["journey_regression"], icon=":material/timeline:")
+journey[1].page_link("views/ml_classification.py", label=C["journey_classification"], icon=":material/scatter_plot:")
 journey[2].page_link("views/mlp.py", label=C["journey_network"], icon=":material/network_node:")
 journey[3].page_link("views/transformer.py", label=C["journey_text"], icon=":material/smart_toy:")
 
@@ -213,10 +207,13 @@ st.divider()
 # Build status — runs each experiment's run.py (done / todo / error)
 # --------------------------------------------------------------------------- #
 st.subheader(f"🔬 {C['status_title']}")
+st.caption("These counts describe runnable code, not your learning progress.")
+st.page_link("views/my_learning.py", label="See my personal learning checkpoints")
 st.caption(C["status_caption"])
 
 
 @st.cache_data(show_spinner="Scanning experiments…")
+@limited_training
 def scan(include_heavy: bool):
     """Run each experiment once; status = done / todo / error / heavy."""
     out = {}
@@ -232,13 +229,14 @@ controls = st.columns([0.7, 0.3])
 include_heavy = controls[0].checkbox(
     C["include_heavy"],
     value=False,
+    disabled=os.environ.get("AILAB_ENABLE_HEAVY") != "1",
     help=C["include_heavy_help"],
     key="dashboard_include_heavy",
 )
 if controls[1].button(C["rescan"], icon=":material/refresh:", key="dashboard_rescan"):
     scan.clear()
 
-data = scan(include_heavy)
+data = scan(include_heavy and os.environ.get("AILAB_ENABLE_HEAVY") == "1")
 flat = [s for rows in data.values() for _, s in rows]
 done = flat.count("done")
 heavy = flat.count("heavy")

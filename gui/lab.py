@@ -9,13 +9,14 @@ from __future__ import annotations
 import re
 import subprocess
 import sys
+from gui.resource_guard import limited_training
 from dataclasses import dataclass
 from pathlib import Path
 
 LAB_ROOT = Path(__file__).resolve().parents[1]
 EXPERIMENTS = LAB_ROOT / "experiments"
 INFOBASE = LAB_ROOT / "infobase"
-HEAVY_EXPERIMENT_IDS = {"e21"}
+HEAVY_EXPERIMENT_IDS = {"e12", "e13", "e21"}
 SUPPORTED_LANGS = {"tr"}
 
 # ---------------------------------------------------------------------------
@@ -87,6 +88,7 @@ def all_experiments() -> list[Experiment]:
 # ---------------------------------------------------------------------------
 
 
+@limited_training
 def run_script(path: Path, args: list[str] | None = None, timeout: int = 60):
     """Run a python script with the current interpreter. Returns (code, output)."""
     cmd = [sys.executable, str(path), *(args or [])]

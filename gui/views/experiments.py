@@ -1,3 +1,4 @@
+import os
 import pathlib
 import sys
 
@@ -42,16 +43,26 @@ st.title(C["title"])
 tiers = lab.list_tiers()
 tier_names = list(tiers.keys())
 
+# Consume only a known experiment id; never accept a user-supplied script path.
+requested = st.query_params.get("experiment")
+if requested:
+    for tier, experiments in tiers.items():
+        for index, item in enumerate(experiments):
+            if item.id == requested:
+                st.session_state["exp_tier"] = tier
+                st.session_state[f"exp_idx_{tier}"] = index
+    del st.query_params["experiment"]
+
 # --- visible selectors, right in the main area -----------------------------
 tsel = st.segmented_control(
-    C["tier"], tier_names, format_func=lab.tier_label, default=tier_names[0], key="exp_tier"
+    C["tier"], tier_names, format_func=lab.tier_label, default=None if "exp_tier" in st.session_state else tier_names[0], key="exp_tier"
 ) or tier_names[0]
 
 exps = tiers[tsel]
 e_idx = st.segmented_control(
     C["experiment"], list(range(len(exps))),
     format_func=lambda i: f"{exps[i].id} · {exps[i].name}",
-    default=0, key=f"exp_idx_{tsel}",
+    default=None if f"exp_idx_{tsel}" in st.session_state else 0, key=f"exp_idx_{tsel}",
 )
 if e_idx is None:
     e_idx = 0
@@ -71,7 +82,11 @@ with code:
 
 with run:
     st.caption(C["run_caption"])
-    if st.button(C["run_button"], icon=":material/play_arrow:", type="primary"):
+    local_heavy = os.environ.get("AILAB_ENABLE_HEAVY") == "1"
+    blocked = exp.is_heavy and not local_heavy
+    if blocked:
+        st.info("This training experiment runs locally. Open Code for the implementation and Overview for setup instructions.")
+    if st.button(C["run_button"], disabled=blocked, icon=":material/play_arrow:", type="primary") and not blocked:
         with st.spinner(C["running"]):
             rc, out = lab.run_script(exp.run_py)
         (st.success if rc == 0 else st.warning)(f"{C['exit_code']} {rc}")

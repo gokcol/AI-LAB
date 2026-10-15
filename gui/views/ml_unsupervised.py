@@ -6,6 +6,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))  # gui/
 import matplotlib.pyplot as plt
 import numpy as np
 import streamlit as st
+from gui.resource_guard import limited_training
 
 import lessons
 import ml_lessons2
@@ -38,6 +39,7 @@ def _kmeans_once(X, k, rng, iters=100):
     return assign, centroids, inertia
 
 
+@limited_training
 def _kmeans(X, k, seed, iters=100, n_init=20):
     """Best of several k-means++ starts; avoids presenting one poor local run as the optimum."""
     rng = np.random.default_rng(seed)
