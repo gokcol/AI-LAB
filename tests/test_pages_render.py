@@ -52,7 +52,9 @@ def _run(path: pathlib.Path, tmp_path: pathlib.Path, timeout: float = 300.0):
     """
     from streamlit.elements.widgets.button import ButtonMixin
     from streamlit.testing.v1 import AppTest
+    from gui import theme_visuals
 
+    theme_visuals.install()
     os.environ["AILAB_FEEDBACK_DIR"] = str(tmp_path)
     # Patch the innermost implementation. Neither `st.page_link` nor
     # `DeltaGenerator.page_link` is enough: pages call it on columns, and gui/i18n.py's
@@ -63,6 +65,7 @@ def _run(path: pathlib.Path, tmp_path: pathlib.Path, timeout: float = 300.0):
     ButtonMixin._page_link = lambda self, *a, **k: None
     try:
         at = AppTest.from_file(str(path), default_timeout=timeout)
+        at.session_state["theme"] = "dark"
         return at.run()
     finally:
         ButtonMixin._page_link = real

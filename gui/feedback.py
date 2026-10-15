@@ -560,7 +560,8 @@ def render_form() -> None:
         with cap_l:
             st.markdown("<div class='ailab-muted' style='font-size:.83rem;margin-bottom:.25rem'>"
                         "Type the characters you see:</div>", unsafe_allow_html=True)
-            st.image(st.session_state["fb_captcha_png"])
+            with st.container(key="fb_captcha_image"):
+                st.image(st.session_state["fb_captcha_png"])
         with cap_r:
             captcha = st.text_input("Characters", key="fb_captcha",
                                     max_chars=CAPTCHA_LEN + 3,

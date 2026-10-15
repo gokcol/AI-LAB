@@ -1,6 +1,17 @@
 [
   {
     "version": "1.14",
+    "revision": 5,
+    "date": "2026-10-16",
+    "title": "Consistent dark mode across the lab",
+    "changes": [
+      "**Readable lessons in every track:** ANN, ML and Math diagrams now adapt their panels, labels and arrows to Dark and Browser default, while preserving their light appearance.",
+      "**Plots that fit your theme:** simulation backgrounds, axes, legends and annotations follow the selected theme. Heatmaps, image examples and their numeric color scales retain their original data colors.",
+      "**Clearer practice controls:** interactive chart labels, numeric tables, input borders, upload areas and navigation icons stay readable in dark mode. Chart interactions and table sorting remain available."
+    ]
+  },
+  {
+    "version": "1.14",
     "revision": 4,
     "date": "2026-10-15",
     "title": "A timeline that follows your theme",

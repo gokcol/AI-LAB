@@ -84,3 +84,17 @@ def test_explicit_redaction_preserves_other_history_and_requires_new_release(tmp
     current.write_text(json.dumps(old[:1] + old[2:]))
     with pytest.raises(ValueError, match="Prepend"):
         validate(current, previous, redact_versions=["1.02"])
+
+
+def test_release_date_accepts_today_in_another_timezone_but_not_future(tmp_path, monkeypatch):
+    from tools import check_release_notes as notes
+    import datetime as dt
+    monkeypatch.setattr(notes, "latest_calendar_date", lambda: dt.date(2026, 10, 16))
+    path = tmp_path / "notes.json"
+    entry = {"version": "1.14", "date": "2026-10-16", "title": "Theme fixes", "changes": ["Readable plots"]}
+    path.write_text(json.dumps([entry]))
+    assert notes.validate(path)
+    entry["date"] = "2026-10-17"
+    path.write_text(json.dumps([entry]))
+    with pytest.raises(ValueError, match="future"):
+        notes.validate(path)

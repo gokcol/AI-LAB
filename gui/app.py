@@ -39,7 +39,9 @@ TURKISH_TRANSLATION_NOTICE = (
 # (e.g. on Streamlit Community Cloud, which only installs requirements.txt).
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-from gui import curriculum, learning_ui, progress
+from gui import curriculum, learning_ui, progress, theme_visuals
+
+theme_visuals.install()
 
 st.set_page_config(page_title="AI Lab", page_icon="🧠", layout="wide")
 i18n.install_localization()  # transparently localizes static UI text when lang == "tr"

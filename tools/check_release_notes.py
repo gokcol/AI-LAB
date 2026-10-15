@@ -11,6 +11,12 @@ def release_order(entry):
     return (tuple(int(part) for part in entry["version"].split(".")), entry.get("revision", 1))
 
 
+def latest_calendar_date():
+    # Notes contain calendar dates, not timestamps. A release dated by an owner
+    # east of UTC must not fail staging while the UTC server is still yesterday.
+    return (dt.datetime.now(dt.timezone.utc) + dt.timedelta(hours=14)).date()
+
+
 def validate(path, previous=None, *, redact_versions=()):
     releases = json.loads(Path(path).read_text(encoding="utf-8"))
     if not isinstance(releases, list) or not releases:
@@ -31,7 +37,7 @@ def validate(path, previous=None, *, redact_versions=()):
             raise ValueError("Release changes cannot be empty")
     if any(a <= b for a, b in zip(versions, versions[1:])):
         raise ValueError("Version/revision pairs must be unique and newest first")
-    if any(a < b for a, b in zip(dates, dates[1:])) or dates[0] > dt.date.today():
+    if any(a < b for a, b in zip(dates, dates[1:])) or dates[0] > latest_calendar_date():
         raise ValueError("Release dates must be newest first and not in the future")
     if previous is not None and Path(previous).exists():
         old = validate(previous)

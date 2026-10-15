@@ -118,6 +118,16 @@ def _theme_overrides(selected: str) -> str:
           background:var(--ailab-panel) !important; color:var(--ailab-ink) !important;
           border-color:var(--ailab-border) !important; caret-color:var(--ailab-ink);
         }
+        [data-testid="stTextInputRootElement"], [data-testid="stTextAreaRootElement"],
+        [data-testid="stElementToolbarButtonContainer"] {
+          background:var(--ailab-panel) !important; border-color:var(--ailab-border) !important;
+        }
+        [data-testid="stPageLink"] [data-testid="stIconMaterial"] { color:var(--ailab-blue) !important; }
+        [data-testid="stMultiSelect"] [data-baseweb="select"] div,
+        [data-testid="stMultiSelect"] [data-baseweb="select"] svg { color:var(--ailab-ink) !important; }
+        [data-testid="stFileUploaderDropzone"] { background:var(--ailab-panel) !important; border-color:var(--ailab-border) !important; }
+        [data-testid="stFileUploaderDropzoneInstructions"] span { color:var(--ailab-muted) !important; }
+        .st-key-fb_captcha_image img { filter:invert(.90) hue-rotate(180deg); }
         input::placeholder, textarea::placeholder { color:var(--ailab-muted) !important; opacity:1; }
         [role="listbox"], [role="option"], [role="tooltip"], [data-rac][data-placement] {
           background:var(--ailab-panel) !important; color:var(--ailab-ink) !important;
@@ -131,6 +141,25 @@ def _theme_overrides(selected: str) -> str:
         }
         [data-testid="stVerticalBlock"], [data-testid="stVerticalBlockBorderWrapper"],
         [data-testid="stExpander"] details, hr { border-color:var(--ailab-border) !important; }
+        /* Native data grids contain only neutral text/numbers in this lab.
+           Recolor their canvas only; keep controls native and never filter plots,
+           photos, heatmaps or any other data image. */
+        [data-testid="stDataFrame"] canvas { filter: invert(.90) hue-rotate(180deg); }
+        [data-testid="stDataFrame"], [data-testid="stDataFrame"] [data-testid="glideDataEditor"] {
+          background:var(--ailab-panel) !important; color:var(--ailab-ink) !important;
+        }
+        [data-testid="stMetricValue"], [data-testid="stMetricDelta"],
+        [data-testid="stWidgetLabel"], [data-testid="stSliderTickBarMin"],
+        [data-testid="stSliderTickBarMax"], [data-testid="stSliderThumbValue"] { color:var(--ailab-ink) !important; }
+        [data-testid="stMarkdownContainer"] svg:not(.ailab-plot) { color:var(--ailab-ink); }
+        [data-testid="stVegaLiteChart"] svg { background:transparent !important; }
+        [data-testid="stVegaLiteChart"] .mark-text text { fill:var(--ailab-ink) !important; }
+        [data-testid="stVegaLiteChart"] .role-axis-domain line,
+        [data-testid="stVegaLiteChart"] .role-axis-tick line,
+        [data-testid="stVegaLiteChart"] .role-axis-grid line { stroke:var(--ailab-border) !important; }
+        [data-testid="stVegaLiteChart"] .role-frame > .background { fill:transparent !important; }
+        #vg-tooltip-element { background:var(--ailab-panel) !important; color:var(--ailab-ink) !important; border-color:var(--ailab-border) !important; }
+        [data-testid="stMarkdownContainer"] code[style*="background:"] { background:#24344a !important; color:#d9e8ff !important; }
         /* Expanded headers paint their own light surface, separate from details. */
         [data-testid="stExpander"] summary {
           background:var(--ailab-panel) !important; color:var(--ailab-ink) !important;
@@ -254,6 +283,7 @@ def inject_theme(selected: str = DEFAULT_THEME, zoom: int = DEFAULT_ZOOM) -> Non
         }
 
         :root {
+            color-scheme: light;
             --ailab-ink: #172033;
             --ailab-muted: #607086;
             --ailab-border: #d8e3ef;
