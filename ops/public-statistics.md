@@ -20,8 +20,9 @@ Days with no retained records and no prior aggregate are unavailable, not zero.
 A day with log records but no qualifying page loads is a recorded zero. Log
 presence cannot establish that every request in that day was captured.
 
-Weekly bars run Monday–Sunday. Partial calendar weeks are labelled. Weeks with
-missing days have no bar; their recorded subtotal and coverage remain in the table.
+Weekly bars run Monday–Sunday and inherit the selected app theme. Hover details
+include counts and partial-week coverage. Weeks with missing days show a dash,
+with their recorded subtotal and coverage in the hover details, rather than a bar.
 The daily average uses only recorded completed days, including recorded zero days.
 An incomplete total is labelled as recorded visits. Snapshots older than two days
 show a stale-data warning.

@@ -1,6 +1,15 @@
 [
   {
     "version": "1.14",
+    "revision": 3,
+    "date": "2026-10-15",
+    "title": "Clearer visit statistics",
+    "changes": [
+      "**A cleaner About chart:** weekly visits now follow your selected theme, including dark and Browser default. The weekly table has been removed; hover over the chart for counts and coverage. Totals and daily averages remain above the graph."
+    ]
+  },
+  {
+    "version": "1.14",
     "revision": 2,
     "date": "2026-10-15",
     "title": "Probability, optimization and honest evaluation",

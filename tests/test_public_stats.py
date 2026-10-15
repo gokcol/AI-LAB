@@ -3,7 +3,8 @@ from datetime import datetime, timezone
 import json
 import pytest
 from streamlit.testing.v1 import AppTest
-from gui.public_stats import summarize, validate
+from gui.public_stats import summarize, validate, weekly_chart
+from xml.etree import ElementTree as ET
 from tools.collect_public_stats import build_snapshot
 
 NOW = datetime(2026, 10, 9, 1, tzinfo=timezone.utc)
@@ -73,7 +74,22 @@ def test_public_statistics_render_snapshot_and_missing_file(tmp_path, monkeypatc
     assert not at.exception
     assert [m.value for m in at.metric] == ["1", "1.0"]
     assert any("unavailable history" in w.value for w in at.warning)
+    assert not at.dataframe and not at.expander
     monkeypatch.setenv("AILAB_PUBLIC_STATS_FILE", str(tmp_path/"absent.json"))
     at.run()
     assert not at.exception and not at.metric
     assert any("not available yet" in i.value for i in at.info)
+
+
+def test_weekly_chart_distinguishes_missing_history_from_recorded_zero():
+    days = {f"2026-10-{i:02}" for i in range(1, 5)}
+    summary = summarize(build_snapshot([], {"days": days}, NOW))
+    root = ET.fromstring(weekly_chart(summary["weeks"]))
+    ns = {"svg": "http://www.w3.org/2000/svg"}
+    groups = root.findall(".//svg:g", ns)
+    assert len(groups) == 2
+    assert "0 visits. Partial week; 4 of 4" in groups[0].get("aria-label")
+    assert "Unavailable. Missing history; 0 of 4" in groups[1].get("aria-label")
+    assert groups[0].find("svg:text", ns).text == "0"
+    assert groups[1].find("svg:text", ns).text == "—"
+    assert not root.findall(".//svg:rect", ns)
