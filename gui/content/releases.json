@@ -1,6 +1,16 @@
 [
   {
     "version": "1.14",
+    "revision": 6,
+    "date": "2026-10-16",
+    "title": "Brighter plot lines and arrows",
+    "changes": [
+      "**Clearer plots in dark mode:** lines, vector arrows, markers and their legend keys now use brighter colors across the lab, including native training charts. Arrows over contour maps also gain contrasting outlines. Try the [dot-product playground](/math_vectors) or [regression](/ml_regression).",
+      "**Consistent theme behavior:** Dark and Browser default use the brighter palette; Light and Color-blind safe retain their existing colors. Heatmaps, images and continuous color scales keep their original values and colors."
+    ]
+  },
+  {
+    "version": "1.14",
     "revision": 5,
     "date": "2026-10-16",
     "title": "Consistent dark mode across the lab",

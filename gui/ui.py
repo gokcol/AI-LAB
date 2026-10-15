@@ -66,6 +66,7 @@ def select_zoom() -> int:
 
 def _theme_overrides(selected: str) -> str:
     """Small overrides layered after the shared light-first lab styling."""
+    from gui.theme_visuals import native_line_palette_css
     dark = """
         :root { color-scheme: dark; --ailab-ink:#edf3fc; --ailab-muted:#b6c3d4;
           --ailab-border:#40536d; --ailab-panel:#1b2839; --ailab-blue:#91baff;
@@ -198,6 +199,7 @@ def _theme_overrides(selected: str) -> str:
         [data-testid="stMarkdownContainer"] table, [data-testid="stMarkdownContainer"] th,
         [data-testid="stMarkdownContainer"] td { background:#1b2839; color:var(--ailab-ink); border-color:var(--ailab-border); }
     """
+    dark += native_line_palette_css()
     accessible = """
         :root { --ailab-ink:#172033; --ailab-muted:#4b5b70; --ailab-border:#b8c9dc;
           --ailab-panel:rgba(255,255,255,.97); --ailab-blue:#0072b2; --ailab-green:#009e73;
