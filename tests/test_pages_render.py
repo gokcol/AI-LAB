@@ -102,7 +102,7 @@ def test_app_entrypoint_renders(tmp_path):
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("page", ["math_vectors", "math_calculus", "ml_regression", "ml_classification"])
+@pytest.mark.parametrize("page", ["math_vectors", "math_calculus", "ml_regression", "ml_classification", "math_probability", "math_optimization", "ml_model_selection"])
 def test_guided_pages_keep_existing_tabs_functional(page, tmp_path, monkeypatch):
     from streamlit.testing.v1 import AppTest
     from streamlit.elements.widgets.button import ButtonMixin

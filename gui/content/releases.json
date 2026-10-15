@@ -1,6 +1,18 @@
 [
   {
     "version": "1.14",
+    "revision": 2,
+    "date": "2026-10-15",
+    "title": "Probability, optimization and honest evaluation",
+    "changes": [
+      "**Three more guided foundations:** explore [probability and base rates](/math_probability), [optimization and convergence](/math_optimization), and [model evaluation](/ml_model_selection) with plain-language explanations, worked examples and 24 checked exercises with progressive hints.",
+      "**Predict, then investigate:** change spam rates to understand Bayes’ rule, compare learning rates on a quadratic, expose misleading accuracy, and choose a validation criterion before revealing a selected model’s test result. Save predictions and explanations in your notebook.",
+      "**A connected companion:** [Study Coach](/study_coach) includes the new Math and ML topics in recall questions, guided practice, derivations and progress-based recommendations. Existing saved work is preserved.",
+      "**About the lab:** the Home page’s About tab now shows weekly visits, recorded visits since 1 October 2026 and average visits per completed day, with clear counting and coverage notes. The 20 September updates are collected under one v1.13 entry in What’s new."
+    ]
+  },
+  {
+    "version": "1.14",
     "date": "2026-10-15",
     "title": "Guided Math and ML foundations",
     "changes": [

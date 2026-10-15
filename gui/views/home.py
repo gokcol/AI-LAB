@@ -170,7 +170,8 @@ with tab_welcome:
 with tab_news:
     st.markdown("### ✨ What’s new in AI Lab")
     st.write("New lessons, learning tools and fixes, newest first. Updated with every release.")
-    for index, release in enumerate(RELEASES):
+    from gui.release_history import grouped
+    for index, release in enumerate(grouped(RELEASES)):
         with st.expander(f"v{release['version']} · {release['date']} · {release['title']}", expanded=index < 2):
             _release_notes(release)
 
@@ -392,6 +393,9 @@ with tab_fb:
 
 
 with tab_about:
+    from gui import public_stats
+    public_stats.render()
+    st.divider()
     # --- about the author ------------------------------------------------------- #
     with st.container(border=True):
         st.markdown("### 👤 About the author — whose notes these are")

@@ -1,0 +1,14 @@
+[Unit]
+Description=AI Lab aggregate public visit statistics
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/ai-lab-public-stats.env
+ExecStart=/opt/ai-lab/current/.venv/bin/python /opt/ai-lab/current/tools/collect_public_stats.py
+User=root
+UMask=0022
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/opt/ai-lab/shared

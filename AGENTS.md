@@ -4,6 +4,9 @@ For every user-visible update, prepend a dated entry to `gui/content/releases.js
 with a higher version, a short title, and concrete learner-facing changes. Include
 lesson links where useful. Preserve previously published entries. This file drives
 the homepage's What's new section, release history, and displayed app version.
+When the owner explicitly requests keeping the public version unchanged, prepend
+an entry with that version and a higher positive integer `revision` (default 1).
+Preserve the previous entries exactly; the deployment check orders version/revision pairs.
 
 Public release notes should describe learner-facing changes. Exclude SSH tunnels,
 server access instructions, and private owner-console features. If the owner explicitly

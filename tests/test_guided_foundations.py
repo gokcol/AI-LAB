@@ -6,6 +6,7 @@ import pytest
 from streamlit.testing.v1 import AppTest
 from streamlit.elements.widgets.button import ButtonMixin
 from gui import guided_content as content, progress
+from gui import guided_simulations as sim
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -65,6 +66,71 @@ def test_help_reveal_retry_export_and_import_preserve_evidence():
     assert not data["topics"]  # practice never changes self-assessed checkpoints
     assert progress.validate({"version":1, "topics":{}, "runs":[]})["practice"] == {}
     assert progress.validate(json.dumps(data)) == data
+
+
+@pytest.mark.parametrize("variant", range(5))
+def test_next_foundations_against_independent_calculations(variant):
+    a = 2+variant
+    probability = content.exercises("math_probability", variant)
+    # Explicit inbox: each of a*100 spam rows is caught at .8; others at .1.
+    weights = [.8]*(a*100)+[.1]*(1000-a*100)
+    assert probability[4].answer == pytest.approx(sum(weights[:a*100])/sum(weights))
+    assert probability[5].answer == 100*a/10
+    optimization = content.exercises("math_optimization", variant)
+    w = float(a)
+    for _ in range(2):
+        w -= .25*2*w
+    assert optimization[2].answer == w
+    evaluation = content.exercises("ml_model_selection", variant)
+    precision, recall = a/(a+1), a/(a+2)
+    assert evaluation[2].answer == pytest.approx(2*precision*recall/(precision+recall))
+    assert evaluation[3].answer == np.mean([a, a+1, a+5])
+
+
+def test_simulation_boundaries_and_validation_rankings():
+    counts = sim.flag_counts(.1, .8, .1)
+    assert counts["posterior"] == pytest.approx(80/170)
+    assert sum(counts[k] for k in ("TP", "FP", "FN", "TN")) == pytest.approx(1000)
+    assert sim.flag_counts(.1, 0, 0)["posterior"] is None
+    assert sim.flag_counts(0, .8, .1)["posterior"] == 0
+    assert sim.flag_counts(1, .8, .1)["posterior"] == 1
+    rows, truncated = sim.descent(2, .1, 4, 2)
+    assert not truncated and rows[-1]["w"] == pytest.approx(1.44)
+    boundary, truncated = sim.descent(2, .5, 4, 4)
+    assert [r["Loss"] for r in boundary] == [32]*5
+    huge, truncated = sim.descent(10, 1.1, 5, 30)
+    assert truncated and all(np.isfinite(r["Loss"]) for r in huge)
+    baseline = sim.metrics(0, 0, 10, 90)
+    assert baseline == {"Accuracy": .9, "Precision": None, "Recall": 0, "F1": 0}
+    scores = {name: sim.metrics(*counts) for name, counts in sim.VALIDATION.items()}
+    assert max(scores, key=lambda n: scores[n]["Accuracy"]) == "Cautious filter"
+    assert max(scores, key=lambda n: scores[n]["Recall"]) == "Broad filter"
+    assert max(scores, key=lambda n: scores[n]["F1"]) == "Broad filter"
+
+
+def test_full_practice_export_accepts_all_seven_guides():
+    data = progress.empty()
+    data["practice"] = {k: {"solved": True, "independent": True} for k in content.PRACTICE_KEYS}
+    restored = progress.validate(json.dumps(data))
+    assert len(restored["practice"]) == 280
+    assert content.practice_summary("math_probability", restored["practice"])["independent"] == 8
+
+
+def test_reserved_test_requires_explicit_reveal_and_keeps_candidate(monkeypatch):
+    monkeypatch.setattr(ButtonMixin, "_page_link", lambda self, *a, **k: None)
+    at = AppTest.from_string('from gui.guided import render_explorer\nrender_explorer("ml_model_selection")').run()
+    at.radio[0].set_value("Validation before test").run()
+    at.selectbox(key="guided_explore_ml_model_selection_candidate").set_value("Broad filter").run()
+    at.selectbox(key="guided_explore_ml_model_selection_metric").set_value("Recall").run()
+    at.text_area[0].set_value("I choose broad for recall on validation, before inspecting test.")
+    button(at, "Record prediction").click().run()
+    button(at, "Run with these settings").click().run()
+    assert not at.exception and len(at.dataframe) == 1
+    button(at, "Evaluate selected candidate on reserved test").click().run()
+    assert not at.exception and len(at.dataframe) == 2
+    assert at.dataframe[1].value.loc["Reserved test", "Recall"] == .8
+    at.selectbox(key="guided_explore_ml_model_selection_candidate").set_value("Cautious filter").run()
+    assert not at.dataframe  # a new choice requires its own recorded prediction
 
 
 def test_merge_keeps_help_exposure_and_independent_success():

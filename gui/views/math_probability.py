@@ -9,6 +9,7 @@ import numpy as np
 import streamlit as st
 
 import lessons
+from gui import guided
 import math_lessons2
 
 LESSON = math_lessons2.PROBABILITY
@@ -221,14 +222,20 @@ st.title("X3 · Probability — playground & lesson")
 st.caption("Explore the key distributions (shape, mean, variance, where they're used), or "
            "watch the Central Limit Theorem turn any distribution's average into a Gaussian.")
 
-lessons.predict(
-    'Average **n** samples from a *skewed* distribution and increase n. What shape does the distribution of the average approach — and what happens to its spread?',
-    "It approaches a **Gaussian** (the Central Limit Theorem) no matter the base shape, and its spread shrinks like 1/√n. That's why sample means are so well-behaved — and a big reason the Gaussian shows up everywhere.",
+if st.session_state.get("lesson_tabs_math_probability", "🧭 Guided start") != "🧭 Guided start":
+    lessons.predict(
+        'Average **n** samples from a *skewed* distribution and increase n. What shape does the distribution of the average approach — and what happens to its spread?',
+        "It approaches a **Gaussian** (the Central Limit Theorem) no matter the base shape, and its spread shrinks like 1/√n. That's why sample means are so well-behaved — and a big reason the Gaussian shows up everywhere.",
+    )
+
+tab_guided, tab_play, tab_theory, tab_quiz, tab_tasks, tab_ref = st.tabs(
+    ["🧭 Guided start", "🎛 Playground", "📖 Theory", "❓ Self-check", "🛠 Tasks", "📚 References"],
+    on_change="rerun", key="lesson_tabs_math_probability"
 )
 
-tab_play, tab_theory, tab_quiz, tab_tasks, tab_ref = st.tabs(
-    ["🎛 Playground", "📖 Theory", "❓ Self-check", "🛠 Tasks", "📚 References"]
-)
+with tab_guided:
+    if tab_guided.open:
+        guided.render("math_probability")
 
 
 def _bayes():
@@ -427,51 +434,56 @@ def _init_variance():
 
 
 with tab_play:
-    mode = st.radio("playground",
-                    ["Distribution explorer", "Central Limit Theorem",
-                     "🧪 Bayes' rule", "📈 Maximum likelihood",
-                     "🏗 Init & variance"],
-                    horizontal=True, key="p_mode")
-    st.divider()
-    if mode == "Distribution explorer":
-        _explorer()
-    elif mode == "Central Limit Theorem":
-        _clt()
-    elif mode.startswith("🧪"):
-        _bayes()
-    elif mode.startswith("🏗"):
-        _init_variance()
-    else:
-        _mle()
+    if tab_play.open:
+        mode = st.radio("playground",
+                        ["Distribution explorer", "Central Limit Theorem",
+                         "🧪 Bayes' rule", "📈 Maximum likelihood",
+                         "🏗 Init & variance"],
+                        horizontal=True, key="p_mode")
+        st.divider()
+        if mode == "Distribution explorer":
+            _explorer()
+        elif mode == "Central Limit Theorem":
+            _clt()
+        elif mode.startswith("🧪"):
+            _bayes()
+        elif mode.startswith("🏗"):
+            _init_variance()
+        else:
+            _mle()
 
 with tab_theory:
-    st.markdown(LESSON.theory, unsafe_allow_html=True)
+    if tab_theory.open:
+        st.markdown(LESSON.theory, unsafe_allow_html=True)
 with tab_quiz:
-    st.subheader("Self-check")
-    st.caption("Instant feedback, no grading.")
-    lessons.render_quiz(LESSON.quiz, prefix="mathprob")
+    if tab_quiz.open:
+        st.subheader("Self-check")
+        st.caption("Instant feedback, no grading.")
+        lessons.render_quiz(LESSON.quiz, prefix="mathprob")
 with tab_tasks:
-    st.subheader("Tasks")
-    st.markdown(LESSON.tasks)
-    st.divider()
-    st.markdown("#### ✅ Worked solutions")
-    st.caption("Attempt each first, then check.")
-    lessons.solution(
-        r"""**1.** Fair die: $E[X]=3.5$; $E[X^2]=\frac{91}{6}$, so $\text{Var}=E[X^2]-E[X]^2=\frac{91}{6}-12.25=\frac{35}{12}\approx2.92$.
+    if tab_tasks.open:
+        st.subheader("Tasks")
+        st.markdown(LESSON.tasks)
+        st.divider()
+        st.markdown("#### ✅ Worked solutions")
+        st.caption("Attempt each first, then check.")
+        lessons.solution(
+            r"""**1.** Fair die: $E[X]=3.5$; $E[X^2]=\frac{91}{6}$, so $\text{Var}=E[X^2]-E[X]^2=\frac{91}{6}-12.25=\frac{35}{12}\approx2.92$.
 
 **2.** Base rate $1/1000$ with a 99%-accurate test: $P(\text{sick}\mid+)=\dfrac{0.99\cdot0.001}{0.99\cdot0.001+0.01\cdot0.999}\approx\mathbf{9\%}$ — still low, because rare true positives are swamped by false positives.
 
 **3.** For Gaussian residuals, $\log\mathcal N(y\mid\hat y,\sigma^2)=-\frac{(y-\hat y)^2}{2\sigma^2}+\text{const}$; maximizing the sum $\Leftrightarrow$ minimizing $\sum(y-\hat y)^2$ — least squares **is** Gaussian MLE.
 
 **4.** Two fair flips: each of HH, HT, TH, TT has probability $1/4=\tfrac12\cdot\tfrac12=P(A)P(B)$ → **independent**.""",
-        label="Pencil & paper 1–4",
-    )
-    lessons.solution(
-        r"""**5–7.** A histogram of `np.random.normal` overlays its PDF; averaging $k=1,2,30$ uniforms shows the **CLT** (the average → Gaussian, spread → 0); Bayes' rule reproduces the ~9% answer.
+            label="Pencil & paper 1–4",
+        )
+        lessons.solution(
+            r"""**5–7.** A histogram of `np.random.normal` overlays its PDF; averaging $k=1,2,30$ uniforms shows the **CLT** (the average → Gaussian, spread → 0); Bayes' rule reproduces the ~9% answer.
 
 **8.** MSE ↔ **Gaussian MLE** (M1) and cross-entropy ↔ **Bernoulli/categorical MLE** (M2): the losses *are* negative log-likelihoods.""",
-        label="Code & bridge 5–8",
-    )
+            label="Code & bridge 5–8",
+        )
 with tab_ref:
-    st.subheader("Reading & references")
-    st.markdown(LESSON.references)
+    if tab_ref.open:
+        st.subheader("Reading & references")
+        st.markdown(LESSON.references)

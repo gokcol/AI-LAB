@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 from gui import guided_content as content, practice, progress
+from gui import guided_simulations as sim
 
 
 def render_exercises(topic, *, namespace="lesson"):
@@ -56,6 +57,8 @@ def render_exercises(topic, *, namespace="lesson"):
 
 
 def render_explorer(topic):
+    if topic in ("math_probability", "math_optimization", "ml_model_selection"):
+        return render_next_explorer(topic)
     key = "guided_explore_" + topic
     if topic == "math_vectors":
         a, b = st.columns(2)
@@ -122,6 +125,99 @@ def render_explorer(topic):
         a.metric("Precision", f"{precision:.2f}" if precision is not None else "Undefined")
         b.metric("Recall", f"{tp/2:.2f}")
         st.caption("Rows are actual labels; columns are predictions. Changing the threshold changes decisions, not the fixed scores.")
+    practice.save_result(record, json.dumps(result))
+
+
+def render_next_explorer(topic):
+    key = "guided_explore_" + topic
+    if topic == "math_probability":
+        prior = st.slider("Spam base rate (%)", 0, 100, 10, key=key+"_prior")/100
+        catch = st.slider("Spam caught (%)", 0, 100, 80, key=key+"_catch")/100
+        false = st.slider("Legitimate messages falsely flagged (%)", 0, 100, 10, key=key+"_false")/100
+        settings = {"prior": prior, "catch_rate": catch, "false_alarm_rate": false, "population": 1000}
+        prompt = "Out of 1,000 messages, predict true flags, false flags and the fraction of flags that are spam. Explain the denominator."
+    elif topic == "math_optimization":
+        curvature = st.slider("Curvature scale c", 1, 10, 2, key=key+"_curvature")
+        rate = st.slider("Learning rate η", .01, 1.1, .1, .01, key=key+"_rate")
+        start = st.slider("Starting w", -5., 5., 4., .5, key=key+"_start")
+        steps = st.slider("Number of updates", 2, 30, 10, key=key+"_steps")
+        settings = {"curvature": curvature, "rate": round(rate, 2), "start": start, "steps": steps}
+        st.write("Compare your learning rate with η = 0.25/c on L(w) = cw². Both runs start at the same w.")
+        prompt = "Predict whether your run approaches zero, alternates sides, or diverges. What changes when you increase curvature?"
+    else:
+        mode = st.radio("Evaluation experiment", ["Accuracy and the baseline", "Validation before test"], key=key+"_mode", horizontal=True)
+        if mode == "Accuracy and the baseline":
+            positives = st.slider("Spam messages among 100", 1, 99, 10, key=key+"_positives")
+            caught = st.slider("Spam caught (%)", 0, 100, 80, key=key+"_caught")/100
+            false = st.slider("Legitimate messages falsely flagged (%)", 0, 100, 10, key=key+"_false")/100
+            settings = {"mode": mode, "positives": positives, "caught": caught, "false": false}
+            prompt = "Predict whether the filter beats an always-negative baseline on accuracy and recall. Which measure fits the goal of finding spam?"
+        else:
+            metric = st.selectbox("Choose a validation criterion", ["Accuracy", "Recall", "F1"], key=key+"_metric")
+            candidate = st.selectbox("Candidate to evaluate", list(sim.VALIDATION), key=key+"_candidate")
+            st.write("Validation counts (TP, FP, FN, TN): " + "; ".join(f"{name}: {counts}" for name, counts in sim.VALIDATION.items()))
+            st.caption("Same 100 validation rows for every candidate. Choose the criterion first. No test counts are used to rank candidates.")
+            settings = {"mode": mode, "metric": metric, "candidate": candidate}
+            prompt = "Predict which candidate wins on the chosen validation criterion. Explain your choice before viewing its reserved test result."
+    record = practice.prediction_gate(key, title=content.LESSONS[topic]["title"], lesson=topic,
+        seed="fixed teaching example", settings=settings, prompt=prompt)
+    if record is None:
+        return
+    if topic == "math_probability":
+        result = sim.flag_counts(**settings)
+        st.dataframe(pd.DataFrame({"Flagged": [result["TP"], result["FP"]],
+            "Not flagged": [result["FN"], result["TN"]]}, index=["Spam", "Legitimate"]))
+        st.bar_chart(pd.DataFrame({"Expected flags": [result["TP"], result["FP"]]}, index=["Spam", "Legitimate"]))
+        posterior = result["posterior"]
+        st.metric("Spam among flagged messages", f"{posterior:.1%}" if posterior is not None else "Undefined: no flags")
+        st.write(f"True flags = {result['TP']:g}; false flags = {result['FP']:g}. Divide true flags by their sum, not by the whole inbox.")
+        st.caption("Expected counts under the chosen rates; decimals are intentional. Change the base rate while keeping both conditional rates fixed.")
+    elif topic == "math_optimization":
+        rows, truncated = sim.descent(**settings)
+        reference, _ = sim.descent(curvature, .25/curvature, start, steps)
+        result = {"final": rows[-1], "stopped_at_limit": truncated, "reference_final": reference[-1]}
+        frame = pd.DataFrame(rows).set_index("Step")
+        chart = frame[["Loss"]].rename(columns={"Loss": "Your rate"}).reindex(range(steps+1))
+        chart["Reference: 0.25/c"] = [r["Loss"] for r in reference]
+        st.line_chart(chart)
+        st.dataframe(frame, width="stretch")
+        factor = 1-2*settings["rate"]*curvature
+        st.write(f"Signed distance multiplier = **{factor:.3g}**; stable interval for a non-optimal start: **0 < η < {1/curvature:.3g}**.")
+        if truncated:
+            st.warning("Run stopped before loss exceeded 10¹². The missing tail is not convergence; reduce the learning rate.")
+        elif start == 0:
+            st.info("Already at the optimum: the gradient is zero, so no update moves w.")
+        elif abs(factor) < 1:
+            st.success("Distance shrinks on this quadratic. A negative multiplier means it alternates sides while converging.")
+        elif abs(abs(factor)-1) < 1e-10:
+            st.warning("This is the stability boundary: the distance does not shrink.")
+        else:
+            st.warning("Distance grows: the step is too large for this curvature.")
+        st.caption("The reference rate is chosen for this toy quadratic, not a universal training recommendation. Inspect the table if a large loss hides the small curve.")
+    elif settings["mode"] == "Accuracy and the baseline":
+        counts = sim.flag_counts(positives/100, caught, false, 100)
+        scores = sim.metrics(*(counts[k] for k in ("TP", "FP", "FN", "TN")))
+        baseline = sim.metrics(0, 0, positives, 100-positives)
+        result = {"expected_counts": counts, "filter": scores, "baseline": baseline}
+        frame = pd.DataFrame([scores, baseline], index=["Filter", "Always negative"])
+        st.bar_chart(frame[["Accuracy", "Recall", "F1"]])
+        st.dataframe(frame)
+        st.write("Expected confusion counts: " + ", ".join(f"{k}={counts[k]:g}" for k in ("TP", "FP", "FN", "TN")))
+        st.caption("Scores are fractions. Empty precision means undefined (no positive predictions). Counts may be fractional because this is an expectation, not a random sample. Accuracy can reward missing every rare positive.")
+    else:
+        validation = {name: sim.metrics(*counts) for name, counts in sim.VALIDATION.items()}
+        best = max(values[metric] for values in validation.values())
+        winners = [name for name, values in validation.items() if values[metric] == best]
+        st.dataframe(pd.DataFrame(validation).T)
+        st.write(f"Best validation {metric}: **{' / '.join(winners)}**. Your candidate: **{candidate}**.")
+        result = {"criterion": metric, "candidate": candidate, "validation": validation[candidate], "validation_winners": winners}
+        st.info("A final test evaluates a choice already made. Repeatedly changing the candidate after seeing test results makes this set part of selection.")
+        if st.button("Evaluate selected candidate on reserved test", key=key+"_test_"+record["id"]):
+            st.session_state[key+"_tested_"+record["id"]] = True
+        if st.session_state.get(key+"_tested_"+record["id"]):
+            result["test"] = sim.metrics(*sim.TEST[candidate])
+            st.dataframe(pd.DataFrame([result["validation"], result["test"]], index=["Validation", "Reserved test"]))
+            st.caption("Synthetic teaching data. Once inspected, these test results are known to you; changing choices afterwards is practice, not an independent final evaluation.")
     practice.save_result(record, json.dumps(result))
 
 

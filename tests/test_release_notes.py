@@ -36,6 +36,33 @@ def test_deployment_rejects_reused_version(tmp_path):
         validate(current)
 
 
+def test_numbered_revision_keeps_version_and_preserves_history(tmp_path):
+    old = [{"version": "1.14", "date": "2026-10-15", "title": "Foundations", "changes": ["Four guides"]}]
+    previous, current = tmp_path/"old.json", tmp_path/"new.json"
+    previous.write_text(json.dumps(old))
+    update = dict(old[0], revision=2, title="More guides")
+    current.write_text(json.dumps([update]+old))
+    assert validate(current, previous)[0]["version"] == "1.14"
+    current.write_text(json.dumps([update]))
+    with pytest.raises(ValueError, match="preserve"):
+        validate(current, previous)
+    for bad in (0, True, "2"):
+        current.write_text(json.dumps([dict(update, revision=bad)]+old))
+        with pytest.raises(ValueError, match="revision"):
+            validate(current)
+
+
+def test_september_history_is_one_v113_section_without_lost_changes():
+    from gui.release_history import grouped
+    entries = json.loads((Path(__file__).resolve().parents[1]/"gui/content/releases.json").read_text())
+    groups = grouped(entries)
+    september = [g for g in groups if g["date"] == "2026-09-20"]
+    assert len(september) == 1 and september[0]["version"] == "1.13"
+    expected = {c for e in entries if e["date"] == "2026-09-20" for c in e["changes"]}
+    assert set(september[0]["changes"]) == expected
+    assert groups[0]["version"] == "1.14"
+
+
 def test_explicit_redaction_preserves_other_history_and_requires_new_release(tmp_path):
     def entry(version):
         return {"version": version, "date": "2026-09-20", "title": "Update", "changes": ["A fix"]}

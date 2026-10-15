@@ -28,9 +28,9 @@ def validate(raw):
     if not isinstance(raw, dict) or raw.get("version") != 1:
         raise ValueError("Unsupported learning file version.")
     out = empty()
-    from gui.guided_content import valid_practice_key
+    from gui.guided_content import valid_practice_key, PRACTICE_KEYS
     practice = raw.get("practice", {})
-    if not isinstance(practice, dict) or len(practice) > 160:
+    if not isinstance(practice, dict) or len(practice) > len(PRACTICE_KEYS):
         raise ValueError("Invalid guided practice records.")
     for key, record in practice.items():
         if not valid_practice_key(key):
@@ -158,9 +158,11 @@ def replace(data):
 def sync_browser():
     """Mount once at the END of app.py so this rerun's edits are persisted immediately."""
     import streamlit as st
+    from gui.guided_content import PRACTICE_KEYS
     result = _storage_component()(
         key="learning_browser_storage", data={"ready": st.session_state.get("learning_loaded", False),
-          "revision": st.session_state.get("learning_revision", 0), "value": state()},
+          "revision": st.session_state.get("learning_revision", 0), "value": state(),
+          "practice_limit": len(PRACTICE_KEYS)},
         on_loaded_change=lambda: None, on_error_change=lambda: None, on_merged_change=lambda: None,
     )
     if not st.session_state.get("learning_loaded") and result.loaded is not None:
@@ -232,7 +234,7 @@ export default function({data, setStateValue}) {
           }
         }
         const serialized = JSON.stringify(value);
-        if (serialized.length > 500000 || value.runs.length > 100 || Object.keys(value.practice || {}).length > 160) {
+        if (serialized.length > 500000 || value.runs.length > 100 || Object.keys(value.practice || {}).length > data.practice_limit) {
           setStateValue("error", true);
           return;
         }

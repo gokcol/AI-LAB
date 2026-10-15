@@ -103,16 +103,25 @@ links in a fresh browser session as part of each release.
 
 ## What's new and future updates
 
-The four **Guided start** lessons (dot products, gradients, regression and
-classification) connect worked examples to prediction-first exploration and 32 checked
+The seven **Guided start** lessons (dot products, gradients, regression,
+classification, probability, optimization and model evaluation) connect worked examples
+to prediction-first exploration and 56 checked
 exercises. Study Coach follows the selected ANN, ML or Math track. Guided exercise
 results are saved separately from self-assessed checkpoints, retain hint/reveal use,
 and travel with the browser learning export. They are practice records, not grades.
+
+About includes weekly direct page loads, the total since 1 October 2026 and a daily
+average over recorded, completed UTC days. The app reads only an aggregate snapshot;
+the daily server job and its counting/coverage rules are documented in
+[`ops/public-statistics.md`](ops/public-statistics.md).
 
 The homepage shows the latest release on **Welcome**, with a dedicated **What's new**
 tab for the full history. Maintain `gui/content/releases.json` for every update:
 prepend a higher version, release date, title and learner-facing changes (including
 useful lesson links). Preserve published entries. The displayed app version comes
-from this same file. Run `python tools/check_release_notes.py` before deploying;
+from this same file. When explicitly keeping the public version, prepend a higher
+integer `revision` instead (the first entry for a version defaults to revision 1).
+What's new groups the dated entries for display; 20 September 2026 appears once as
+v1.13. Run `python tools/check_release_notes.py` before deploying;
 `tools/release_update.sh` also compares against the live release and refuses updates
 without a new entry.
