@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 import pandas as pd
 import streamlit as st
 from gui import curriculum, progress
+from gui.guided_content import LESSONS, practice_summary
 
 st.title("My learning & experiment notebook")
 st.caption("Your checkpoints stay in this browser. They are processed in your current app session, not stored as learner records on the server. Export a backup to move devices. Avoid sensitive information.")
@@ -28,6 +29,13 @@ with checkpoints:
         if record.get("note"):
             with st.expander(f"My note · {topic.title}"):
                 st.write(record["note"])
+    st.subheader("Guided exercise results")
+    for key, lesson in LESSONS.items():
+        if track != "All" and lesson["track"] != track:
+            continue
+        counts = practice_summary(key, data.get("practice", {}))
+        st.write(f"**{lesson['title']}:** {counts['solved']}/8 solved · {counts['independent']}/8 without hints or revealed answers")
+    st.caption("These results count exercise types across practice sets, separately from self-assessed checkpoints. They are practice records, not a supervised assessment.")
     st.caption("Explored = tried it; Explained = can explain without notes; Rebuilt = reconstructed independently. These are self-assessments, not grades.")
 with notebook:
     st.write("Record a prediction before running an experiment. Keep the seed and settings so you can reproduce it.")
@@ -87,6 +95,7 @@ with backup:
                 for entry in restored["topics"].values():
                     entry["updated"] = datetime.now(timezone.utc).isoformat()
                 merged["topics"].update(restored["topics"])
+                merged["practice"] = progress.merge_practice(merged.get("practice", {}), restored.get("practice", {}))
                 indexed = {r["id"]: r for r in merged["runs"]}
                 indexed.update({r["id"]: r for r in restored["runs"]})
                 merged["runs"] = list(indexed.values())

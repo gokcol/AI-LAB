@@ -102,6 +102,25 @@ def test_app_entrypoint_renders(tmp_path):
 
 
 @pytest.mark.slow
+@pytest.mark.parametrize("page", ["math_vectors", "math_calculus", "ml_regression", "ml_classification"])
+def test_guided_pages_keep_existing_tabs_functional(page, tmp_path, monkeypatch):
+    from streamlit.testing.v1 import AppTest
+    from streamlit.elements.widgets.button import ButtonMixin
+
+    monkeypatch.setattr(ButtonMixin, "_page_link", lambda self, *a, **k: None)
+    at = AppTest.from_file(str(VIEWS / f"{page}.py"), default_timeout=60).run()
+    assert not at.exception
+    assert not at.dataframe and not at.get("imgs")  # hidden simulations don't run
+    labels = [t.label for t in at.get("tab")]
+    for label in labels[1:]:
+        at.session_state[f"lesson_tabs_{page}"] = label
+        at.run()
+        assert not at.exception, (page, label, at.exception)
+        if label in ("🎛 Playground", "🎛 Dot product", "🔲 Matrix transform", "🌌 High dimensions", "🏋 Train step by step", "🎛 Evaluate thresholds"):
+            assert at.slider or at.select_slider or at.number_input, (page, label)
+
+
+@pytest.mark.slow
 @pytest.mark.parametrize("overview,module", [("dashboard", "ANN"), ("ml_overview", "ML")])
 def test_training_journey_resolves_across_tracks(overview, module, tmp_path, monkeypatch):
     """Use real navigation: isolated renders cannot catch broken cross-track shortcuts.

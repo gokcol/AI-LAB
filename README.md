@@ -103,6 +103,12 @@ links in a fresh browser session as part of each release.
 
 ## What's new and future updates
 
+The four **Guided start** lessons (dot products, gradients, regression and
+classification) connect worked examples to prediction-first exploration and 32 checked
+exercises. Study Coach follows the selected ANN, ML or Math track. Guided exercise
+results are saved separately from self-assessed checkpoints, retain hint/reveal use,
+and travel with the browser learning export. They are practice records, not grades.
+
 The homepage shows the latest release on **Welcome**, with a dedicated **What's new**
 tab for the full history. Maintain `gui/content/releases.json` for every update:
 prepend a higher version, release date, title and learner-facing changes (including

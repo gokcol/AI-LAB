@@ -6,6 +6,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))  # gui/
 import matplotlib.pyplot as plt
 import numpy as np
 import streamlit as st
+from gui import guided
 
 import lessons
 import math_lessons2
@@ -22,14 +23,23 @@ st.title("X2 · Calculus & gradients — playground & lesson")
 st.caption("The derivative is the slope of the tangent — the limit of secant slopes as h→0. "
            "Shrink h and watch the secant become the tangent.")
 
-lessons.predict(
-    'Shrink the secant gap **h** toward 0. What does the secant slope approach — and how is that the same thing backprop relies on?',
-    'It approaches the **tangent slope**, i.e. the analytic derivative f′(x); the error → 0 as h → 0. That limit *is* the derivative. Backprop is just the **chain rule** applied to these derivatives, composed layer by layer.',
+
+tab_guided, tab_play, tab_theory, tab_quiz, tab_tasks, tab_ref = st.tabs(
+    ["🧭 Guided start", "🎛 Playground", "📖 Theory", "❓ Self-check", "🛠 Tasks", "📚 References"],
+    key="lesson_tabs_math_calculus", on_change="rerun"
 )
 
-tab_play, tab_theory, tab_quiz, tab_tasks, tab_ref = st.tabs(
-    ["🎛 Playground", "📖 Theory", "❓ Self-check", "🛠 Tasks", "📚 References"]
-)
+if not tab_guided.open:
+    lessons.predict(
+        'Shrink the secant gap **h** toward 0. What does the secant slope approach — and how is that the same thing backprop relies on?',
+        'It approaches the **tangent slope**, i.e. the analytic derivative f′(x); the error → 0 as h → 0. That limit *is* the derivative. Backprop is just the **chain rule** applied to these derivatives, composed layer by layer.',
+    )
+
+
+if tab_guided.open:
+    with tab_guided:
+        guided.render("math_calculus")
+
 
 def _secant():
     left, right = st.columns([0.42, 0.58])
@@ -243,49 +253,54 @@ def _gradcheck():
     )
 
 
-with tab_play:
-    mode = st.radio("playground",
-                    ["Tangent & secant", "⛓ Chain rule (= backprop)",
-                     "🧭 Partial derivatives & the gradient", "🔬 Gradient checking"],
-                    horizontal=True, key="c_mode")
-    st.divider()
-    if mode.startswith("Tangent"):
-        _secant()
-    elif mode.startswith("⛓"):
-        _chain()
-    elif mode.startswith("🧭"):
-        _gradient_field()
-    else:
-        _gradcheck()
+if tab_play.open:
+    with tab_play:
+        mode = st.radio("playground",
+                        ["Tangent & secant", "⛓ Chain rule (= backprop)",
+                         "🧭 Partial derivatives & the gradient", "🔬 Gradient checking"],
+                        horizontal=True, key="c_mode")
+        st.divider()
+        if mode.startswith("Tangent"):
+            _secant()
+        elif mode.startswith("⛓"):
+            _chain()
+        elif mode.startswith("🧭"):
+            _gradient_field()
+        else:
+            _gradcheck()
 
-with tab_theory:
-    st.markdown(LESSON.theory, unsafe_allow_html=True)
-with tab_quiz:
-    st.subheader("Self-check")
-    st.caption("Instant feedback, no grading.")
-    lessons.render_quiz(LESSON.quiz, prefix="mathcalc")
-with tab_tasks:
-    st.subheader("Tasks")
-    st.markdown(LESSON.tasks)
-    st.divider()
-    st.markdown("#### ✅ Worked solutions")
-    st.caption("Attempt each first, then check.")
-    lessons.solution(
-        r"""**1.** $\frac{d}{dx}3x^4=12x^3$; $\frac{d}{dx}\sin x=\cos x$; $\frac{d}{dx}e^{2x}=2e^{2x}$; $\frac{d}{dx}(5x^2+2x-1)=10x+2$.
+if tab_theory.open:
+    with tab_theory:
+        st.markdown(LESSON.theory, unsafe_allow_html=True)
+if tab_quiz.open:
+    with tab_quiz:
+        st.subheader("Self-check")
+        st.caption("Instant feedback, no grading.")
+        lessons.render_quiz(LESSON.quiz, prefix="mathcalc")
+if tab_tasks.open:
+    with tab_tasks:
+        st.subheader("Tasks")
+        st.markdown(LESSON.tasks)
+        st.divider()
+        st.markdown("#### ✅ Worked solutions")
+        st.caption("Attempt each first, then check.")
+        lessons.solution(
+            r"""**1.** $\frac{d}{dx}3x^4=12x^3$; $\frac{d}{dx}\sin x=\cos x$; $\frac{d}{dx}e^{2x}=2e^{2x}$; $\frac{d}{dx}(5x^2+2x-1)=10x+2$.
 
 **2.** $\frac{d}{dx}(3x+1)^5=5(3x+1)^4\cdot3=15(3x+1)^4$; $\frac{d}{dx}e^{-x^2}=-2x\,e^{-x^2}$.
 
 **3.** $\partial f/\partial x=2xy$, $\partial f/\partial y=x^2+3y^2$. At $(1,2)$: $\nabla f=(4,\,13)$.
 
 **4.** $\nabla(x^2+y^2)=(2x,2y)=2(x,y)$ — at every point it points **radially outward** from the origin (steepest ascent of the bowl).""",
-        label="Pencil & paper 1–4",
-    )
-    lessons.solution(
-        r"""**5–6.** The central difference $\frac{f(x+h)-f(x-h)}{2h}$ matches $\frac{d}{dx}x^2=2x$ (the e06 gradient check); the tangent to $x^2$ at $x=2$ has slope 4.
+            label="Pencil & paper 1–4",
+        )
+        lessons.solution(
+            r"""**5–6.** The central difference $\frac{f(x+h)-f(x-h)}{2h}$ matches $\frac{d}{dx}x^2=2x$ (the e06 gradient check); the tangent to $x^2$ at $x=2$ has slope 4.
 
 **7.** Backprop *is* the chain rule: for a 2-layer net, $\partial L/\partial w^{(1)}$ is the product of local derivatives from the loss back through layer 2's activation and weights into layer 1 (see the **Backprop** page).""",
-        label="Code & bridge 5–7",
-    )
-with tab_ref:
-    st.subheader("Reading & references")
-    st.markdown(LESSON.references)
+            label="Code & bridge 5–7",
+        )
+if tab_ref.open:
+    with tab_ref:
+        st.subheader("Reading & references")
+        st.markdown(LESSON.references)

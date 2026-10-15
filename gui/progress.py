@@ -14,7 +14,7 @@ STAGES = ("Not started", "Explored", "Explained", "Rebuilt")
 
 
 def empty():
-    return {"version": 1, "topics": {}, "runs": [], "last_topic": None}
+    return {"version": 1, "topics": {}, "runs": [], "practice": {}, "last_topic": None}
 
 
 def validate(raw):
@@ -28,6 +28,24 @@ def validate(raw):
     if not isinstance(raw, dict) or raw.get("version") != 1:
         raise ValueError("Unsupported learning file version.")
     out = empty()
+    from gui.guided_content import valid_practice_key
+    practice = raw.get("practice", {})
+    if not isinstance(practice, dict) or len(practice) > 160:
+        raise ValueError("Invalid guided practice records.")
+    for key, record in practice.items():
+        if not valid_practice_key(key):
+            continue
+        if not isinstance(record, dict):
+            raise ValueError("Invalid guided practice record.")
+        attempts, hints = record.get("attempts", 0), record.get("hints", 0)
+        if type(attempts) is not int or not 0 <= attempts <= 10000 or type(hints) is not int or not 0 <= hints <= 2:
+            raise ValueError("Invalid practice counts.")
+        if any(type(record.get(k, False)) is not bool for k in ("solved", "independent", "revealed")):
+            raise ValueError("Invalid practice result.")
+        out["practice"][key] = {"attempts": attempts, "hints": hints,
+            "solved": record.get("solved", False) or record.get("independent", False),
+            "independent": record.get("independent", False), "revealed": record.get("revealed", False),
+            "updated": str(record.get("updated", ""))[:40]}
     from gui.curriculum import CATALOG
     topics = raw.get("topics", {})
     if not isinstance(topics, dict) or len(topics) > 100:
@@ -56,6 +74,39 @@ def validate(raw):
     if len(json.dumps(out).encode()) > MAX_BYTES:
         raise ValueError("Learning file exceeds 500 KB.")
     return out
+
+
+def record_practice(data, key, action, *, correct=False):
+    """Hints and reveals persist, so reloading cannot turn an assisted solve into an independent one."""
+    from gui.guided_content import valid_practice_key
+    if not valid_practice_key(key) or action not in ("check", "hint", "reveal"):
+        raise ValueError("Unknown practice action.")
+    updated = validate(data)
+    record = updated["practice"].setdefault(key, {"attempts": 0, "hints": 0,
+        "solved": False, "independent": False, "revealed": False})
+    if action == "hint":
+        record["hints"] = min(2, record["hints"] + 1)
+    elif action == "reveal":
+        record["revealed"] = True
+    else:
+        record["attempts"] = min(10000, record["attempts"] + 1)
+        record["solved"] |= bool(correct)
+        record["independent"] |= bool(correct) and not record["hints"] and not record["revealed"]
+    record["updated"] = datetime.now(timezone.utc).isoformat()
+    return validate(updated)
+
+
+def merge_practice(first, second):
+    """Progress and help exposure are cumulative across browser tabs and imports."""
+    merged = copy.deepcopy(first)
+    for key, other in second.items():
+        current = merged.setdefault(key, {})
+        for field in ("solved", "independent", "revealed"):
+            current[field] = bool(current.get(field) or other.get(field))
+        for field in ("attempts", "hints"):
+            current[field] = max(current.get(field, 0), other.get(field, 0))
+        current["updated"] = max(current.get("updated", ""), other.get("updated", ""))
+    return merged
 
 
 def start_run(data, *, title, lesson, seed, settings, prediction):
@@ -168,9 +219,20 @@ export default function({data, setStateValue}) {
             if (!previous || stamp(run) >= stamp(previous)) runs.set(run.id, run);
           }
           value.runs = Array.from(runs.values());
+          value.practice = value.practice || {};
+          for (const [key, other] of Object.entries(saved.practice || {})) {
+            const current = value.practice[key] || {};
+            for (const field of ["solved", "independent", "revealed"])
+              current[field] = Boolean(current[field] || other[field]);
+            for (const field of ["attempts", "hints"])
+              current[field] = Math.max(current[field] || 0, other[field] || 0);
+            current.updated = String(current.updated || "") > String(other.updated || "")
+              ? current.updated : other.updated;
+            value.practice[key] = current;
+          }
         }
         const serialized = JSON.stringify(value);
-        if (serialized.length > 500000 || value.runs.length > 100) {
+        if (serialized.length > 500000 || value.runs.length > 100 || Object.keys(value.practice || {}).length > 160) {
           setStateValue("error", true);
           return;
         }

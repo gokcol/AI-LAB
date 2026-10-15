@@ -8,6 +8,8 @@ import streamlit as st
 import i18n
 import lab
 import ui
+from gui import curriculum, progress, guided
+from gui.guided_content import LESSONS, practice_summary
 
 LANG = i18n.lang()
 COPY = {
@@ -76,18 +78,39 @@ for col, (title, body) in zip(cols, C["steps"]):
 
 st.divider()
 
+# Follow the sidebar on entry/change, while retaining an explicit coach choice on reruns.
+module = st.session_state.get("module", "ANN")
+if module not in ("ANN", "ML", "Math"):
+    module = "ANN"
+if st.session_state.get("coach_module_seen") != module:
+    st.session_state["coach_track"] = module
+    st.session_state["coach_module_seen"] = module
+track = st.selectbox("Learning track", ["ANN", "ML", "Math"], key="coach_track")
+focused = [key for key, lesson in LESSONS.items() if lesson["track"] == track]
+st.caption(f"{track} companion · recommendations, questions, practice and derivations below follow this track.")
+
 tab_today, tab_questions, tab_checks, tab_derivations, tab_template = st.tabs(C["tabs"])
 
 with tab_today:
-    from gui import curriculum, progress
     st.subheader(C["suggested_order"])
-    track = st.selectbox("Choose today's track", ["ANN", "ML", "Math"])
     candidates = [t for t in curriculum.TOPICS if t.track == track]
     records = progress.state()["topics"]
-    recommended = next((t for t in candidates if records.get(t.key, {}).get("stage") != "Rebuilt"), candidates[0])
+    recommended = next((t for t in candidates
+        if records.get(t.key, {}).get("stage") != "Rebuilt"
+        and (t.key not in focused or practice_summary(t.key, progress.state().get("practice", {}))["independent"] < 8)), candidates[0])
+    needs_practice = next((key for key in focused if practice_summary(key, progress.state().get("practice", {}))["independent"] < 8), None)
+    if needs_practice:
+        recommended = curriculum.CATALOG[needs_practice]
     st.page_link(recommended.path, label=f"Today: {recommended.title}")
     st.write(recommended.objective)
-    st.caption(f"About {recommended.minutes} minutes. Suggested from your saved self-assessments; you can skip ahead.")
+    st.caption(f"About {recommended.minutes} minutes. Guided topics use saved exercise results; other suggestions use your self-assessed checkpoints. You can skip ahead.")
+    for key in focused:
+        counts = practice_summary(key, progress.state().get("practice", {}))
+        st.write(f"**{curriculum.CATALOG[key].title}:** {counts['solved']}/8 exercise types solved; {counts['independent']}/8 without hints or revealed answers.")
+    if needs_practice:
+        st.info("Begin with Guided start in the suggested lesson, or use Self-checks here. Reading a page does not mark its exercises solved.")
+        if track == "ML":
+            st.page_link("views/ml_foundations.py", label="New to ML? First explore features, targets and data splits")
     st.write("Predict one outcome, run the example, explain the result, then rebuild the smallest version without looking. Save a checkpoint at the bottom of the lesson.")
     st.page_link("views/my_learning.py", label="Review my notes and experiment notebook")
     explained = [t for t in candidates if records.get(t.key, {}).get("stage") in {"Explained", "Rebuilt"}]
@@ -101,43 +124,76 @@ with tab_today:
     )
 
 with tab_questions:
-    qfiles = {
-        "Tier 0": lab.LAB_ROOT / "learning/questions/tier0_neuron.md",
-        "Tier 1": lab.LAB_ROOT / "learning/questions/tier1_backprop.md",
-        "Tier 2": lab.LAB_ROOT / "learning/questions/tier2_training.md",
-    }
-    choice = st.segmented_control(
-        C["question_set"],
-        list(qfiles),
-        default="Tier 2",
-        key="study_coach_question_set",
-    ) or "Tier 2"
-    st.markdown(lab.read_localized(qfiles[choice], LANG), unsafe_allow_html=True)  # renders <details> answer keys
+    if track == "ANN":
+        qfiles = {
+            "Tier 0": lab.LAB_ROOT / "learning/questions/tier0_neuron.md",
+            "Tier 1": lab.LAB_ROOT / "learning/questions/tier1_backprop.md",
+            "Tier 2": lab.LAB_ROOT / "learning/questions/tier2_training.md",
+        }
+        choice = st.segmented_control(
+            C["question_set"],
+            list(qfiles),
+            default="Tier 2",
+            key="study_coach_question_set",
+        ) or "Tier 2"
+        st.markdown(lab.read_localized(qfiles[choice], LANG), unsafe_allow_html=True)  # renders <details> answer keys
+    else:
+        st.subheader(f"{track} recall questions")
+        st.caption("Answer aloud before opening the explanation. These reflections do not award checked practice results.")
+        for key in focused:
+            st.markdown("### " + LESSONS[key]["title"])
+            for question, answer in LESSONS[key]["recall"]:
+                st.write("**" + question + "**")
+                with st.expander("Explanation · " + question):
+                    st.write(answer)
 
 with tab_checks:
-    cfiles = {
-        "Tier 0": lab.LAB_ROOT / "learning/self_checks/tier0_self_check.md",
-        "Tier 1": lab.LAB_ROOT / "learning/self_checks/tier1_self_check.md",
-        "Tier 2": lab.LAB_ROOT / "learning/self_checks/tier2_self_check.md",
-    }
-    choice = st.segmented_control(
-        C["self_check"],
-        list(cfiles),
-        default="Tier 2",
-        key="study_coach_self_check",
-    ) or "Tier 2"
-    st.markdown(lab.read_localized(cfiles[choice], LANG))
+    if track == "ANN":
+        cfiles = {
+            "Tier 0": lab.LAB_ROOT / "learning/self_checks/tier0_self_check.md",
+            "Tier 1": lab.LAB_ROOT / "learning/self_checks/tier1_self_check.md",
+            "Tier 2": lab.LAB_ROOT / "learning/self_checks/tier2_self_check.md",
+        }
+        choice = st.segmented_control(
+            C["self_check"],
+            list(cfiles),
+            default="Tier 2",
+            key="study_coach_self_check",
+        ) or "Tier 2"
+        st.markdown(lab.read_localized(cfiles[choice], LANG))
+    else:
+        chosen = st.selectbox("Practise a foundation", focused, format_func=lambda k: LESSONS[k]["title"], key="coach_practice_"+track)
+        guided.render_exercises(chosen, namespace="coach")
+        st.page_link(curriculum.CATALOG[chosen].path, label="Open the full guide and interactive example")
 
 with tab_derivations:
-    derivations = sorted(
-        p for p in (lab.LAB_ROOT / "infobase/04_derivations").glob("*.md")
-        if not lab.is_localized_variant(p)
-    )
-    labels = [p.stem.replace("-", " ") for p in derivations]
-    selected = st.selectbox(C["derivation"], labels, index=0, key="study_coach_derivation")
-    selected = selected or labels[0]
-    path = derivations[labels.index(selected)]
-    st.markdown(lab.read_localized(path, LANG))
+    if track == "ANN":
+        derivations = sorted(
+            p for p in (lab.LAB_ROOT / "infobase/04_derivations").glob("*.md")
+            if not lab.is_localized_variant(p)
+        )
+        labels = [p.stem.replace("-", " ") for p in derivations]
+        selected = st.selectbox(C["derivation"], labels, index=0, key="study_coach_derivation")
+        selected = selected or labels[0]
+        path = derivations[labels.index(selected)]
+        st.markdown(lab.read_localized(path, LANG))
+    else:
+        st.subheader(f"{track} · derive it one step at a time")
+        for key in focused:
+            st.markdown("### " + LESSONS[key]["title"])
+            st.latex(LESSONS[key]["formula"])
+            st.write(LESSONS[key]["symbols"])
+            st.markdown(LESSONS[key]["derive"])
+            with st.expander("Revisit the numerical example · " + curriculum.CATALOG[key].title):
+                st.markdown(LESSONS[key]["worked"])
 
 with tab_template:
-    st.markdown(lab.read_localized(lab.LAB_ROOT / "learning/templates/checkpoint.md", LANG))
+    if track == "ANN":
+        st.markdown(lab.read_localized(lab.LAB_ROOT / "learning/templates/checkpoint.md", LANG))
+    else:
+        st.subheader(f"{track} reflection")
+        st.write("1. Explain one idea without a formula.\n2. Calculate one example without looking.\n3. Name a mistake you made and how you corrected it.\n4. Explain where this idea appears in the other track.")
+        for key in focused:
+            st.page_link(curriculum.CATALOG[key].path, label="Save a checkpoint in " + curriculum.CATALOG[key].title)
+        st.page_link("views/my_learning.py", label="Review or export checkpoints, exercise results and notebook")
+        st.caption("Checkpoints are your self-assessment. Checked exercise results are recorded separately and do not certify mastery.")

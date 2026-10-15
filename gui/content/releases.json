@@ -1,5 +1,15 @@
 [
   {
+    "version": "1.14",
+    "date": "2026-10-15",
+    "title": "Guided Math and ML foundations",
+    "changes": [
+      "**Four guided foundations:** learn [dot products](/math_vectors), [gradients](/math_calculus), [regression](/ml_regression) and [classification](/ml_classification) through plain-language explanations, worked numbers and interactive examples. Record predictions before revealing results.",
+      "**32 checked exercises:** practise calculations, common mistakes and small implementation choices with progressive hints, worked answers and five practice sets. Browser-saved results distinguish assisted solves from answers checked without hints or reveals.",
+      "**A companion for your track:** [Study Coach](/study_coach) now gives ML and Math their own recall questions, checked practice, derivations and next steps. [My learning](/my_learning) includes exercise results in its display and portable export, separately from self-assessed checkpoints."
+    ]
+  },
+  {
     "version": "1.13",
     "date": "2026-09-20",
     "title": "Readable expandable sections",

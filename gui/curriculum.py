@@ -1,5 +1,5 @@
 """One public curriculum catalog for routing, prerequisites and learner checkpoints."""
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 
 @dataclass(frozen=True)
@@ -59,6 +59,7 @@ TOPICS = [
     Topic("math_information", "Information theory", "Math", 20, "Calculate entropy and cross-entropy.", ("math_probability",)),
     Topic("math_numerical", "Numerical computing", "Math", 20, "Recognize overflow, cancellation and gradient-check error.", ("math_calculus",)),
 ]
+TOPICS = [replace(t, updated="2026-10-15") if t.key in {"math_vectors", "math_calculus", "ml_regression", "ml_classification"} else t for t in TOPICS]
 CATALOG = {t.key: t for t in TOPICS}
 
 
