@@ -554,8 +554,44 @@ def inject_theme(selected: str = DEFAULT_THEME, zoom: int = DEFAULT_ZOOM) -> Non
             box-shadow: 0 9px 22px rgba(37, 99, 235, 0.36) !important;
         }
 
+        /* Wide math starts at its left edge and scrolls within the lesson.
+           A centered, overflowing KaTeX line otherwise loses its first terms. */
+        [data-testid="stMarkdownContainer"] .katex-display {
+            max-width: 100%; overflow-x: auto; overflow-y: hidden;
+            padding: .35rem .15rem .65rem; text-align: left;
+            scrollbar-width: thin;
+            scrollbar-color: var(--ailab-muted) var(--ailab-panel);
+        }
+        [data-testid="stMarkdownContainer"] .katex-display > .katex {
+            width: max-content; min-width: 100%; text-align: center;
+        }
+        /* Inline expressions can also be wider than a phone. */
+        [data-testid="stMarkdownContainer"] .katex:not(.katex-display > .katex) {
+            display: inline-block; max-width: 100%; overflow-x: auto;
+            overflow-y: hidden; vertical-align: middle; padding-block: .15em;
+            scrollbar-width: thin;
+        }
+        .ailab-plot-mobile { display: none; }
+        .ailab-plot-scroll {
+            width: 100%; overflow-x: auto; overscroll-behavior-x: contain;
+            scrollbar-width: thin;
+            scrollbar-color: var(--ailab-muted) var(--ailab-panel);
+        }
+        .ailab-plot-scroll:focus-visible {
+            outline: 2px solid var(--ailab-blue); outline-offset: -2px;
+        }
+        .ailab-plot-scroll svg { min-width: var(--ailab-plot-width); }
+        .ailab-plot-hint { font-size: .8rem !important; color: var(--ailab-muted) !important; }
+
         /* ---------------- mobile ------------------------------------------------ */
         @media (max-width: 640px) {
+            .ailab-plot-desktop { display: none; }
+            .ailab-plot-mobile { display: block; }
+            [data-testid="stMarkdownContainer"]:has(> .katex-display)::after {
+                content: "↔ Long equations scroll sideways.";
+                display: block; font-size: .8rem; color: var(--ailab-muted);
+                margin-top: -.5rem; margin-bottom: .5rem;
+            }
             .block-container { padding-left: 0.8rem; padding-right: 0.8rem; }
             button[data-baseweb="tab"] {
                 font-size: 0.88rem;

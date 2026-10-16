@@ -7,7 +7,58 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
-from gui.theme_visuals import diagram_html, figure_svg, plot_color
+from gui.theme_visuals import diagram_html, figure_svg, plot_color, responsive_figure_html
+
+
+@pytest.mark.parametrize('selected', ['light', 'dark'])
+def test_mobile_plot_has_readable_text_without_changing_source_data_or_layout(selected):
+    fig, ax = plt.subplots(figsize=(4.7, 4))
+    line, = ax.plot([0, 1, 2], [1, 3, 2], label='Measured probability')
+    ax.set(title='Probability distribution', xlabel='Outcome', ylabel='Probability')
+    ax.legend(fontsize=8)
+    fig.tight_layout()
+    before = (tuple(fig.get_size_inches()), ax.get_position().bounds,
+              ax.xaxis.get_major_locator(), ax.get_xlim(), ax.get_ylim(),
+              ax.title.get_fontsize(), ax.get_legend().get_texts()[0].get_fontsize())
+    root = ET.fromstring(responsive_figure_html(fig, selected=selected))
+    variants = root.findall('.//{http://www.w3.org/2000/svg}svg')
+    assert len(variants) == 2
+    mobile = variants[1]
+    import re
+    minimum = float(re.search(r'--ailab-plot-width:(\d+)px', ET.tostring(root, encoding='unicode'))[1])
+    width = float(mobile.get('viewBox').split()[2])
+    text = mobile.findall('.//{http://www.w3.org/2000/svg}text')
+    fonts = [float(re.search(r'font-size: ([\d.]+)px', t.get('style', ''))[1]) for t in text]
+    # Even a narrow 320px phone keeps labels and legends >=14px, and this
+    # ordinary single-panel chart fits without needing horizontal panning.
+    assert min(fonts) * max(292, minimum) / width >= 14
+    assert minimum <= 292
+    assert tuple(fig.get_size_inches()) == before[0]
+    assert (ax.get_position().bounds, ax.xaxis.get_major_locator(), ax.get_xlim(), ax.get_ylim(),
+            ax.title.get_fontsize(), ax.get_legend().get_texts()[0].get_fontsize()) == before[1:]
+    assert list(line.get_xdata()) == [0, 1, 2] and list(line.get_ydata()) == [1, 3, 2]
+    assert not fig.legends and ax.get_legend().get_visible()
+    plt.close(fig)
+
+
+def test_mobile_complex_plot_preserves_geometry_and_uses_independent_svg_ids():
+    fig, axes = plt.subplots(1, 2, figsize=(9, 3))
+    axes[0].imshow([[0, 1], [1, 0]])
+    axes[0].plot([0, 1], [1, 0], label='Direction')
+    axes[0].legend(fontsize=8)
+    axes[1].plot([0, 1], [0, 1], label='Trend')
+    axes[1].legend(fontsize=8)
+    root = ET.fromstring(responsive_figure_html(fig, selected='dark'))
+    svgs = root.findall('.//{http://www.w3.org/2000/svg}svg')
+    assert svgs[0].get('viewBox') == svgs[1].get('viewBox')
+    paths = lambda svg: [p.get('d') for p in svg.findall('.//{http://www.w3.org/2000/svg}path')]
+    assert paths(svgs[0]) == paths(svgs[1])
+    ids = [element.get('id') for element in root.iter() if element.get('id')]
+    assert len(ids) == len(set(ids))  # clip paths, markers AND overlay filters
+    region = root.find('.//div[@role="region"]')
+    assert region.get('tabindex') == '0'
+    assert 'arrow keys' in region.get('aria-label')
+    plt.close(fig)
 
 
 @pytest.mark.parametrize('example', ['bernoulli', 'distances', 'subplots'])
@@ -172,5 +223,7 @@ st.dataframe(pd.DataFrame({'x':[1,2]}))
     import json
     spec = json.loads(app.get('vega_lite_chart')[0].proto.spec)
     assert spec['usermeta']['embedOptions']['renderer'] == 'svg'
+    assert spec['config']['axis']['labelFontSize'] == 14
+    assert spec['config']['legend']['labelFontSize'] == 14
     assert spec.get('params') or any(layer.get('params') for layer in spec.get('layer', []))  # native pan/zoom selection survives
     assert app.dataframe  # keep native sorting, resizing and download controls

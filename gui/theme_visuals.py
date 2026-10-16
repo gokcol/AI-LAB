@@ -8,8 +8,10 @@ hover/zoom behavior and use SVG so the same CSS theme reaches their labels.
 from __future__ import annotations
 
 import colorsys
+import copy
 import functools
 import io
+import math
 import re
 import threading
 import textwrap
@@ -327,6 +329,86 @@ def figure_svg(fig, *, selected="light", **save_options) -> str:
     return svg.replace("<svg ", '<svg style="display:block;width:100%;height:auto" ', 1)
 
 
+def _compact_figure(fig):
+    """Reflow simple numeric plots; preserve complex/scientific layouts intact.
+
+    Work on a copy because layout, tick locators and aspect handling can all
+    mutate a figure during drawing. Annotated diagrams, images, colorbars and
+    multiple panels keep their geometry and can be panned at readable size.
+    """
+    from matplotlib.text import Text
+    from matplotlib.ticker import AutoLocator, FixedLocator, MaxNLocator, ScalarFormatter
+
+    if len(fig.axes) != 1:
+        return None
+    ax = fig.axes[0]
+    numeric_ticks = isinstance(ax.xaxis.get_major_formatter(), ScalarFormatter)
+    if (ax.name != "rectilinear" or not ax.axison or ax.images or ax.texts
+            or ax.get_subplotspec() is None
+            or (not isinstance(ax.xaxis.get_major_locator(), AutoLocator)
+                and not numeric_ticks and len(ax.get_xticks()) > 4)):
+        return None
+    compact = copy.deepcopy(fig)
+    compact.set_size_inches(3.25, max(2.8, min(3.5, fig.get_figheight())))
+    ax = compact.axes[0]
+    for text in compact.findobj(Text):
+        text.set_fontsize(max(12, text.get_fontsize()))
+    ax.title.set_fontsize(max(14, ax.title.get_fontsize()))
+    for text in (ax.title, ax.xaxis.label, ax.yaxis.label):
+        if "$" not in text.get_text():
+            text.set_text(textwrap.fill(text.get_text(), 26, break_long_words=False,
+                                        break_on_hyphens=False))
+    if type(ax.xaxis.get_major_locator()) is AutoLocator:
+        ax.xaxis.set_major_locator(MaxNLocator(nbins=4, min_n_ticks=3))
+    elif numeric_ticks and isinstance(ax.xaxis.get_major_locator(), FixedLocator):
+        ax.xaxis.set_major_locator(FixedLocator(ax.get_xticks(), nbins=4))
+    legends = [ax.get_legend()] if ax.get_legend() is not None else []
+    legends += compact.legends
+    visibility = [legend.get_visible() for legend in legends]
+    for legend in legends:
+        legend.set_visible(False)
+    compact.tight_layout(pad=.9)
+    compact.set_layout_engine(None)
+    for legend, visible in zip(legends, visibility):
+        legend.set_visible(visible)
+    return compact
+
+
+def responsive_figure_html(fig, *, selected="light", **save_options) -> str:
+    """Keep mobile text at least 14 CSS px instead of shrinking a whole chart.
+
+    Simple charts get a narrow layout with larger text. Wider scientific
+    figures retain their geometry in a keyboard/touch-scrollable region.
+    CSS selects the variant without rerunning simulations on viewport changes.
+    """
+    from matplotlib.text import Text
+    import matplotlib.pyplot as plt
+
+    with _LOCK:
+        desktop = figure_svg(fig, selected=selected, **save_options)
+        compact = _compact_figure(fig)
+        try:
+            mobile_fig = compact if compact is not None else fig
+            mobile = figure_svg(compact, selected=selected, **save_options) if compact is not None else desktop
+            fonts = [t.get_fontsize() for t in mobile_fig.findobj(Text)
+                     if t.get_visible() and t.get_text().strip()]
+            width = float(re.search(r'viewBox="[^"]*?([\d.]+) [\d.]+"', mobile)[1])
+            minimum = math.ceil(width * 14 / min(fonts, default=12))
+        finally:
+            if compact is not None:
+                plt.close(compact)
+    # Keep IDs unique even when both variants reuse the same exported geometry.
+    if compact is None:
+        mobile = re.sub(r'plot([a-f0-9]+)_', r'mobileplot\1_', mobile)
+        mobile = mobile.replace("series-", "mobile-series-")
+    return (f'<div class="ailab-responsive-plot"><div class="ailab-plot-desktop">{desktop}</div>'
+            f'<div class="ailab-plot-mobile" style="--ailab-plot-width:{minimum}px">'
+            '<div class="ailab-plot-scroll" role="region" tabindex="0" '
+            'aria-label="Lesson plot; use left and right arrow keys to explore wide plots">'
+            f'{mobile}</div><p class="ailab-plot-hint">↔ Swipe across wider plots to see every label.</p>'
+            '</div></div>')
+
+
 def install() -> None:
     """Install once, before localization captures Streamlit's bound methods."""
     if getattr(st, "_ailab_visuals_installed", False):
@@ -350,7 +432,7 @@ def install() -> None:
         if fig is None:
             fig = plt.gcf()
             clear_figure = True if clear_figure is None else clear_figure
-        rendered = self.markdown(figure_svg(fig, selected=st.session_state.get("theme", "browser"), **kwargs), unsafe_allow_html=True,
+        rendered = self.markdown(responsive_figure_html(fig, selected=st.session_state.get("theme", "browser"), **kwargs), unsafe_allow_html=True,
                                  width=width if isinstance(width, int) else "stretch")
         if clear_figure:
             fig.clear()
@@ -362,6 +444,8 @@ def install() -> None:
     @functools.wraps(original_chart)
     def svg_chart(self, altair_chart, *args, **kwargs):
         chart = altair_chart.copy(deep=True)
+        chart = chart.configure_axis(labelFontSize=14, titleFontSize=14).configure_legend(
+            labelFontSize=14, titleFontSize=14)
         meta = chart.usermeta if isinstance(chart.usermeta, dict) else {}
         chart.usermeta = {**meta, "embedOptions": {**meta.get("embedOptions", {}), "renderer": "svg"}}
         return original_chart(self, chart, *args, **kwargs)

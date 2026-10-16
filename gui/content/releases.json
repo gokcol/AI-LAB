@@ -1,6 +1,16 @@
 [
   {
     "version": "1.14",
+    "revision": 8,
+    "date": "2026-10-16",
+    "title": "Readable plots and equations on phones",
+    "changes": [
+      "**Larger mobile plot text:** simple charts use a compact layout with larger labels and wrapped legends. Wider figures keep their detail and can be swiped horizontally. Try the [probability playground](/math_probability).",
+      "**Complete equations:** long formulas scroll within the lesson, keeping their first and last terms accessible. Mobile hints make scrolling easier to discover, and interactive charts also have larger axis and legend text. These improvements work in both light and dark themes."
+    ]
+  },
+  {
+    "version": "1.14",
     "revision": 7,
     "date": "2026-10-16",
     "title": "Plot legends without overlaps",
