@@ -41,13 +41,12 @@ def test_mobile_plot_has_readable_text_without_changing_source_data_or_layout(se
     plt.close(fig)
 
 
-def test_mobile_complex_plot_preserves_geometry_and_uses_independent_svg_ids():
-    fig, axes = plt.subplots(1, 2, figsize=(9, 3))
-    axes[0].imshow([[0, 1], [1, 0]])
-    axes[0].plot([0, 1], [1, 0], label='Direction')
-    axes[0].legend(fontsize=8)
-    axes[1].plot([0, 1], [0, 1], label='Trend')
-    axes[1].legend(fontsize=8)
+def test_colorbar_stays_with_its_plot_and_uses_independent_svg_ids():
+    fig, ax = plt.subplots(figsize=(5, 3))
+    im = ax.imshow([[0, 1], [1, 0]])
+    ax.plot([0, 1], [1, 0], label='Direction')
+    ax.legend(fontsize=8)
+    fig.colorbar(im, ax=ax)
     root = ET.fromstring(responsive_figure_html(fig, selected='dark'))
     svgs = root.findall('.//{http://www.w3.org/2000/svg}svg')
     assert svgs[0].get('viewBox') == svgs[1].get('viewBox')
@@ -58,6 +57,73 @@ def test_mobile_complex_plot_preserves_geometry_and_uses_independent_svg_ids():
     region = root.find('.//div[@role="region"]')
     assert region.get('tabindex') == '0'
     assert 'arrow keys' in region.get('aria-label')
+    plt.close(fig)
+
+
+def test_detached_multi_panel_figure_exports_without_a_canvas_renderer():
+    from matplotlib.figure import Figure
+    fig = Figure(figsize=(9, 3))
+    for ax in fig.subplots(1, 2):
+        ax.plot([0, 1], [1, 0], label='Descent')
+        ax.legend()
+    canvas = fig.canvas
+    assert not hasattr(canvas, 'get_renderer')
+    root = ET.fromstring(responsive_figure_html(fig, selected='dark'))
+    assert len(root.findall('.//{http://www.w3.org/2000/svg}svg')) == 3
+    assert fig.canvas is canvas
+    assert all(ax.get_legend().get_visible() for ax in fig.axes)
+
+
+@pytest.mark.parametrize('selected', ['light', 'dark'])
+@pytest.mark.parametrize('shape,images', [((1, 2), False), ((1, 3), False), ((2, 2), True)])
+def test_mobile_panels_stack_in_reading_order_preserving_data_scales_and_desktop(shape, images, selected, monkeypatch):
+    from gui import theme_visuals
+    fig, axes = plt.subplots(*shape, figsize=(9.2, 3.4), sharey=True)
+    axes = np.asarray(axes).ravel()
+    for i, ax in enumerate(axes):
+        ax.set(title=f'Panel {i + 1}', xlabel='Input')
+        ax.plot([0, 1], [i, i + 1], label=f'Series {i + 1}')
+        ax.legend(fontsize=7.5)
+        if images and i % 2 == 0:
+            ax.imshow([[0, 1], [2, 3]], cmap='Blues', vmin=0, vmax=3)
+    axes[0].set_ylabel('Shared output')
+    fig.tight_layout()
+    fig.canvas.draw()
+    source = [(ax.get_position().bounds, ax.get_xlim(), ax.get_ylim()) for ax in axes]
+    before = ET.fromstring(figure_svg(fig, selected=selected))
+    original_export = theme_visuals.figure_svg
+    exported = []
+    def inspect_panel(figure, **kwargs):
+        if figure is not fig:
+            assert len(figure.axes) == 1
+            ax = figure.axes[0]
+            i = len(exported)
+            assert ax.get_xlim() == source[i][1] and ax.get_ylim() == source[i][2]
+            assert ax.get_ylabel() == 'Shared output'
+            assert any(t.get_visible() for t in ax.get_yticklabels())
+            assert list(ax.lines[0].get_ydata()) == [i, i + 1]
+            if images and i % 2 == 0:
+                assert np.array_equal(ax.images[0].get_array(), [[0, 1], [2, 3]])
+                assert ax.images[0].get_clim() == (0, 3)
+            exported.append(ax.get_title())
+        return original_export(figure, **kwargs)
+    monkeypatch.setattr(theme_visuals, 'figure_svg', inspect_panel)
+    root = ET.fromstring(responsive_figure_html(fig, selected=selected))
+    svgs = root.findall('.//{http://www.w3.org/2000/svg}svg')
+    assert len(svgs) == 1 + len(axes)
+    assert exported == [f'Panel {i + 1}' for i in range(len(axes))]
+    paths = lambda svg: [p.get('d') for p in svg.findall('.//{http://www.w3.org/2000/svg}path')]
+    assert paths(svgs[0]) == paths(before) and svgs[0].get('viewBox') == before.get('viewBox')
+    for i, svg in enumerate(svgs[1:]):
+        labels = ''.join(svg.itertext())
+        assert f'Series {i + 1}' in labels
+        assert all(f'Series {j + 1}' not in labels for j in range(len(axes)) if j != i)
+        assert float(svg.get('viewBox').split()[2]) < 260  # readable at 320px, without panning
+    assert not root.findall('.//div[@class="ailab-plot-scroll"]')
+    ids = [e.get('id') for e in root.iter() if e.get('id')]
+    assert len(ids) == len(set(ids))
+    assert [(ax.get_position().bounds, ax.get_xlim(), ax.get_ylim()) for ax in axes] == source
+    assert len(axes[0].get_shared_y_axes().get_siblings(axes[0])) == len(axes)
     plt.close(fig)
 
 
@@ -218,7 +284,7 @@ import streamlit as st
 import pandas as pd
 st.line_chart(pd.DataFrame({'a':[1,2], 'b':[2,1]}))
 st.dataframe(pd.DataFrame({'x':[1,2]}))
-''').run()
+''', default_timeout=15).run()
     assert not app.exception
     import json
     spec = json.loads(app.get('vega_lite_chart')[0].proto.spec)

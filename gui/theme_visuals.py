@@ -10,6 +10,7 @@ from __future__ import annotations
 import colorsys
 import copy
 import functools
+import html
 import io
 import math
 import re
@@ -214,6 +215,7 @@ def figure_svg(fig, *, selected="light", **save_options) -> str:
     from matplotlib.text import Text
     from matplotlib.colors import to_hex
     from matplotlib import rc_context
+    from matplotlib.backends.backend_agg import FigureCanvasAgg
 
     saved = []
     temporary_legends = []
@@ -226,7 +228,12 @@ def figure_svg(fig, *, selected="light", **save_options) -> str:
         getattr(artist, "set_" + prop)(value)
 
     with _LOCK:
+        canvas = fig.canvas
         try:
+            # Detached/copied figures can have a base canvas with no renderer.
+            # Legend measurements need Agg; never leave the caller's canvas changed.
+            if not hasattr(canvas, "get_renderer"):
+                FigureCanvasAgg(fig)
             legends = [(ax, ax.get_legend()) for ax in fig.axes if ax.get_legend() is not None]
             legends += [(None, legend) for legend in fig.legends]
             legends = [(ax, legend) for ax, legend in legends
@@ -309,6 +316,7 @@ def figure_svg(fig, *, selected="light", **save_options) -> str:
                 legend.remove()
             for artist, prop, value in reversed(saved):
                 getattr(artist, "set_" + prop)(value)
+            fig.set_canvas(canvas)
     svg = buf.getvalue()
     svg = svg[svg.index("<svg"):]
     # Namespace IDs: independent figures often have identical clip/marker IDs.
@@ -329,28 +337,14 @@ def figure_svg(fig, *, selected="light", **save_options) -> str:
     return svg.replace("<svg ", '<svg style="display:block;width:100%;height:auto" ', 1)
 
 
-def _compact_figure(fig):
-    """Reflow simple numeric plots; preserve complex/scientific layouts intact.
-
-    Work on a copy because layout, tick locators and aspect handling can all
-    mutate a figure during drawing. Annotated diagrams, images, colorbars and
-    multiple panels keep their geometry and can be panned at readable size.
-    """
+def _compact_layout(compact):
+    """Size and label an owned, single-panel figure for a phone."""
     from matplotlib.text import Text
     from matplotlib.ticker import AutoLocator, FixedLocator, MaxNLocator, ScalarFormatter
 
-    if len(fig.axes) != 1:
-        return None
-    ax = fig.axes[0]
-    numeric_ticks = isinstance(ax.xaxis.get_major_formatter(), ScalarFormatter)
-    if (ax.name != "rectilinear" or not ax.axison or ax.images or ax.texts
-            or ax.get_subplotspec() is None
-            or (not isinstance(ax.xaxis.get_major_locator(), AutoLocator)
-                and not numeric_ticks and len(ax.get_xticks()) > 4)):
-        return None
-    compact = copy.deepcopy(fig)
-    compact.set_size_inches(3.25, max(2.8, min(3.5, fig.get_figheight())))
+    compact.set_size_inches(3.25, max(2.8, min(3.5, compact.get_figheight())))
     ax = compact.axes[0]
+    numeric_ticks = isinstance(ax.xaxis.get_major_formatter(), ScalarFormatter)
     for text in compact.findobj(Text):
         text.set_fontsize(max(12, text.get_fontsize()))
     ax.title.set_fontsize(max(14, ax.title.get_fontsize()))
@@ -371,14 +365,88 @@ def _compact_figure(fig):
     compact.set_layout_engine(None)
     for legend, visible in zip(legends, visibility):
         legend.set_visible(visible)
+
+
+def _compact_figure(fig):
+    """Reflow simple numeric plots on a copy, preserving the source figure."""
+    from matplotlib.ticker import AutoLocator, ScalarFormatter
+
+    if len(fig.axes) != 1:
+        return None
+    ax = fig.axes[0]
+    numeric_ticks = isinstance(ax.xaxis.get_major_formatter(), ScalarFormatter)
+    if (ax.name != "rectilinear" or not ax.axison or ax.images or ax.texts
+            or ax.get_subplotspec() is None
+            or (not isinstance(ax.xaxis.get_major_locator(), AutoLocator)
+                and not numeric_ticks and len(ax.get_xticks()) > 4)):
+        return None
+    compact = copy.deepcopy(fig)
+    _compact_layout(compact)
     return compact
+
+
+def _stacked_panels(fig, *, selected="light", **save_options):
+    """Export independent subplots in reading order with local legend rows.
+
+    A colorbar or a twin axis is part of its plot, not another teaching panel.
+    Keep those composite figures together. All current multi-panel lessons use
+    independent rectilinear subplots, including shared axes and image panels.
+    """
+    from matplotlib.gridspec import GridSpec
+    import matplotlib.pyplot as plt
+
+    axes = [ax for ax in fig.axes if ax.get_visible()]
+    if (len(axes) < 2 or any(hasattr(ax, "_colorbar") or ax.name != "rectilinear"
+                             or ax.get_subplotspec() is None for ax in axes)):
+        return None
+    specs = [ax.get_subplotspec() for ax in axes]
+    if len(set(specs)) != len(specs):  # overlaid axes must stay overlaid
+        return None
+    # Use grid cells, not aspect-adjusted image boxes, to preserve row order.
+    axes.sort(key=lambda ax: (-round(ax.get_subplotspec().get_position(fig).y1, 6),
+                              ax.get_subplotspec().get_position(fig).x0))
+    panels = []
+    for index, source in enumerate(axes):
+        panel = copy.deepcopy(fig)
+        try:
+            ax = panel.axes[fig.axes.index(source)]
+            limits = source.get_xlim(), source.get_ylim()
+            for other in list(panel.axes):
+                if other is not ax:
+                    panel.delaxes(other)
+            ax.set_subplotspec(GridSpec(1, 1, figure=panel)[0])
+            # Shared axes normally suppress inner tick labels. Each stacked
+            # panel needs its own scale and the original shared limits.
+            ax.tick_params(labelleft=True, labelbottom=True)
+            for dimension in ("x", "y"):
+                if not getattr(source, f"get_{dimension}label")():
+                    siblings = getattr(source, f"get_shared_{dimension}_axes")().get_siblings(source)
+                    label = next((getattr(other, f"get_{dimension}label")()
+                                  for other in fig.axes if other in siblings
+                                  and getattr(other, f"get_{dimension}label")()), "")
+                    getattr(ax, f"set_{dimension}label")(label)
+            ax.set_xlim(limits[0]); ax.set_ylim(limits[1])
+            if index:
+                # Figure-wide headings/keys appear once, with the first panel.
+                for text in panel.texts:
+                    text.set_text("")
+                for legend in list(panel.legends):
+                    legend.remove()
+            _compact_layout(panel)
+            svg = figure_svg(panel, selected=selected, **save_options)
+            label = html.escape(f"Panel {index + 1}: {source.get_title() or 'Lesson plot'}", quote=True)
+            svg = svg.replace('aria-label="Lesson plot"', f'aria-label="{label}"', 1)
+            panels.append(f'<div class="ailab-plot-panel">{svg}</div>')
+        finally:
+            plt.close(panel)
+    return "".join(panels)
 
 
 def responsive_figure_html(fig, *, selected="light", **save_options) -> str:
     """Keep mobile text at least 14 CSS px instead of shrinking a whole chart.
 
-    Simple charts get a narrow layout with larger text. Wider scientific
-    figures retain their geometry in a keyboard/touch-scrollable region.
+    Simple charts get a narrow layout with larger text. Independent subplots
+    stack vertically; composite diagrams retain their geometry and can scroll.
     CSS selects the variant without rerunning simulations on viewport changes.
     """
     from matplotlib.text import Text
@@ -386,6 +454,11 @@ def responsive_figure_html(fig, *, selected="light", **save_options) -> str:
 
     with _LOCK:
         desktop = figure_svg(fig, selected=selected, **save_options)
+        stacked = _stacked_panels(fig, selected=selected, **save_options)
+        if stacked is not None:
+            return (f'<div class="ailab-responsive-plot"><div class="ailab-plot-desktop">{desktop}</div>'
+                    '<div class="ailab-plot-mobile ailab-plot-stack" role="group" '
+                    f'aria-label="Chart panels in reading order">{stacked}</div></div>')
         compact = _compact_figure(fig)
         try:
             mobile_fig = compact if compact is not None else fig

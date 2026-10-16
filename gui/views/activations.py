@@ -122,7 +122,7 @@ if t1.open:
             st.markdown(f"**At z = {zq:.1f}:**\n\n"
                         "| activation | range | φ(z) | φ′(z) | gradient flow |\n|---|---|---|---|---|\n"
                         + "\n".join(rows))
-            st.info("**Read the right-hand plot as 'how much learning signal survives this unit'.** "
+            st.info("**Read the gradient plot as 'how much learning signal survives this unit'.** "
                     "Backprop multiplies by $\\varphi'(z)$ at every layer, so a curve that spends most "
                     "of its range near **0** is a network that trains slowly or not at all.",
                     icon=":material/lightbulb:")

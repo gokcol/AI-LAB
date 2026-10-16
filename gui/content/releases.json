@@ -1,6 +1,16 @@
 [
   {
     "version": "1.14",
+    "revision": 9,
+    "date": "2026-10-16",
+    "title": "Stacked comparison charts on mobile",
+    "changes": [
+      "**Read comparisons from top to bottom:** multi-panel charts now stack vertically on phones, with a readable title, axes and legend for each panel. Explore [activation functions](/activations), [the chain rule](/math_calculus), [optimization](/math_optimization), [CNN filters](/cnn) and [generative models](/generative) without sideways chart scrolling.",
+      "**Consistent comparisons:** shared scales and plotted data are preserved, and shared-axis labels repeat where needed. Desktop charts retain their existing layout, in both light and dark themes."
+    ]
+  },
+  {
+    "version": "1.14",
     "revision": 8,
     "date": "2026-10-16",
     "title": "Readable plots and equations on phones",

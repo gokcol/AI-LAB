@@ -572,6 +572,7 @@ def inject_theme(selected: str = DEFAULT_THEME, zoom: int = DEFAULT_ZOOM) -> Non
             scrollbar-width: thin;
         }
         .ailab-plot-mobile { display: none; }
+        .ailab-plot-panel + .ailab-plot-panel { margin-top: 1.25rem; }
         .ailab-plot-scroll {
             width: 100%; overflow-x: auto; overscroll-behavior-x: contain;
             scrollbar-width: thin;
