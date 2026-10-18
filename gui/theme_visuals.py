@@ -196,8 +196,11 @@ def _legend_rows(fig, legends, temporary):
     """
     if not legends:
         return
-    fig.draw_without_rendering()
-    renderer = fig.canvas.get_renderer()
+    # Keep the renderer we own: draw_without_rendering() may temporarily select
+    # an export backend whose canvas has no get_renderer() during app reruns.
+    from matplotlib.backends.backend_agg import FigureCanvasAgg
+    renderer = FigureCanvasAgg(fig).get_renderer()
+    fig.draw(renderer)
     available = fig.bbox.width * .94
     bottom = fig.get_tightbbox(renderer).y0 * fig.dpi - 10 * fig.dpi / 72
     for index, (ax, original) in enumerate(legends):
@@ -511,18 +514,29 @@ def install() -> None:
         return
     from streamlit.delta_generator import DeltaGenerator
     from streamlit.elements.vega_charts import VegaChartsMixin
+    from gui.mobile_tables import responsive_markdown_tables, install_dataframe_cards
 
     def markdown_wrapper(original):
         @functools.wraps(original)
         def render(self, body, *args, **kwargs):
-            if kwargs.get("unsafe_allow_html") and isinstance(body, str):
-                body = diagram_html(body, st.session_state.get("theme", "browser"))
-                body = responsive_diagrams(body)
+            if isinstance(body, str):
+                allow_html = kwargs.get("unsafe_allow_html", args[0] if args else False)
+                body, cards = responsive_markdown_tables(body, unsafe_allow_html=allow_html)
+                if cards:
+                    if args:
+                        args = (True, *args[1:])
+                    else:
+                        kwargs["unsafe_allow_html"] = True
+                if allow_html:
+                    body = diagram_html(body, st.session_state.get("theme", "browser"))
+                    body = responsive_diagrams(body)
             return original(self, body, *args, **kwargs)
         return render
 
     DeltaGenerator.markdown = markdown_wrapper(DeltaGenerator.markdown)
     st.markdown = st._main.markdown
+    install_dataframe_cards(DeltaGenerator)
+    st.dataframe = st._main.dataframe
 
     def pyplot(self, fig=None, clear_figure=None, *, width="stretch", use_container_width=None, **kwargs):
         import matplotlib.pyplot as plt

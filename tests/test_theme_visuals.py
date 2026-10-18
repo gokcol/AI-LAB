@@ -117,6 +117,28 @@ def test_detached_multi_panel_figure_exports_without_a_canvas_renderer():
     assert all(ax.get_legend().get_visible() for ax in fig.axes)
 
 
+def test_legend_export_does_not_depend_on_canvas_after_backend_measurement(monkeypatch):
+    from matplotlib.backend_bases import FigureCanvasBase
+    fig, ax = plt.subplots(figsize=(5, 3))
+    ax.plot([0, 1], [1, 0], label='Descent')
+    ax.legend()
+    canvas = fig.canvas
+    draw = fig.draw_without_rendering
+
+    def detached_draw():
+        draw()
+        FigureCanvasBase(fig)
+
+    # Reproduce a renderer-less canvas after backend measurement on a rerun.
+    monkeypatch.setattr(fig, 'draw_without_rendering', detached_draw)
+    for selected in ('light', 'dark', 'light'):
+        root = ET.fromstring(responsive_figure_html(fig, selected=selected))
+        assert root.findall('.//{http://www.w3.org/2000/svg}svg')
+        assert fig.canvas is canvas
+        assert ax.get_legend().get_visible() and not fig.legends
+    plt.close(fig)
+
+
 @pytest.mark.parametrize('selected', ['light', 'dark'])
 @pytest.mark.parametrize('shape,images', [((1, 2), False), ((1, 3), False), ((2, 2), True)])
 def test_mobile_panels_stack_in_reading_order_preserving_data_scales_and_desktop(shape, images, selected, monkeypatch):

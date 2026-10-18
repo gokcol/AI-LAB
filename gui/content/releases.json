@@ -1,6 +1,25 @@
 [
   {
     "version": "1.14",
+    "revision": 13,
+    "date": "2026-10-18",
+    "title": "Reliable chart updates while exploring lessons",
+    "changes": [
+      "**Keep exploring without interruptions:** fixed a chart-rendering error that could occur when changing simulation settings or switching themes. Interactive plots and the new mobile table cards remain available as you experiment with [activation functions](/activations) and other lessons."
+    ]
+  },
+  {
+    "version": "1.14",
+    "revision": 12,
+    "date": "2026-10-18",
+    "title": "Lesson tables become cards on phones",
+    "changes": [
+      "**Read each row as a card:** lesson comparison tables now stack vertically on phones, with each value labelled by its column heading. Formulas, links and emphasis stay readable. Try the [activation comparison](/activations), [vectors](/math_vectors) or [classification](/ml_classification).",
+      "**Explore exercise data without sideways scrolling:** read-only data grids also have a mobile card view, including row indices and missing values. Longer grids are grouped into expandable sets of ten rows. Both light and dark themes are supported, while desktop tables and their controls retain their existing presentation."
+    ]
+  },
+  {
+    "version": "1.14",
     "revision": 11,
     "date": "2026-10-18",
     "title": "Lesson diagrams that stack on phones",
