@@ -1,6 +1,16 @@
 [
   {
     "version": "1.14",
+    "revision": 11,
+    "date": "2026-10-18",
+    "title": "Lesson diagrams that stack on phones",
+    "changes": [
+      "**Follow diagrams from top to bottom:** wide process diagrams now become vertical steps on phones, including [backprop](/backprop), [attention](/attention), [CNNs](/cnn), [RAG](/embeddings) and the [neuron-to-GPT journey](/the_chain). Live values, branches, skip connections and feedback directions stay explicit.",
+      "**Compare without sideways scrolling:** illustrated comparisons stack into separate panels. Spatial figures keep their geometry, with readable numbered annotations below the image. Diagram layouts work in light and dark themes; desktop diagrams retain their original layout."
+    ]
+  },
+  {
+    "version": "1.14",
     "revision": 10,
     "date": "2026-10-18",
     "title": "Readable lesson diagrams and tables on phones",

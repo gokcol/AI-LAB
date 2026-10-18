@@ -11,33 +11,34 @@ from gui.theme_visuals import diagram_html, figure_svg, plot_color, responsive_d
 
 
 @pytest.mark.parametrize('selected', ['light', 'dark', 'browser'])
-def test_mobile_diagram_preserves_geometry_and_scales_inherited_labels(selected):
+def test_mobile_diagram_retains_desktop_geometry_and_all_annotations(selected):
     svg = '''<svg viewBox="0 0 600 200" width="100%" role="img" aria-label="Chain rule">
     <defs><marker id="arrow"><path d="M0,0 L5,3 L0,6"/></marker></defs>
     <g font-size="12" fill="#172033"><text x="20" y="30">Input</text>
-    <g style="font-size:75%"><text x="150" y="80">Gradient<tspan font-size="6">1</tspan></text></g></g>
-    <path d="M50,50 L150,50" stroke="#172033" marker-end="url(#arrow)"/></svg>'''
+    <g style="font-size:75%"><text x="150" y="80">Gradient<tspan font-size="6" fill="#c0507a">1</tspan></text></g></g>
+    <path d="M50,50 L150,50" stroke="#172033" marker-end="url(#arrow)"/>
+    <path d="M0,100 Q300,0 600,100" fill="none" stroke="#d8e6f3"/></svg>'''
     themed = diagram_html(svg, selected)
     result = responsive_diagrams('Before' + themed + 'After')
-    # Preserve the SVG verbatim: connected arrows, subscripts, colors, accessible
-    # title and desktop geometry must not be reconstructed or reflowed.
-    assert themed in result or themed.split('</style>')[-1] in result
+    assert themed.split('</style>')[-1] in result
     assert result.startswith('Before') and result.endswith('After')
     root = ET.fromstring('<div>' + result + '</div>')
-    wrapper = root.find('div[@class="ailab-diagram"]')
-    minimum = int(wrapper.get('style').split(':')[1].removesuffix('px'))
-    assert minimum * 9 / 600 >= 14
-    assert minimum * 9 / 600 < 14.02
-    region = wrapper.find('div[@role="region"]')
-    assert region.get('tabindex') == '0' and 'arrow keys' in region.get('aria-label')
-    assert region.find('svg').get('aria-label') == 'Chain rule'
-
-
-@pytest.mark.parametrize('font', ['10px', '7.5pt', '.625em', '62.5%'])
-def test_mobile_diagram_font_units_produce_same_readable_scale(font):
-    svg = f'<svg viewBox="0 0 400 100"><text style="font-size:{font}">Weight</text></svg>'
-    root = ET.fromstring(responsive_diagrams(svg))
-    assert root.get('style') == '--ailab-diagram-width:560px'
+    desktop = root.find('.//div[@class="ailab-diagram-desktop"]/svg')
+    mobile = root.find('.//div[@role="group"]')
+    assert desktop.get('viewBox') == '0 0 600 200'
+    assert 'Input' in ''.join(mobile.itertext()) and 'Gradient1' in ''.join(mobile.itertext())
+    color_key = mobile.find('.//span')
+    assert '#c0507a' in color_key.get('style') or '--diagram-c0507a' in color_key.get('style')
+    if selected != 'light':
+        assert 'diagram-' in mobile.get('class')  # color variables also reach HTML keys
+    source_paths = [e.get('d') for e in desktop.iter('path')]
+    assert [e.get('d') for e in mobile.iter('path')] == source_paths
+    assert list(mobile.iter('path'))[-1].get('stroke') == 'var(--ailab-blue)'
+    assert list(mobile.iter('path'))[-1].get('fill') == 'none'
+    ids = [e.get('id') for e in root.iter() if e.get('id')]
+    assert len(ids) == len(set(ids))
+    references = [v[5:-1] for e in root.iter() for v in e.attrib.values() if v.startswith('url(#')]
+    assert all(reference in ids for reference in references)
 
 
 def test_diagram_adapter_leaves_plots_icons_and_unparseable_content_alone():

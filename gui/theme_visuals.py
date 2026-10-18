@@ -165,49 +165,24 @@ def diagram_html(body: str, selected: str) -> str:
 
 
 def responsive_diagrams(body: str) -> str:
-    """Keep SVG label geometry intact, with a readable mobile scale.
+    """Pair untouched desktop SVGs with vertically arranged phone diagrams."""
+    from gui.mobile_diagrams import mobile_diagram
 
-    The wrapper has no layout box on desktop. Phones can pan the diagram
-    without making the lesson itself wider. Plot SVGs have their own renderer.
-    """
     def adapt(match):
         svg = match.group()
         try:
             root = ET.fromstring(svg)
             if "ailab-plot" in root.get("class", "").split():
                 return svg
-            width = float(root.get("viewBox", "").replace(",", " ").split()[2])
-        except (ET.ParseError, ValueError, IndexError):
+            bounds = [float(v) for v in root.get("viewBox", "").replace(",", " ").split()]
+            if len(bounds) != 4 or not all(math.isfinite(v) for v in bounds) or min(bounds[2:]) <= 0:
+                return svg
+        except (ET.ParseError, ValueError):
             return svg
-        sizes = []
-
-        def text_sizes(element, inherited=16.):
-            # SVG font-size inherits through groups. Subscripts within a text
-            # node keep their deliberate relative size; scale the main label.
-            size = element.get("font-size", "")
-            style = re.search(r"(?:^|;)\s*font-size\s*:\s*([^;]+)", element.get("style", ""))
-            if style:
-                size = style[1].strip()
-            value = re.fullmatch(r"([\d.]+)(px|pt|em|%)?", size)
-            if value:
-                number, unit = float(value[1]), value[2]
-                inherited = number * ({"pt": 4 / 3, "em": inherited, "%": inherited / 100}.get(unit, 1))
-            if element.tag.rsplit("}", 1)[-1] == "text" and "".join(element.itertext()).strip():
-                if inherited > 0:
-                    sizes.append(inherited)
-                return
-            for child in element:
-                text_sizes(child, inherited)
-
-        text_sizes(root)
-        if not sizes or width <= 0:
+        if not any(e.tag.rsplit("}", 1)[-1] == "text" for e in root.iter()):
             return svg
-        minimum = math.ceil(width * 14 / min(sizes))
-        return (f'<div class="ailab-diagram" style="--ailab-diagram-width:{minimum}px">'
-                '<div class="ailab-diagram-scroll" role="region" tabindex="0" '
-                'aria-label="Lesson diagram; use left and right arrow keys to explore">'
-                f'{svg}</div><p class="ailab-diagram-hint">'
-                '↔ Swipe across the diagram to read every label.</p></div>')
+        return ('<div class="ailab-diagram"><div class="ailab-diagram-desktop">'
+                f'{svg}</div>{mobile_diagram(root)}</div>')
 
     return _SVG.sub(adapt, body)
 

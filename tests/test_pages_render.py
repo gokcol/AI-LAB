@@ -330,6 +330,60 @@ def test_svg_diagrams_are_well_formed():
     assert not bad, "\n".join(bad)
 
 
+def test_mobile_diagram_layouts_cover_source_labels_without_changing_desktop_svgs():
+    """Catch stale panel boundaries/label indices when a lesson SVG is edited."""
+    import re
+    import xml.etree.ElementTree as ET
+    from gui.mobile_diagrams import layouts
+    from gui.theme_visuals import responsive_diagrams
+
+    metadata = layouts()
+    seen = set()
+    for path in _sources():
+        for text in _runtime_strings(path):
+            for source in re.findall(r"<svg[\s\S]*?</svg>", text):
+                svg = ET.fromstring(source)
+                labels = [''.join(e.itertext()).strip() for e in svg.iter()
+                          if e.tag.rsplit('}', 1)[-1] == 'text']
+                if not labels:
+                    continue
+                label = svg.get('aria-label')
+                assert label in metadata, f'{path.name}: missing mobile layout for {label}'
+                layout = metadata[label]
+                assert layout['text_count'] == len(labels), label
+                indices = layout.get('lead_labels', []) + [i for s in layout['sections'] for i in s['labels']]
+                assert len(indices) == len(set(indices)) and all(0 <= i < len(labels) for i in indices), label
+                result = responsive_diagrams(source)
+                assert source in result  # desktop bytes are untouched
+                mobile = ET.fromstring(result).find('.//div[@role="group"]')
+                mobile_text = ''.join(mobile.itertext())
+                assert all(value in mobile_text for value in labels), label
+                assert 'ailab-diagram-scroll' not in result
+                seen.add(label)
+    assert seen == set(metadata), 'Stale mobile layout metadata or missing source coverage'
+
+
+def test_mobile_backprop_uses_live_values_and_forward_order():
+    import re
+    import xml.etree.ElementTree as ET
+    from gui.theme_visuals import responsive_diagrams
+
+    graph = next(source for text in _runtime_strings(GUI / 'views' / 'backprop.py')
+                 for source in re.findall(r"<svg[\s\S]*?</svg>", text)
+                 if 'Live computational graph:' in source)
+    graph = graph.replace('w = 0', 'w = 0.91').replace('∂L/∂w = 0', '∂L/∂w = -0.123')
+    root = ET.fromstring(responsive_diagrams(graph))
+    mobile = root.find('.//div[@role="group"]')
+    cards = mobile.findall('./ol/li')
+    assert len(cards) == 4
+    assert 'w = 0.91' in ''.join(cards[0].itertext())
+    assert '∂L/∂w = -0.123' in ''.join(cards[0].itertext())
+    assert 'Weighted sum' in ''.join(cards[1].itertext())
+    assert 'Activation' in ''.join(cards[2].itertext())
+    assert 'loss' in ''.join(cards[3].itertext())
+    assert 'gradients travel back up' in ''.join(mobile.itertext())
+
+
 def test_page_link_targets_exist_and_are_registered():
     """Every st.page_link must point at a real view that app.py registers.
 

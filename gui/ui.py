@@ -577,8 +577,8 @@ def inject_theme(selected: str = DEFAULT_THEME, zoom: int = DEFAULT_ZOOM) -> Non
             scrollbar-width: thin;
         }
         .ailab-plot-mobile { display: none; }
-        .ailab-diagram, .ailab-diagram-scroll { display: contents; }
-        .ailab-diagram-hint { display: none; }
+        .ailab-diagram, .ailab-diagram-desktop { display: contents; }
+        .ailab-diagram-mobile { display: none; }
         .ailab-plot-panel + .ailab-plot-panel { margin-top: 1.25rem; }
         .ailab-plot-scroll {
             width: 100%; overflow-x: auto; overscroll-behavior-x: contain;
@@ -594,23 +594,44 @@ def inject_theme(selected: str = DEFAULT_THEME, zoom: int = DEFAULT_ZOOM) -> Non
         /* ---------------- mobile ------------------------------------------------ */
         @media (max-width: 640px) {
             .ailab-diagram { display: block; max-width: 100%; }
-            .ailab-diagram-scroll {
-                display: block; width: 100%; overflow-x: auto;
-                overscroll-behavior-x: contain; scrollbar-width: thin;
-                scrollbar-color: var(--ailab-muted) var(--ailab-panel);
+            .ailab-diagram-desktop { display: none; }
+            .ailab-diagram-mobile {
+                display: block; width: 100%; min-width: 0;
+                text-align: left; color: var(--ailab-ink);
             }
-            .ailab-diagram-scroll > svg {
-                min-width: var(--ailab-diagram-width);
-                max-width: none !important; height: auto !important;
+            .ailab-diagram-mobile .ailab-diagram-sections {
+                display: flex; flex-direction: column; gap: 1rem;
+                padding: 0; margin: .75rem 0; list-style: none;
             }
-            .ailab-diagram-scroll:focus-visible {
-                outline: 2px solid var(--ailab-blue); outline-offset: -2px;
+            .ailab-diagram-mobile .ailab-diagram-card {
+                display: block; position: relative; min-width: 0; margin: 0;
+                padding: .9rem; border: 1px solid var(--ailab-border);
+                border-radius: 12px; background: var(--ailab-panel);
+                color: var(--ailab-ink); overflow-wrap: break-word;
             }
-            .ailab-diagram-hint {
-                display: block; font-size: .85rem !important;
-                color: var(--ailab-muted) !important; text-align: left;
-                margin: .4rem 0 .8rem;
+            .ailab-diagram-mobile .ailab-diagram-title {
+                display: block; margin-bottom: .5rem; font-size: 1rem;
             }
+            .ailab-diagram-mobile p, .ailab-diagram-mobile li {
+                font-size: 1rem !important; line-height: 1.5;
+            }
+            .ailab-diagram-mobile p { margin: .25rem 0; }
+            .ailab-diagram-flow .ailab-diagram-sections { gap: 2rem; }
+            .ailab-diagram-flow .ailab-diagram-card + .ailab-diagram-card::before {
+                content: "↓"; position: absolute; top: -1.7rem; left: 50%;
+                transform: translateX(-50%); font-size: 1.4rem;
+                line-height: 1.4rem; color: var(--ailab-blue);
+            }
+            .ailab-diagram-mobile .ailab-diagram-key {
+                margin: .75rem 0 0; padding-left: 1.6rem;
+            }
+            .ailab-diagram-mobile .ailab-diagram-key li { margin: .35rem 0; }
+            .ailab-diagram-mobile .ailab-diagram-notes {
+                padding: .5rem 0; color: var(--ailab-muted);
+            }
+            .ailab-diagram-mobile svg { max-width: 100%; height: auto; }
+            .ailab-diagram-banner .ailab-diagram-sections { gap: .5rem; }
+            .ailab-diagram-banner .ailab-diagram-card { padding: .4rem .75rem; }
             [data-testid="stMarkdownContainer"] table,
             [data-testid="stTable"] table {
                 display: block; max-width: 100%; overflow-x: auto;

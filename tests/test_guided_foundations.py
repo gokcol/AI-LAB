@@ -118,7 +118,9 @@ def test_full_practice_export_accepts_all_seven_guides():
 
 def test_reserved_test_requires_explicit_reveal_and_keeps_candidate(monkeypatch):
     monkeypatch.setattr(ButtonMixin, "_page_link", lambda self, *a, **k: None)
-    at = AppTest.from_string('from gui.guided import render_explorer\nrender_explorer("ml_model_selection")').run()
+    # Cold numerical/chart imports can exceed Streamlit's three-second default.
+    at = AppTest.from_string('from gui.guided import render_explorer\nrender_explorer("ml_model_selection")',
+                             default_timeout=60).run()
     at.radio[0].set_value("Validation before test").run()
     at.selectbox(key="guided_explore_ml_model_selection_candidate").set_value("Broad filter").run()
     at.selectbox(key="guided_explore_ml_model_selection_metric").set_value("Recall").run()

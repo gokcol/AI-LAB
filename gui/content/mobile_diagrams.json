@@ -1,0 +1,2752 @@
+[
+  {
+    "label": "Scaled dot-product attention: queries and keys form a score matrix Q times K-transpose, divided by the square root of d, softmaxed into attention weights, then multiplied by the values V to give the output context vectors.",
+    "text_count": 13,
+    "kind": "flow",
+    "summary": "Q and K produce the scores. V joins at the weighted sum, after softmax.",
+    "sections": [
+      {
+        "title": "Queries, keys and values",
+        "labels": [
+          0,
+          3,
+          1,
+          4,
+          2,
+          5
+        ]
+      },
+      {
+        "title": "Compare queries with keys",
+        "labels": [
+          6
+        ]
+      },
+      {
+        "title": "Scale the scores",
+        "labels": [
+          7
+        ]
+      },
+      {
+        "title": "Turn scores into weights",
+        "labels": [
+          8,
+          11
+        ]
+      },
+      {
+        "title": "Combine values into context",
+        "labels": [
+          9,
+          10,
+          12
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Live computational graph: inputs w, x, b feed z = w x + b, then a = sigmoid(z), then the loss L. Forward values flow right; the gradient of L with respect to each quantity flows back to the left.",
+    "text_count": 16,
+    "kind": "flow",
+    "summary": "Forward values flow down these steps. During backprop, the loss gradients travel back up; the live values below update with the sliders.",
+    "sections": [
+      {
+        "title": "Inputs and their gradients",
+        "labels": [
+          0,
+          3,
+          1,
+          4,
+          2,
+          5
+        ]
+      },
+      {
+        "title": "Weighted sum: z = w·x + b",
+        "labels": [
+          6,
+          9,
+          12
+        ]
+      },
+      {
+        "title": "Activation: a = sigmoid(z)",
+        "labels": [
+          7,
+          10,
+          13
+        ]
+      },
+      {
+        "title": "Squared-error loss: L = (a − y)²",
+        "labels": [
+          8,
+          11
+        ]
+      }
+    ]
+  },
+  {
+    "label": "The chain rule along the path w to z to a to L: the gradient dL/dw is the product of the local derivatives dz/dw = x, da/dz = a(1-a), and dL/da = 2(a-y).",
+    "text_count": 8,
+    "kind": "flow",
+    "summary": "Multiply the local derivatives along this path to obtain the weight’s loss gradient.",
+    "sections": [
+      {
+        "title": "Start with the weight",
+        "labels": [
+          0
+        ]
+      },
+      {
+        "title": "Weight changes the linear score",
+        "labels": [
+          1,
+          4
+        ]
+      },
+      {
+        "title": "Score changes the activation",
+        "labels": [
+          2,
+          5
+        ]
+      },
+      {
+        "title": "Activation changes the loss",
+        "labels": [
+          3,
+          6
+        ]
+      }
+    ]
+  },
+  {
+    "label": "A CNN: an input image goes through repeated convolution, ReLU and pooling blocks (spatial size shrinks, the number of channels grows), then is flattened into fully-connected layers ending in a softmax over classes.",
+    "text_count": 9,
+    "kind": "flow",
+    "summary": "",
+    "sections": [
+      {
+        "title": "Input image",
+        "labels": [
+          0
+        ]
+      },
+      {
+        "title": "Detect local features",
+        "labels": [
+          1
+        ]
+      },
+      {
+        "title": "Reduce spatial size",
+        "labels": [
+          2
+        ]
+      },
+      {
+        "title": "Build deeper features",
+        "labels": [
+          3
+        ]
+      },
+      {
+        "title": "Convert maps into a vector",
+        "labels": [
+          4
+        ]
+      },
+      {
+        "title": "Combine features",
+        "labels": [
+          5
+        ]
+      },
+      {
+        "title": "Predict a class",
+        "labels": [
+          6,
+          7
+        ]
+      }
+    ]
+  },
+  {
+    "label": "A feature hierarchy for recognizing a bird: an edge-detection layer feeds part detectors beak and eye, which feed an object-part detector bird's head, which votes among the output classes cat, dog, bird and politician — bird wins.",
+    "text_count": 11,
+    "kind": "flow",
+    "summary": "Edge features support beak and eye detectors; those parts support a bird’s-head feature, which helps the final classification.",
+    "sections": [
+      {
+        "title": "Early visual features",
+        "labels": [
+          0,
+          1
+        ]
+      },
+      {
+        "title": "Parallel part detectors",
+        "labels": [
+          2,
+          3
+        ]
+      },
+      {
+        "title": "Combine the parts",
+        "labels": [
+          4,
+          5
+        ]
+      },
+      {
+        "title": "Alternative output classes",
+        "labels": [
+          6,
+          7,
+          8,
+          9
+        ]
+      }
+    ]
+  },
+  {
+    "label": "RAG pipeline: the question is embedded, used to search a vector database of embedded documents, the top-k chunks are retrieved and placed in the prompt alongside the question, and the LLM generates a grounded answer.",
+    "text_count": 11,
+    "kind": "flow",
+    "summary": "",
+    "sections": [
+      {
+        "title": "Ask a question",
+        "labels": [
+          0
+        ]
+      },
+      {
+        "title": "Create its embedding",
+        "labels": [
+          1,
+          2
+        ]
+      },
+      {
+        "title": "Search embedded documents",
+        "labels": [
+          3,
+          4,
+          5
+        ]
+      },
+      {
+        "title": "Build grounded context",
+        "labels": [
+          6,
+          7
+        ]
+      },
+      {
+        "title": "Generate with the context",
+        "labels": [
+          8
+        ]
+      },
+      {
+        "title": "Return the answer",
+        "labels": [
+          9
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Hinton family-tree network: a symbol for person 1 and a symbol for the relationship each map to a learned feature vector; a hidden layer of neurons predicts the output features from the input features; those become the learned features of person 2, which produce the output symbol for person 2.",
+    "text_count": 7,
+    "kind": "flow",
+    "summary": "The person and relationship are parallel inputs. Their learned features combine to predict the related person.",
+    "sections": [
+      {
+        "title": "Input symbols",
+        "labels": [
+          5,
+          6
+        ]
+      },
+      {
+        "title": "Learn two input representations",
+        "labels": [
+          3,
+          4
+        ]
+      },
+      {
+        "title": "Predict output features",
+        "labels": [
+          2
+        ]
+      },
+      {
+        "title": "Output representation",
+        "labels": [
+          1
+        ]
+      },
+      {
+        "title": "Predict the related person",
+        "labels": [
+          0
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Four families of generative model. Autoregressive models factorise the joint probability into a product of conditionals and maximise exact likelihood. Variational autoencoders encode to a latent distribution and maximise a lower bound on the likelihood. Generative adversarial networks train a generator against a discriminator with no likelihood at all. Diffusion models add noise over many steps and learn to reverse it, maximising a bound on the likelihood.",
+    "text_count": 29,
+    "kind": "comparison",
+    "summary": "",
+    "sections": [
+      {
+        "title": "Autoregressive",
+        "labels": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      },
+      {
+        "title": "Variational autoencoder",
+        "labels": [
+          6,
+          7,
+          8,
+          9,
+          10
+        ]
+      },
+      {
+        "title": "Generative adversarial network",
+        "labels": [
+          11,
+          12,
+          13,
+          14,
+          15
+        ]
+      },
+      {
+        "title": "Diffusion",
+        "labels": [
+          16,
+          17,
+          18,
+          19,
+          20
+        ]
+      },
+      {
+        "title": "Text example",
+        "labels": [
+          21,
+          22,
+          23,
+          24
+        ]
+      },
+      {
+        "title": "Image example",
+        "labels": [
+          25,
+          26,
+          27,
+          28
+        ]
+      }
+    ]
+  },
+  {
+    "label": "AI Lab banner: the journey from a single neuron, through layers and attention, to a small GPT.",
+    "text_count": 13,
+    "kind": "banner",
+    "summary": "",
+    "sections": [
+      {
+        "title": "One neuron",
+        "labels": [
+          3,
+          8
+        ]
+      },
+      {
+        "title": "Layers",
+        "labels": [
+          9
+        ]
+      },
+      {
+        "title": "Attention and Transformers",
+        "labels": [
+          4,
+          5,
+          10
+        ]
+      },
+      {
+        "title": "A small language model",
+        "labels": [
+          6,
+          7,
+          11
+        ]
+      }
+    ],
+    "lead_labels": [
+      0,
+      1,
+      2
+    ],
+    "compact": true
+  },
+  {
+    "label": "The learning loop used on every page: predict, then play with the interactive demo, then check yourself with the quiz, then rebuild the idea from memory.",
+    "text_count": 9,
+    "kind": "flow",
+    "summary": "Repeat the loop: use what you learned to make your next prediction.",
+    "sections": [
+      {
+        "title": "1 · Predict",
+        "labels": [
+          0,
+          1
+        ]
+      },
+      {
+        "title": "2 · Play",
+        "labels": [
+          2,
+          3
+        ]
+      },
+      {
+        "title": "3 · Check",
+        "labels": [
+          4,
+          5
+        ]
+      },
+      {
+        "title": "4 · Rebuild",
+        "labels": [
+          6,
+          7
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Career timeline: 1987 first code on IBM mainframes in Assembler; 1993 to 1994 a PhD-level course on the mathematics of neural networks; 1999 a PhD in Aeronautics and computational engineering; 1999 to 2006 leading university IT services while teaching; 2016 founding an information-security consultancy and audit practice; 2025 using agentic AI professionally.",
+    "text_count": 13,
+    "kind": "flow",
+    "summary": "",
+    "sections": [
+      {
+        "title": "1987",
+        "labels": [
+          0,
+          6
+        ]
+      },
+      {
+        "title": "1993–94",
+        "labels": [
+          1,
+          7
+        ]
+      },
+      {
+        "title": "1999",
+        "labels": [
+          2,
+          8
+        ]
+      },
+      {
+        "title": "1999–2006",
+        "labels": [
+          3,
+          9
+        ]
+      },
+      {
+        "title": "2016",
+        "labels": [
+          4,
+          10
+        ]
+      },
+      {
+        "title": "2025",
+        "labels": [
+          5,
+          11
+        ]
+      }
+    ]
+  },
+  {
+    "label": "A multilayer perceptron: two input nodes fully connected to a hidden layer of neurons, which connect to one output neuron.",
+    "text_count": 6,
+    "kind": "flow",
+    "summary": "Each input connects to the hidden neurons. Their activations feed the output neuron.",
+    "sections": [
+      {
+        "title": "Input layer",
+        "labels": [
+          0,
+          1,
+          3
+        ]
+      },
+      {
+        "title": "Fully connected hidden layer",
+        "labels": [
+          4
+        ]
+      },
+      {
+        "title": "Output neuron",
+        "labels": [
+          2,
+          5
+        ]
+      }
+    ]
+  },
+  {
+    "label": "The training loop: forward pass to predict, compute the loss, backward pass for gradients, optimizer step to update weights, then repeat.",
+    "text_count": 9,
+    "kind": "flow",
+    "summary": "Repeat the four steps for each training update.",
+    "sections": [
+      {
+        "title": "1 · Forward pass",
+        "labels": [
+          0,
+          1
+        ]
+      },
+      {
+        "title": "2 · Measure the loss",
+        "labels": [
+          2,
+          3
+        ]
+      },
+      {
+        "title": "3 · Backward pass",
+        "labels": [
+          4,
+          5
+        ]
+      },
+      {
+        "title": "4 · Update the weights",
+        "labels": [
+          6,
+          7
+        ]
+      }
+    ]
+  },
+  {
+    "label": "A half adder built from neurons: an AND neuron makes the Carry, a second neuron makes the Sum (XOR).",
+    "text_count": 7,
+    "kind": "comparison",
+    "summary": "Both branches receive A and B. Carry and Sum are separate outputs, not consecutive operations.",
+    "sections": [
+      {
+        "title": "Shared inputs",
+        "labels": [
+          0,
+          1
+        ]
+      },
+      {
+        "title": "Carry branch: AND",
+        "labels": [
+          2,
+          4
+        ]
+      },
+      {
+        "title": "Sum branch: XOR",
+        "labels": [
+          3,
+          5
+        ]
+      }
+    ]
+  },
+  {
+    "label": "The post-training pipeline: pretraining on web text gives a base LM that knows language; supervised fine-tuning on instruction demonstrations makes it follow instructions; preference tuning with RLHF or DPO on human rankings makes it helpful, harmless and honest.",
+    "text_count": 16,
+    "kind": "flow",
+    "summary": "",
+    "sections": [
+      {
+        "title": "1 · Pretraining",
+        "labels": [
+          0,
+          3,
+          4,
+          5
+        ]
+      },
+      {
+        "title": "2 · Supervised fine-tuning",
+        "labels": [
+          1,
+          6,
+          7,
+          8,
+          12
+        ]
+      },
+      {
+        "title": "3 · Preference tuning",
+        "labels": [
+          2,
+          9,
+          10,
+          11,
+          13
+        ]
+      }
+    ]
+  },
+  {
+    "label": "LoRA: keep the big pretrained weight matrix W frozen, and learn a small low-rank update B times A (with rank r much smaller than the dimension), so the effective weight is W plus B A. Only the tiny B and A are trained.",
+    "text_count": 12,
+    "kind": "flow",
+    "summary": "",
+    "sections": [
+      {
+        "title": "Keep the pretrained matrix frozen",
+        "labels": [
+          0,
+          1,
+          2
+        ]
+      },
+      {
+        "title": "Learn the low-rank update BA",
+        "labels": [
+          3,
+          4,
+          5,
+          6,
+          7
+        ]
+      },
+      {
+        "title": "Add the update to W",
+        "labels": [
+          8,
+          9,
+          10
+        ]
+      }
+    ]
+  },
+  {
+    "label": "An RNN drawn two ways: folded as one cell whose hidden state feeds back into itself (recurrent weight Wh), with input weight Wx and output weight Wy; and unrolled over time as a chain h0 to h3 where each step takes an input x_t, updates the state, and emits y_t.",
+    "text_count": 22,
+    "kind": "flow",
+    "summary": "Each time step receives its own x and produces its own y. The hidden state passes to the next step; all steps reuse the same weights.",
+    "sections": [
+      {
+        "title": "Folded view: one recurrent cell",
+        "labels": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      },
+      {
+        "title": "Unroll: time step 1",
+        "labels": [
+          7,
+          8,
+          12,
+          13,
+          17
+        ]
+      },
+      {
+        "title": "Time step 2",
+        "labels": [
+          9,
+          14,
+          18
+        ]
+      },
+      {
+        "title": "Time step 3",
+        "labels": [
+          10,
+          15,
+          19
+        ]
+      },
+      {
+        "title": "Time step 4",
+        "labels": [
+          11,
+          16,
+          20
+        ]
+      }
+    ]
+  },
+  {
+    "label": "The chain from a single neuron to a GPT: one neuron → logic gate → a layer → MLP → Transformer → LLM, each step a weighted sum plus a nonlinearity.",
+    "text_count": 14,
+    "kind": "flow",
+    "summary": "",
+    "sections": [
+      {
+        "title": "One neuron",
+        "labels": [
+          1,
+          7
+        ]
+      },
+      {
+        "title": "A logic gate",
+        "labels": [
+          2,
+          8
+        ]
+      },
+      {
+        "title": "A layer",
+        "labels": [
+          3,
+          9
+        ]
+      },
+      {
+        "title": "An MLP",
+        "labels": [
+          4,
+          10
+        ]
+      },
+      {
+        "title": "A Transformer",
+        "labels": [
+          5,
+          11
+        ]
+      },
+      {
+        "title": "A language model",
+        "labels": [
+          6,
+          12
+        ]
+      }
+    ]
+  },
+  {
+    "label": "A single neuron: three inputs are each multiplied by a weight, summed with a bias, then passed through an activation to produce one output number.",
+    "text_count": 14,
+    "kind": "flow",
+    "summary": "",
+    "sections": [
+      {
+        "title": "Inputs and their weights",
+        "labels": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          10
+        ]
+      },
+      {
+        "title": "Sum and add bias",
+        "labels": [
+          6,
+          7,
+          11
+        ]
+      },
+      {
+        "title": "Apply the activation",
+        "labels": [
+          8,
+          12
+        ]
+      },
+      {
+        "title": "Output",
+        "labels": [
+          9,
+          13
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Scale: one neuron, then a layer of a few, then a GPT — the same unit repeated up to about a hundred billion times.",
+    "text_count": 5,
+    "kind": "flow",
+    "summary": "",
+    "sections": [
+      {
+        "title": "Start with one neuron",
+        "labels": [
+          0
+        ]
+      },
+      {
+        "title": "Repeat it in a layer",
+        "labels": [
+          1,
+          3
+        ]
+      },
+      {
+        "title": "Scale up to a GPT",
+        "labels": [
+          2,
+          4
+        ]
+      }
+    ]
+  },
+  {
+    "label": "The same neuron seen two ways: a logic view (neuron → gate → circuit → computer) and a function view (neuron → MLP → any function); a trained network is both at once.",
+    "text_count": 10,
+    "kind": "comparison",
+    "summary": "These are two views of the same neuron, not competing stages in a single pipeline.",
+    "sections": [
+      {
+        "title": "Shared building block",
+        "labels": [
+          0
+        ]
+      },
+      {
+        "title": "Logic view",
+        "labels": [
+          1,
+          2,
+          3,
+          6
+        ]
+      },
+      {
+        "title": "Function view",
+        "labels": [
+          4,
+          5,
+          7
+        ]
+      },
+      {
+        "title": "The same trained network",
+        "labels": [
+          8,
+          9
+        ]
+      }
+    ]
+  },
+  {
+    "label": "The two paradigms of intelligence (Geoffrey Hinton). The logic-inspired approach: intelligence is reasoning via symbolic rules, and learning can wait. The biologically-inspired approach: intelligence is learning the connection strengths in a neural network, and reasoning can wait. This lab follows the biologically-inspired approach.",
+    "text_count": 13,
+    "kind": "comparison",
+    "summary": "",
+    "sections": [
+      {
+        "title": "Logic-inspired intelligence",
+        "labels": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      },
+      {
+        "title": "Biologically inspired intelligence",
+        "labels": [
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ]
+      }
+    ]
+  },
+  {
+    "label": "A Transformer block: input embeddings, then LayerNorm and causal self-attention with a residual add, then LayerNorm and a feed-forward MLP with a residual add; stacked N times, then a linear layer and softmax over the vocabulary giving next-token probabilities.",
+    "text_count": 11,
+    "kind": "flow",
+    "summary": "Within each repeated block, a skip connection adds the attention input after attention; another adds the MLP input after the MLP.",
+    "sections": [
+      {
+        "title": "Input embeddings",
+        "labels": [
+          1
+        ]
+      },
+      {
+        "title": "Normalize",
+        "labels": [
+          2
+        ]
+      },
+      {
+        "title": "Causal self-attention",
+        "labels": [
+          3
+        ]
+      },
+      {
+        "title": "Add the attention residual",
+        "labels": [
+          4,
+          8
+        ]
+      },
+      {
+        "title": "Normalize again",
+        "labels": [
+          5
+        ]
+      },
+      {
+        "title": "Feed-forward network",
+        "labels": [
+          6
+        ]
+      },
+      {
+        "title": "Add the MLP residual",
+        "labels": [
+          7
+        ]
+      },
+      {
+        "title": "Project to vocabulary scores",
+        "labels": [
+          9
+        ]
+      },
+      {
+        "title": "Next-token probabilities",
+        "labels": [
+          10
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Two-neuron network: inputs x0 and x1 feed a hidden neuron h and also skip directly to the output neuron y; y combines x0, x1 and h to compute XOR.",
+    "text_count": 7,
+    "kind": "flow",
+    "summary": "The output receives both original inputs directly as skip connections, as well as the hidden neuron’s output.",
+    "sections": [
+      {
+        "title": "Two inputs",
+        "labels": [
+          0,
+          1
+        ]
+      },
+      {
+        "title": "Learn a hidden feature",
+        "labels": [
+          2,
+          4
+        ]
+      },
+      {
+        "title": "Combine inputs and hidden feature",
+        "labels": [
+          3,
+          5,
+          6
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Schematic of one neuron: each input times its weight is summed with a bias to give z, then an activation phi gives the output a.",
+    "text_count": 14,
+    "kind": "flow",
+    "summary": "",
+    "sections": [
+      {
+        "title": "Inputs and weights",
+        "labels": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      },
+      {
+        "title": "Weighted sum plus bias",
+        "labels": [
+          6,
+          7,
+          8,
+          9,
+          12
+        ]
+      },
+      {
+        "title": "Nonlinear activation",
+        "labels": [
+          10,
+          13
+        ]
+      },
+      {
+        "title": "Output",
+        "labels": [
+          11
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Two panels. Left: a larger weight makes the sigmoid switch steeper. Right: the bias slides the same switch left or right.",
+    "text_count": 4,
+    "kind": "comparison",
+    "summary": "",
+    "sections": [
+      {
+        "title": "Weight controls steepness",
+        "labels": [
+          0,
+          2
+        ],
+        "bounds": [
+          0,
+          0,
+          265,
+          285
+        ]
+      },
+      {
+        "title": "Bias controls position",
+        "labels": [
+          1,
+          3
+        ],
+        "bounds": [
+          265,
+          0,
+          265,
+          285
+        ]
+      }
+    ]
+  },
+  {
+    "label": "A guide to choosing an activation. Ask which layer: hidden layers use ReLU by default, GELU or SiLU for transformers, Leaky ReLU or ELU for dead units, and avoid sigmoid or tanh deep. Output layers pick by task: linear for regression, sigmoid for binary, softmax for multiclass, sigmoid per class for multi-label — each paired with its matching loss.",
+    "text_count": 14,
+    "kind": "comparison",
+    "summary": "",
+    "sections": [
+      {
+        "title": "Choose the layer",
+        "labels": [
+          0,
+          1,
+          2
+        ]
+      },
+      {
+        "title": "Hidden layers",
+        "labels": [
+          3,
+          4,
+          5,
+          6,
+          7
+        ]
+      },
+      {
+        "title": "Output layers",
+        "labels": [
+          8,
+          9,
+          10,
+          11,
+          12,
+          13
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Left: a central blue cluster surrounded by a red ring cannot be split by any single straight line, which is all a stack of linear layers can produce. Right: a nonlinear network bends the boundary into a closed curve that cleanly encloses the blue cluster.",
+    "text_count": 4,
+    "kind": "comparison",
+    "summary": "",
+    "sections": [
+      {
+        "title": "Only linear layers",
+        "labels": [
+          0,
+          2
+        ],
+        "bounds": [
+          0,
+          0,
+          260,
+          250
+        ]
+      },
+      {
+        "title": "Add a nonlinearity",
+        "labels": [
+          1,
+          3
+        ],
+        "bounds": [
+          260,
+          0,
+          260,
+          250
+        ]
+      }
+    ]
+  },
+  {
+    "label": "AND is separable by one straight line; XOR is not — its two 1-corners sit on opposite diagonals.",
+    "text_count": 3,
+    "kind": "comparison",
+    "summary": "",
+    "sections": [
+      {
+        "title": "AND: linearly separable",
+        "labels": [
+          0
+        ],
+        "bounds": [
+          0,
+          0,
+          260,
+          270
+        ]
+      },
+      {
+        "title": "XOR: not linearly separable",
+        "labels": [
+          1
+        ],
+        "bounds": [
+          260,
+          0,
+          260,
+          270
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Anatomy of a biological neuron",
+    "text_count": 8,
+    "kind": "comparison",
+    "summary": "Follow the signal from dendrites and soma, along the axon, to its terminals.",
+    "sections": [
+      {
+        "title": "Inputs and cell body",
+        "labels": [
+          0,
+          1,
+          2
+        ],
+        "bounds": [
+          0,
+          0,
+          300,
+          300
+        ]
+      },
+      {
+        "title": "Axon and insulation",
+        "labels": [
+          3,
+          4,
+          5,
+          7
+        ],
+        "bounds": [
+          300,
+          0,
+          250,
+          300
+        ]
+      },
+      {
+        "title": "Axon terminals",
+        "labels": [
+          6
+        ],
+        "bounds": [
+          550,
+          0,
+          210,
+          300
+        ]
+      }
+    ]
+  },
+  {
+    "label": "A synapse transmitting a signal",
+    "text_count": 7,
+    "kind": "comparison",
+    "summary": "Vesicles release neurotransmitters into the cleft; they bind receptors on the receiving neuron.",
+    "sections": [
+      {
+        "title": "Presynaptic terminal",
+        "labels": [
+          1,
+          2
+        ],
+        "bounds": [
+          0,
+          0,
+          320,
+          320
+        ]
+      },
+      {
+        "title": "Across the synaptic cleft",
+        "labels": [
+          3,
+          4,
+          6
+        ],
+        "bounds": [
+          320,
+          0,
+          140,
+          320
+        ]
+      },
+      {
+        "title": "Postsynaptic neuron",
+        "labels": [
+          0,
+          5
+        ],
+        "bounds": [
+          460,
+          0,
+          300,
+          320
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Mapping between biological and artificial neuron parts",
+    "text_count": 17,
+    "kind": "comparison",
+    "summary": "",
+    "sections": [
+      {
+        "title": "Dendrites → inputs",
+        "labels": [
+          2,
+          7,
+          12
+        ]
+      },
+      {
+        "title": "Synapses → weights",
+        "labels": [
+          3,
+          8,
+          13
+        ]
+      },
+      {
+        "title": "Soma → weighted sum",
+        "labels": [
+          4,
+          9,
+          14
+        ]
+      },
+      {
+        "title": "Threshold → activation",
+        "labels": [
+          5,
+          10,
+          15
+        ]
+      },
+      {
+        "title": "Spike → output",
+        "labels": [
+          6,
+          11,
+          16
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Threshold Logic Unit: inputs times weights, summed, then thresholded to a 0/1 output",
+    "text_count": 14,
+    "kind": "flow",
+    "summary": "The threshold logic unit returns 0 or 1 according to whether the weighted sum reaches its threshold.",
+    "sections": [
+      {
+        "title": "Multiply inputs by weights",
+        "labels": [
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13
+        ]
+      },
+      {
+        "title": "Sum the weighted inputs",
+        "labels": [
+          0
+        ]
+      },
+      {
+        "title": "Compare with the threshold",
+        "labels": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      }
+    ]
+  },
+  {
+    "label": "A matrix is a linear transformation: the unit square with basis vectors e1 and e2 on the left becomes a sheared, scaled parallelogram on the right, whose edges are the columns of W — the images of e1 and e2.",
+    "text_count": 7,
+    "kind": "comparison",
+    "summary": "The edges after transformation are the columns of W: the images of the two basis vectors.",
+    "sections": [
+      {
+        "title": "Before: the unit square",
+        "labels": [
+          0,
+          1,
+          2
+        ],
+        "bounds": [
+          0,
+          0,
+          220,
+          230
+        ]
+      },
+      {
+        "title": "After: apply W",
+        "labels": [
+          4,
+          5,
+          6
+        ],
+        "bounds": [
+          270,
+          0,
+          210,
+          230
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Four distribution shapes side by side: a symmetric bell (normal), a flat box (uniform), a decaying curve (exponential), and a right-skewed hump with a long right tail.",
+    "text_count": 4,
+    "kind": "comparison",
+    "summary": "",
+    "sections": [
+      {
+        "title": "Normal",
+        "labels": [
+          0
+        ],
+        "bounds": [
+          0,
+          0,
+          120,
+          175
+        ]
+      },
+      {
+        "title": "Uniform",
+        "labels": [
+          1
+        ],
+        "bounds": [
+          120,
+          0,
+          120,
+          175
+        ]
+      },
+      {
+        "title": "Exponential",
+        "labels": [
+          2
+        ],
+        "bounds": [
+          240,
+          0,
+          120,
+          175
+        ]
+      },
+      {
+        "title": "Right-skewed",
+        "labels": [
+          3
+        ],
+        "bounds": [
+          360,
+          0,
+          120,
+          175
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Gradient descent on the same quadratic bowl with three learning rates. Too small: tiny steps that crawl. Just right: a few steps converge to the bottom. Too big: steps overshoot and bounce across the valley without settling.",
+    "text_count": 6,
+    "kind": "comparison",
+    "summary": "",
+    "sections": [
+      {
+        "title": "Learning rate too small",
+        "labels": [
+          0,
+          3
+        ],
+        "bounds": [
+          0,
+          0,
+          180,
+          230
+        ]
+      },
+      {
+        "title": "Learning rate just right",
+        "labels": [
+          1,
+          4
+        ],
+        "bounds": [
+          180,
+          0,
+          180,
+          230
+        ]
+      },
+      {
+        "title": "Learning rate too large",
+        "labels": [
+          2,
+          5
+        ],
+        "bounds": [
+          360,
+          0,
+          180,
+          230
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Left: a convex loss is a single bowl, so descent always reaches the global minimum. Right: a non-convex loss has several dips, and gradient descent can get stuck in a local minimum that is not the global one.",
+    "text_count": 5,
+    "kind": "comparison",
+    "summary": "",
+    "sections": [
+      {
+        "title": "Convex loss",
+        "labels": [
+          0,
+          2
+        ],
+        "bounds": [
+          0,
+          0,
+          260,
+          230
+        ]
+      },
+      {
+        "title": "Non-convex loss",
+        "labels": [
+          1,
+          3,
+          4
+        ],
+        "bounds": [
+          260,
+          0,
+          260,
+          230
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Naive softmax on large logits 1000, 1001, 1002 overflows: exp gives infinity and infinity over infinity is NaN. Subtracting the max first gives logits -2, -1, 0, exp gives finite values, and softmax returns a valid probability distribution.",
+    "text_count": 8,
+    "kind": "comparison",
+    "summary": "",
+    "sections": [
+      {
+        "title": "Naive softmax overflows",
+        "labels": [
+          0,
+          2,
+          3,
+          4
+        ]
+      },
+      {
+        "title": "Stable softmax subtracts the maximum",
+        "labels": [
+          1,
+          5,
+          6,
+          7
+        ]
+      }
+    ]
+  },
+  {
+    "label": "The 32 bits of a float32: 1 sign bit, 8 exponent bits, and 23 mantissa (fraction) bits. Its value is minus-one to the sign, times 1 point mantissa, times two to the (exponent minus 127).",
+    "text_count": 9,
+    "kind": "flow",
+    "summary": "",
+    "sections": [
+      {
+        "title": "Sign",
+        "labels": [
+          1,
+          4
+        ]
+      },
+      {
+        "title": "Exponent",
+        "labels": [
+          2,
+          5
+        ]
+      },
+      {
+        "title": "Mantissa / fraction",
+        "labels": [
+          3,
+          6
+        ]
+      },
+      {
+        "title": "Combine the three fields",
+        "labels": [
+          7,
+          8
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Three panels on the same data. Left: a straight line underfits. Middle: a smooth curve fits well. Right: a wiggly high-degree curve overfits by chasing the noise.",
+    "text_count": 3,
+    "kind": "comparison",
+    "summary": "",
+    "sections": [
+      {
+        "title": "Underfit",
+        "labels": [
+          0
+        ],
+        "bounds": [
+          0,
+          0,
+          180,
+          230
+        ]
+      },
+      {
+        "title": "A good fit",
+        "labels": [
+          1
+        ],
+        "bounds": [
+          180,
+          0,
+          180,
+          230
+        ]
+      },
+      {
+        "title": "Overfit",
+        "labels": [
+          2
+        ],
+        "bounds": [
+          360,
+          0,
+          180,
+          230
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Left: a decision tree of threshold questions with three leaves A, B, C. Right: the same rules chop the 2D feature space into three axis-aligned rectangles labeled A, B, C.",
+    "text_count": 16,
+    "kind": "comparison",
+    "summary": "",
+    "sections": [
+      {
+        "title": "The threshold rules",
+        "labels": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          14
+        ],
+        "bounds": [
+          0,
+          0,
+          310,
+          270
+        ]
+      },
+      {
+        "title": "The same regions in feature space",
+        "labels": [
+          9,
+          10,
+          11,
+          12,
+          13,
+          15
+        ],
+        "bounds": [
+          310,
+          0,
+          250,
+          270
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Two panels. Small C gives a wide street that tolerates a few points violating the margin. Large C gives a narrow street that hugs the points to avoid violations.",
+    "text_count": 2,
+    "kind": "comparison",
+    "summary": "",
+    "sections": [
+      {
+        "title": "Small C",
+        "labels": [
+          0
+        ],
+        "bounds": [
+          0,
+          0,
+          260,
+          250
+        ]
+      },
+      {
+        "title": "Large C",
+        "labels": [
+          1
+        ],
+        "bounds": [
+          260,
+          0,
+          260,
+          250
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Left: in one dimension the blue class is in the middle and red on both ends, so no single threshold separates them. Right: adding an x-squared coordinate lifts the points onto a parabola, where one straight horizontal line cleanly separates blue (low) from red (high).",
+    "text_count": 7,
+    "kind": "comparison",
+    "summary": "Adding x² makes it possible to separate the classes with one straight line in the lifted feature space.",
+    "sections": [
+      {
+        "title": "Original one-dimensional feature",
+        "labels": [
+          0,
+          1
+        ],
+        "bounds": [
+          0,
+          0,
+          245,
+          280
+        ]
+      },
+      {
+        "title": "Lift to (x, x²)",
+        "labels": [
+          4,
+          5,
+          6
+        ],
+        "bounds": [
+          270,
+          0,
+          250,
+          280
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Two interleaving crescent clusters. Left: k-means with k=2 splits them with a straight cut and mixes the crescents. Right: DBSCAN follows the density and recovers the two crescents correctly.",
+    "text_count": 2,
+    "kind": "comparison",
+    "summary": "",
+    "sections": [
+      {
+        "title": "k-means",
+        "labels": [
+          0
+        ],
+        "bounds": [
+          0,
+          0,
+          260,
+          280
+        ]
+      },
+      {
+        "title": "DBSCAN",
+        "labels": [
+          1
+        ],
+        "bounds": [
+          260,
+          0,
+          260,
+          280
+        ]
+      }
+    ]
+  },
+  {
+    "label": "5-fold cross-validation: the data is split into 5 equal parts; across 5 rounds each part is used once as the validation set while the other four train the model, and the scores are averaged.",
+    "text_count": 14,
+    "kind": "flow",
+    "summary": "Split the data into five parts. In each round, the named fold is validation data and the other four folds are training data.",
+    "sections": [
+      {
+        "title": "Round 1: validate on fold 1",
+        "labels": [
+          8,
+          3
+        ]
+      },
+      {
+        "title": "Round 2: validate on fold 2",
+        "labels": [
+          9,
+          4
+        ]
+      },
+      {
+        "title": "Round 3: validate on fold 3",
+        "labels": [
+          10,
+          5
+        ]
+      },
+      {
+        "title": "Round 4: validate on fold 4",
+        "labels": [
+          11,
+          6
+        ]
+      },
+      {
+        "title": "Round 5: validate on fold 5",
+        "labels": [
+          12,
+          7
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Grid search vs random search with 9 trials each. The grid's 9 points fall on only 3 distinct values of the important (horizontal) parameter; random search's 9 points give 9 distinct values, covering the important axis much better.",
+    "text_count": 5,
+    "kind": "comparison",
+    "summary": "",
+    "sections": [
+      {
+        "title": "Grid search: nine trials",
+        "labels": [
+          0,
+          2
+        ],
+        "bounds": [
+          0,
+          0,
+          260,
+          250
+        ]
+      },
+      {
+        "title": "Random search: nine trials",
+        "labels": [
+          1,
+          3
+        ],
+        "bounds": [
+          260,
+          0,
+          260,
+          250
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Nested cross-validation: an outer 3-fold loop where each round holds out a test fold, and inside each outer training part an inner 3-fold loop rotates a validation fold to choose hyperparameters. The outer test folds, never seen by tuning, give the honest score.",
+    "text_count": 12,
+    "kind": "flow",
+    "summary": "For each outer round, tune inside the outer training data. Evaluate the chosen setting on that round’s untouched outer test fold.",
+    "sections": [
+      {
+        "title": "Outer loop: estimate generalization",
+        "labels": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      {
+        "title": "Resplit only the outer training data",
+        "labels": [
+          4
+        ]
+      },
+      {
+        "title": "Inner loop: choose hyperparameters",
+        "labels": [
+          5,
+          6,
+          7,
+          8
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Left, a learning curve: training error stays near zero while validation error falls as data grows but keeps a gap — the signature of high variance. Right, a validation curve: training error keeps dropping with tree depth while validation error bottoms out near depth 5 then flattens — the sweet spot.",
+    "text_count": 9,
+    "kind": "comparison",
+    "summary": "",
+    "sections": [
+      {
+        "title": "Learning curve: vary data size",
+        "labels": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "bounds": [
+          0,
+          0,
+          310,
+          280
+        ]
+      },
+      {
+        "title": "Validation curve: vary complexity",
+        "labels": [
+          6,
+          7,
+          8
+        ],
+        "bounds": [
+          310,
+          0,
+          230,
+          280
+        ]
+      }
+    ]
+  },
+  {
+    "label": "The end-to-end machine learning workflow: Data, Clean and split, Features, Train, Validate and tune, Deploy and monitor, connected left to right, with a dashed feedback loop from monitoring back to features.",
+    "text_count": 11,
+    "kind": "flow",
+    "summary": "Monitoring provides new data and can trigger retraining, closing the loop.",
+    "sections": [
+      {
+        "title": "Collect data",
+        "labels": [
+          1
+        ]
+      },
+      {
+        "title": "Clean and split",
+        "labels": [
+          2,
+          3
+        ]
+      },
+      {
+        "title": "Prepare features",
+        "labels": [
+          4
+        ]
+      },
+      {
+        "title": "Train",
+        "labels": [
+          9
+        ]
+      },
+      {
+        "title": "Validate and tune",
+        "labels": [
+          5,
+          6
+        ]
+      },
+      {
+        "title": "Deploy and monitor",
+        "labels": [
+          7,
+          8
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Before scaling, income's raw range 0 to 100000 fills the axis while age 0 to 80 is a tiny sliver on the same scale, so distance-based models ignore age. After standardizing, income and age span the same range and both count.",
+    "text_count": 10,
+    "kind": "comparison",
+    "summary": "",
+    "sections": [
+      {
+        "title": "Before scaling",
+        "labels": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "bounds": [
+          0,
+          0,
+          480,
+          120
+        ]
+      },
+      {
+        "title": "After standardization",
+        "labels": [
+          6,
+          7,
+          8,
+          9
+        ],
+        "bounds": [
+          0,
+          120,
+          480,
+          110
+        ]
+      }
+    ]
+  },
+  {
+    "label": "One-hot encoding turns a single 'color' column with values red, green, blue, red into three 0/1 columns is_red, is_green, is_blue, where exactly one column is 1 per row.",
+    "text_count": 21,
+    "kind": "comparison",
+    "summary": "The output tuple is ordered (is_red, is_green, is_blue). Each row activates exactly its own category.",
+    "sections": [
+      {
+        "title": "red → (1, 0, 0)",
+        "labels": [
+          1,
+          9,
+          10,
+          11
+        ]
+      },
+      {
+        "title": "green → (0, 1, 0)",
+        "labels": [
+          2,
+          12,
+          13,
+          14
+        ]
+      },
+      {
+        "title": "blue → (0, 0, 1)",
+        "labels": [
+          3,
+          15,
+          16,
+          17
+        ]
+      },
+      {
+        "title": "red → (1, 0, 0)",
+        "labels": [
+          4,
+          18,
+          19,
+          20
+        ]
+      }
+    ]
+  },
+  {
+    "label": "A class distribution of 950 negatives to 50 positives (95 to 5 percent). A model always predicting negative scores 95 percent accuracy yet catches zero positives. After rebalancing — oversampling/SMOTE, undersampling, or class weights — the two classes are even.",
+    "text_count": 9,
+    "kind": "comparison",
+    "summary": "",
+    "sections": [
+      {
+        "title": "Before: imbalanced classes",
+        "labels": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      {
+        "title": "Possible rebalancing strategies",
+        "labels": [
+          4
+        ]
+      },
+      {
+        "title": "After: balanced illustration",
+        "labels": [
+          5,
+          6,
+          7,
+          8
+        ]
+      }
+    ]
+  },
+  {
+    "label": "A neuron's straight decision line splits the plane into a 1 side and a 0 side; the weight vector points to the 1 side at right angles, and distance from the line is confidence.",
+    "text_count": 7,
+    "kind": "figure",
+    "summary": "",
+    "sections": [
+      {
+        "title": "",
+        "labels": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "bounds": [
+          0.0,
+          0.0,
+          600.0,
+          340.0
+        ]
+      }
+    ]
+  },
+  {
+    "label": "The weight vector and the input vector with the angle theta between them; output is largest when they align.",
+    "text_count": 3,
+    "kind": "figure",
+    "summary": "",
+    "sections": [
+      {
+        "title": "",
+        "labels": [
+          0,
+          1,
+          2
+        ],
+        "bounds": [
+          0.0,
+          0.0,
+          360.0,
+          210.0
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Shapes of the step, sigmoid, tanh and ReLU activation functions on shared axes",
+    "text_count": 8,
+    "kind": "figure",
+    "summary": "",
+    "sections": [
+      {
+        "title": "",
+        "labels": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "bounds": [
+          0.0,
+          0.0,
+          480.0,
+          300.0
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Gradient size versus network depth: ReLU stays at 1 while the sigmoid product vanishes toward zero.",
+    "text_count": 8,
+    "kind": "figure",
+    "summary": "",
+    "sections": [
+      {
+        "title": "",
+        "labels": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "bounds": [
+          0.0,
+          0.0,
+          480.0,
+          280.0
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Two vectors a and b drawn from the origin with the angle theta between them. The projection of b onto a is b's shadow along a, found by dropping a perpendicular from the tip of b to the line of a.",
+    "text_count": 4,
+    "kind": "figure",
+    "summary": "",
+    "sections": [
+      {
+        "title": "",
+        "labels": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "bounds": [
+          0.0,
+          0.0,
+          380.0,
+          250.0
+        ]
+      }
+    ]
+  },
+  {
+    "label": "An eigenvector v lies on a dashed line; applying W only stretches it to lambda v along the same line, while a non-eigenvector u is rotated to a new direction Wu.",
+    "text_count": 5,
+    "kind": "figure",
+    "summary": "",
+    "sections": [
+      {
+        "title": "",
+        "labels": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "bounds": [
+          0.0,
+          0.0,
+          260.0,
+          220.0
+        ]
+      }
+    ]
+  },
+  {
+    "label": "A cloud of data points forms an elongated blob; PCA finds the principal axes — a long arrow PC1 along the direction of most variance and a short perpendicular arrow PC2.",
+    "text_count": 3,
+    "kind": "figure",
+    "summary": "",
+    "sections": [
+      {
+        "title": "",
+        "labels": [
+          0,
+          1,
+          2
+        ],
+        "bounds": [
+          0.0,
+          0.0,
+          470.0,
+          210.0
+        ]
+      }
+    ]
+  },
+  {
+    "label": "A curve f(x) with the tangent line at a point P; the tangent's slope, rise over run, is the derivative f-prime at P.",
+    "text_count": 5,
+    "kind": "figure",
+    "summary": "",
+    "sections": [
+      {
+        "title": "",
+        "labels": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "bounds": [
+          0.0,
+          0.0,
+          420.0,
+          260.0
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Concentric circular contours of a bowl with its minimum at the centre. At a point P the gradient points radially outward (steepest ascent), the negative gradient points inward toward the minimum (steepest descent), and both are perpendicular to the contour through P.",
+    "text_count": 5,
+    "kind": "figure",
+    "summary": "",
+    "sections": [
+      {
+        "title": "",
+        "labels": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "bounds": [
+          0.0,
+          0.0,
+          360.0,
+          300.0
+        ]
+      }
+    ]
+  },
+  {
+    "label": "The normal bell curve centred at the mean. About 68 percent of the area lies within one standard deviation, 95 percent within two, and 99.7 percent within three.",
+    "text_count": 4,
+    "kind": "figure",
+    "summary": "",
+    "sections": [
+      {
+        "title": "",
+        "labels": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "bounds": [
+          0.0,
+          0.0,
+          460.0,
+          285.0
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Minimizing x squared plus y squared subject to x plus y equals 1: concentric level circles centered at the origin are tangent to the constraint line at (0.5, 0.5), where the gradient of f is parallel to the gradient of g.",
+    "text_count": 3,
+    "kind": "figure",
+    "summary": "",
+    "sections": [
+      {
+        "title": "",
+        "labels": [
+          0,
+          1,
+          2
+        ],
+        "bounds": [
+          0.0,
+          0.0,
+          300.0,
+          250.0
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Binary entropy as a function of the coin bias p: a dome peaking at 1 bit when p is 0.5 (maximum uncertainty) and dropping to 0 at p=0 and p=1 (a certain outcome).",
+    "text_count": 7,
+    "kind": "figure",
+    "summary": "",
+    "sections": [
+      {
+        "title": "",
+        "labels": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "bounds": [
+          0.0,
+          0.0,
+          420.0,
+          270.0
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Cross-entropy as a function of the predicted probability q when the true bias is 0.7. The curve is a valley reaching its minimum exactly at q equals 0.7, and rising steeply as q approaches 0 (confident and wrong).",
+    "text_count": 4,
+    "kind": "figure",
+    "summary": "",
+    "sections": [
+      {
+        "title": "",
+        "labels": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "bounds": [
+          0.0,
+          0.0,
+          420.0,
+          270.0
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Scatter of eight data points with the best-fit straight line; each pink vertical segment is a residual, the gap between a point and the line.",
+    "text_count": 5,
+    "kind": "figure",
+    "summary": "",
+    "sections": [
+      {
+        "title": "",
+        "labels": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "bounds": [
+          0.0,
+          0.0,
+          480.0,
+          320.0
+        ]
+      }
+    ]
+  },
+  {
+    "label": "The mean squared error drawn as a convex bowl over the weight w; gradient descent takes steps downhill, large when far away and small near the bottom, converging at the minimum.",
+    "text_count": 5,
+    "kind": "figure",
+    "summary": "",
+    "sections": [
+      {
+        "title": "",
+        "labels": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "bounds": [
+          0.0,
+          0.0,
+          480.0,
+          320.0
+        ]
+      }
+    ]
+  },
+  {
+    "label": "As model capacity grows, training error keeps falling while test error follows a U-shape, reaching a minimum at the sweet spot before rising due to overfitting.",
+    "text_count": 7,
+    "kind": "figure",
+    "summary": "",
+    "sections": [
+      {
+        "title": "",
+        "labels": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "bounds": [
+          0.0,
+          0.0,
+          480.0,
+          300.0
+        ]
+      }
+    ]
+  },
+  {
+    "label": "The logistic sigmoid squashes any real score z into a probability between 0 and 1, crossing 0.5 at z=0 and saturating toward 0 and 1 in the tails.",
+    "text_count": 8,
+    "kind": "figure",
+    "summary": "",
+    "sections": [
+      {
+        "title": "",
+        "labels": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "bounds": [
+          0.0,
+          0.0,
+          420.0,
+          250.0
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Two classes of points in 2D separated by a single straight decision boundary; one side is predicted class 1, the other class 0.",
+    "text_count": 7,
+    "kind": "figure",
+    "summary": "",
+    "sections": [
+      {
+        "title": "",
+        "labels": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "bounds": [
+          0.0,
+          0.0,
+          360.0,
+          300.0
+        ]
+      }
+    ]
+  },
+  {
+    "label": "A regression tree predicts a piecewise-constant staircase. A shallow depth-2 tree makes a few wide steps; a deep depth-6 tree makes many narrow steps that chase the noisy data points.",
+    "text_count": 5,
+    "kind": "figure",
+    "summary": "",
+    "sections": [
+      {
+        "title": "",
+        "labels": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "bounds": [
+          0.0,
+          0.0,
+          480.0,
+          300.0
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Gradient boosting starts from the flat mean F0 and adds shallow trees one at a time; after 1 tree the fit is coarse, after 8 closer, after 60 it tracks the data well.",
+    "text_count": 6,
+    "kind": "figure",
+    "summary": "",
+    "sections": [
+      {
+        "title": "",
+        "labels": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "bounds": [
+          0.0,
+          0.0,
+          480.0,
+          300.0
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Several thin lines can separate the two classes, but the SVM chooses the boundary sitting in the middle of the widest empty street; the two points touching the street edges are the support vectors.",
+    "text_count": 3,
+    "kind": "figure",
+    "summary": "",
+    "sections": [
+      {
+        "title": "",
+        "labels": [
+          0,
+          1,
+          2
+        ],
+        "bounds": [
+          0.0,
+          0.0,
+          460.0,
+          270.0
+        ]
+      }
+    ]
+  },
+  {
+    "label": "A support vector machine separates two classes with the widest possible street: a solid boundary line, two dashed margin lines, and the circled points touching them are the support vectors.",
+    "text_count": 4,
+    "kind": "figure",
+    "summary": "",
+    "sections": [
+      {
+        "title": "",
+        "labels": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "bounds": [
+          0.0,
+          0.0,
+          420.0,
+          300.0
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Three classification losses versus the margin: the 0/1 loss is a step at zero, the hinge loss falls linearly and becomes exactly zero once the margin passes 1 (with a kink there), and the log loss is smooth and never reaches zero.",
+    "text_count": 7,
+    "kind": "figure",
+    "summary": "",
+    "sections": [
+      {
+        "title": "",
+        "labels": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "bounds": [
+          0.0,
+          0.0,
+          460.0,
+          280.0
+        ]
+      }
+    ]
+  },
+  {
+    "label": "k-means clustering with k equals 3: points colored by their assigned cluster, with an X marking each cluster's centroid (mean).",
+    "text_count": 1,
+    "kind": "figure",
+    "summary": "",
+    "sections": [
+      {
+        "title": "",
+        "labels": [
+          0
+        ],
+        "bounds": [
+          0.0,
+          0.0,
+          360.0,
+          300.0
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Elbow plot: k-means inertia drops steeply from k=1 to k=3 then flattens, so the elbow at k=3 is the suggested number of clusters.",
+    "text_count": 11,
+    "kind": "figure",
+    "summary": "",
+    "sections": [
+      {
+        "title": "",
+        "labels": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "bounds": [
+          0.0,
+          0.0,
+          440.0,
+          280.0
+        ]
+      }
+    ]
+  },
+  {
+    "label": "A dendrogram of six points A to F merged bottom-up at increasing distances; a dashed horizontal cut line crosses three branches, giving three clusters: A-B-C, D-E, and F.",
+    "text_count": 8,
+    "kind": "figure",
+    "summary": "",
+    "sections": [
+      {
+        "title": "",
+        "labels": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "bounds": [
+          0.0,
+          0.0,
+          440.0,
+          280.0
+        ]
+      }
+    ]
+  },
+  {
+    "label": "A tilted 2-D point cloud with its principal components drawn as axes through the centroid: PC1 is the long axis along the direction of greatest spread (95% of the variance), PC2 the short perpendicular axis (5%).",
+    "text_count": 2,
+    "kind": "figure",
+    "summary": "",
+    "sections": [
+      {
+        "title": "",
+        "labels": [
+          0,
+          1
+        ],
+        "bounds": [
+          0.0,
+          0.0,
+          360.0,
+          300.0
+        ]
+      }
+    ]
+  }
+]
