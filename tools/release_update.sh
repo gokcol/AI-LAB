@@ -5,6 +5,10 @@ MODE="${1:-}"
 RELEASE="${2:-}"
 BASE=/opt/ai-lab
 [[ "$RELEASE" =~ ^[0-9]{8}T[0-9]{6}Z$ ]] || { echo 'Expected release YYYYMMDDTHHMMSSZ'; exit 2; }
+[[ "$MODE" == stage || "$MODE" == activate ]] || { echo 'Expected stage or activate'; exit 2; }
+# Serialize staging, activation and cleanup so another deployment cannot lose its files.
+exec 9>"$BASE/.release.lock"
+flock -n 9 || { echo 'Another AI Lab deployment is running' >&2; exit 2; }
 STAGE="$BASE/releases/$RELEASE"
 PREVIOUS=$(readlink -f "$BASE/current")
 [[ "$PREVIOUS" == "$BASE/releases/"* && -d "$STAGE" ]] || exit 2
@@ -73,6 +77,11 @@ elif [[ "$MODE" == activate ]]; then
   fi
   trap - ERR
   echo "Active: $STAGE; rollback: $PREVIOUS"
+  # A cleanup failure must not undo an activation that passed every health check.
+  if ! python3 "$STAGE/tools/prune_releases.py" --active "$RELEASE" \
+      --rollback "${PREVIOUS##*/}" --lock-fd 9 --apply; then
+    echo 'WARNING: deployment succeeded, but old build cleanup needs attention.' >&2
+  fi
 else
   echo 'Usage: release_update.sh stage|activate RELEASE [--redact-version VERSION | --private-ops]' >&2; exit 2
 fi

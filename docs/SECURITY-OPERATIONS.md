@@ -55,6 +55,24 @@ ASGI error markers. Journal retention and the 10,000-entry cap limit coverage.
 Events are not tied to a request status or visitor; HTTP 200 alone does not prove
 lesson success. Handled errors and client-side failures need separate telemetry.
 
+## Deployment build retention (2026-10-18)
+
+`tools/release_update.sh` serializes staging and activation with
+`/opt/ai-lab/.release.lock`. After activation passes service/public health checks
+and approves the integrity baseline, it runs `tools/prune_releases.py` to keep
+the active release and the rollback recorded in its `previous-release.txt`.
+Older release folders and temporary AI Lab deployment archives older than both
+retained releases are removed. Newer staging folders remain available for their
+pending deployment. Shared feedback, statistics, datasets outside old builds,
+logs, and other applications are outside the cleanup scope.
+
+Cleanup verifies the active link, rollback metadata and runtimes before deleting
+anything. Symlinked release folders, mounts, running old builds, retained-release
+dependencies, or unshared feedback stop cleanup. A cleanup failure prints a
+warning and leaves the healthy activation running; it never triggers rollback.
+The next successful deployment retries cleanup. The utility previews changes
+unless `--apply` is supplied and takes the same deployment lock when run directly.
+
 ## Traffic history retention (2026-10-15)
 
 The ops dashboard reconstructs traffic from AI Lab's dedicated nginx access log;

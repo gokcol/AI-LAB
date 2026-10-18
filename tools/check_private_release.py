@@ -3,6 +3,7 @@ from pathlib import Path
 import sys
 
 PRIVATE_FILES = {'tools/release_update.sh', 'tools/check_private_release.py',
+                 'tools/prune_releases.py', 'tests/test_release_cleanup.py',
                  'tools/collect_ops_security.py', 'tools/install_ops_monitor.sh',
                  'tests/test_ops_dashboard.py', 'tests/test_ops_security.py',
                  'tools/visitor_report.py', 'ops/ai-lab-history.logrotate',
