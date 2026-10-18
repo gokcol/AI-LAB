@@ -360,6 +360,10 @@ def figure_svg(fig, *, selected="light", **save_options) -> str:
         svg = svg.replace("<svg ", '<svg class="ailab-plot" ', 1)
     svg = svg.replace("<svg ", '<svg role="img" aria-label="Lesson plot" ', 1)
     svg = re.sub(r'\s(?:width|height)="[^\"]+pt"', '', svg, count=2)
+    # Blank lines terminate a raw HTML block in Markdown. XML reserialization
+    # can leave them where Matplotlib comments were removed, letting later
+    # legend groups render as stray HTML text outside the SVG.
+    svg = re.sub(r">\s+<", "><", svg)
     return svg.replace("<svg ", '<svg style="display:block;width:100%;height:auto" ', 1)
 
 

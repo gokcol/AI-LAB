@@ -1,6 +1,16 @@
 [
   {
     "version": "1.14",
+    "revision": 14,
+    "date": "2026-10-18",
+    "title": "Mobile readability across the lab",
+    "changes": [
+      "**Read the small details:** inline code, source paths, captions and helper labels use larger text on phones. Long code names wrap inside the lesson, while desktop typography keeps its existing size.",
+      "**Keep chart keys with their plots:** fixed an SVG formatting issue that could detach legend labels from charts in dark mode. Labels, series colors and mobile chart sizing now stay together in both themes, including [model evaluation](/ml_model_selection) and [activation simulations](/activations)."
+    ]
+  },
+  {
+    "version": "1.14",
     "revision": 13,
     "date": "2026-10-18",
     "title": "Reliable chart updates while exploring lessons",

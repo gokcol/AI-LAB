@@ -596,6 +596,19 @@ def inject_theme(selected: str = DEFAULT_THEME, zoom: int = DEFAULT_ZOOM) -> Non
 
         /* ---------------- mobile ------------------------------------------------ */
         @media (max-width: 640px) {
+            /* Small monospace runs and secondary labels must stay readable
+               even inside captions, list items and compact status cards. */
+            :is([data-testid="stMarkdownContainer"], [data-testid="stCaptionContainer"]) :not(pre) > code {
+                font-size: .9rem !important;
+                white-space: normal; overflow-wrap: anywhere;
+            }
+            [data-testid="stCaptionContainer"] p, .ailab-plot-hint,
+            .ailab-chip, .ailab-stat .lab {
+                font-size: .875rem !important; line-height: 1.5;
+            }
+            .ailab-muted {
+                font-size: max(.875rem, 1em) !important; line-height: 1.5;
+            }
             .ailab-diagram { display: block; max-width: 100%; }
             .ailab-diagram-desktop { display: none; }
             .ailab-diagram-mobile {
@@ -687,7 +700,7 @@ def inject_theme(selected: str = DEFAULT_THEME, zoom: int = DEFAULT_ZOOM) -> Non
             .ailab-plot-mobile { display: block; }
             [data-testid="stMarkdownContainer"]:has(> .katex-display)::after {
                 content: "↔ Long equations scroll sideways.";
-                display: block; font-size: .8rem; color: var(--ailab-muted);
+                display: block; font-size: .875rem; color: var(--ailab-muted);
                 margin-top: -.5rem; margin-bottom: .5rem;
             }
             .block-container { padding-left: 0.8rem; padding-right: 0.8rem; }

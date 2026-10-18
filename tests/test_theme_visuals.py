@@ -103,6 +103,22 @@ def test_colorbar_stays_with_its_plot_and_uses_independent_svg_ids():
     plt.close(fig)
 
 
+@pytest.mark.parametrize('selected', ['light', 'dark', 'browser'])
+def test_plot_remains_one_markdown_html_block_including_legend(selected):
+    import re
+    fig, ax = plt.subplots()
+    ax.plot([0, 1], [1, 0], label='Training error')
+    ax.legend()
+    svg = figure_svg(fig, selected=selected)
+    # A blank line ends a CommonMark raw HTML block. The remaining legend
+    # groups would then be wrapped as prose outside the SVG by the app renderer.
+    assert not re.search(r'\n[ \t]*\n', svg)
+    root = ET.fromstring(svg)
+    assert any(t.text == 'Training error' for t in root.findall('.//{http://www.w3.org/2000/svg}text'))
+    assert ax.get_legend().get_visible() and not fig.legends
+    plt.close(fig)
+
+
 def test_detached_multi_panel_figure_exports_without_a_canvas_renderer():
     from matplotlib.figure import Figure
     fig = Figure(figsize=(9, 3))
