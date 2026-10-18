@@ -146,6 +146,11 @@ def _theme_overrides(selected: str) -> str:
            Recolor their canvas only; keep controls native and never filter plots,
            photos, heatmaps or any other data image. */
         [data-testid="stDataFrame"] canvas { filter: invert(.90) hue-rotate(180deg); }
+        @media (max-width: 640px) {
+          [data-testid="stDataFrame"] canvas {
+            filter: invert(.90) hue-rotate(180deg) brightness(1.4) contrast(1.2);
+          }
+        }
         [data-testid="stDataFrame"], [data-testid="stDataFrame"] [data-testid="glideDataEditor"] {
           background:var(--ailab-panel) !important; color:var(--ailab-ink) !important;
         }
@@ -572,6 +577,8 @@ def inject_theme(selected: str = DEFAULT_THEME, zoom: int = DEFAULT_ZOOM) -> Non
             scrollbar-width: thin;
         }
         .ailab-plot-mobile { display: none; }
+        .ailab-diagram, .ailab-diagram-scroll { display: contents; }
+        .ailab-diagram-hint { display: none; }
         .ailab-plot-panel + .ailab-plot-panel { margin-top: 1.25rem; }
         .ailab-plot-scroll {
             width: 100%; overflow-x: auto; overscroll-behavior-x: contain;
@@ -586,6 +593,52 @@ def inject_theme(selected: str = DEFAULT_THEME, zoom: int = DEFAULT_ZOOM) -> Non
 
         /* ---------------- mobile ------------------------------------------------ */
         @media (max-width: 640px) {
+            .ailab-diagram { display: block; max-width: 100%; }
+            .ailab-diagram-scroll {
+                display: block; width: 100%; overflow-x: auto;
+                overscroll-behavior-x: contain; scrollbar-width: thin;
+                scrollbar-color: var(--ailab-muted) var(--ailab-panel);
+            }
+            .ailab-diagram-scroll > svg {
+                min-width: var(--ailab-diagram-width);
+                max-width: none !important; height: auto !important;
+            }
+            .ailab-diagram-scroll:focus-visible {
+                outline: 2px solid var(--ailab-blue); outline-offset: -2px;
+            }
+            .ailab-diagram-hint {
+                display: block; font-size: .85rem !important;
+                color: var(--ailab-muted) !important; text-align: left;
+                margin: .4rem 0 .8rem;
+            }
+            [data-testid="stMarkdownContainer"] table,
+            [data-testid="stTable"] table {
+                display: block; max-width: 100%; overflow-x: auto;
+                overscroll-behavior-x: contain; scrollbar-width: thin;
+                scrollbar-color: var(--ailab-muted) var(--ailab-panel);
+                font-size: 1rem !important;
+            }
+            [data-testid="stMarkdownContainer"] :is(th, td),
+            [data-testid="stTable"] :is(th, td) {
+                min-width: 6rem; max-width: 18rem;
+                white-space: normal; overflow-wrap: break-word;
+                font-size: 1rem !important; line-height: 1.5;
+            }
+            [data-testid="stMarkdownContainer"] table .katex,
+            [data-testid="stTable"] table .katex {
+                white-space: nowrap;
+            }
+            [data-testid="stMarkdownContainer"] table:focus-visible,
+            [data-testid="stTable"] table:focus-visible {
+                outline: 2px solid var(--ailab-blue); outline-offset: -2px;
+            }
+            [data-testid="stMarkdownContainer"] table::after,
+            [data-testid="stTable"] table::after {
+                content: "↔ Swipe for all columns.";
+                display: block; position: sticky; left: 0; width: 100%;
+                font-size: .85rem; color: var(--ailab-muted);
+                margin-top: .4rem; white-space: normal;
+            }
             .ailab-plot-desktop { display: none; }
             .ailab-plot-mobile { display: block; }
             [data-testid="stMarkdownContainer"]:has(> .katex-display)::after {

@@ -7,7 +7,49 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
-from gui.theme_visuals import diagram_html, figure_svg, plot_color, responsive_figure_html
+from gui.theme_visuals import diagram_html, figure_svg, plot_color, responsive_diagrams, responsive_figure_html
+
+
+@pytest.mark.parametrize('selected', ['light', 'dark', 'browser'])
+def test_mobile_diagram_preserves_geometry_and_scales_inherited_labels(selected):
+    svg = '''<svg viewBox="0 0 600 200" width="100%" role="img" aria-label="Chain rule">
+    <defs><marker id="arrow"><path d="M0,0 L5,3 L0,6"/></marker></defs>
+    <g font-size="12" fill="#172033"><text x="20" y="30">Input</text>
+    <g style="font-size:75%"><text x="150" y="80">Gradient<tspan font-size="6">1</tspan></text></g></g>
+    <path d="M50,50 L150,50" stroke="#172033" marker-end="url(#arrow)"/></svg>'''
+    themed = diagram_html(svg, selected)
+    result = responsive_diagrams('Before' + themed + 'After')
+    # Preserve the SVG verbatim: connected arrows, subscripts, colors, accessible
+    # title and desktop geometry must not be reconstructed or reflowed.
+    assert themed in result or themed.split('</style>')[-1] in result
+    assert result.startswith('Before') and result.endswith('After')
+    root = ET.fromstring('<div>' + result + '</div>')
+    wrapper = root.find('div[@class="ailab-diagram"]')
+    minimum = int(wrapper.get('style').split(':')[1].removesuffix('px'))
+    assert minimum * 9 / 600 >= 14
+    assert minimum * 9 / 600 < 14.02
+    region = wrapper.find('div[@role="region"]')
+    assert region.get('tabindex') == '0' and 'arrow keys' in region.get('aria-label')
+    assert region.find('svg').get('aria-label') == 'Chain rule'
+
+
+@pytest.mark.parametrize('font', ['10px', '7.5pt', '.625em', '62.5%'])
+def test_mobile_diagram_font_units_produce_same_readable_scale(font):
+    svg = f'<svg viewBox="0 0 400 100"><text style="font-size:{font}">Weight</text></svg>'
+    root = ET.fromstring(responsive_diagrams(svg))
+    assert root.get('style') == '--ailab-diagram-width:560px'
+
+
+def test_diagram_adapter_leaves_plots_icons_and_unparseable_content_alone():
+    fragments = [
+        '<svg class="ailab-plot" viewBox="0 0 400 100"><text>Axis</text></svg>',
+        '<svg viewBox="0 0 20 20"><path d="M0,0 L20,20"/></svg>',
+        '<svg><text>No view box</text></svg>',
+        '<svg viewBox="0 0 400 100"><text>Invalid & XML</text></svg>',
+        '<p>Plain lesson prose</p>',
+    ]
+    for fragment in fragments:
+        assert responsive_diagrams(fragment) == fragment
 
 
 @pytest.mark.parametrize('selected', ['light', 'dark'])

@@ -1,6 +1,16 @@
 [
   {
     "version": "1.14",
+    "revision": 10,
+    "date": "2026-10-18",
+    "title": "Readable lesson diagrams and tables on phones",
+    "changes": [
+      "**Larger diagram labels:** lesson diagrams keep their connected arrows and labels intact at a readable mobile size. Swipe within wide diagrams to explore every step, including the [backprop walkthrough](/backprop), [attention](/attention) and Math and ML illustrations.",
+      "**Complete tables:** wide lesson tables scroll within their own area, with readable text and wrapping for longer descriptions. The [activation comparison](/activations) no longer hides its rightmost columns on phones. Native data tables also gain stronger contrast in dark mode on phones. Both light and dark themes are supported; desktop layouts stay unchanged."
+    ]
+  },
+  {
+    "version": "1.14",
     "revision": 9,
     "date": "2026-10-16",
     "title": "Stacked comparison charts on mobile",

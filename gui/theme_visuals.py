@@ -164,6 +164,54 @@ def diagram_html(body: str, selected: str) -> str:
     return _SVG.sub(adapt, body)
 
 
+def responsive_diagrams(body: str) -> str:
+    """Keep SVG label geometry intact, with a readable mobile scale.
+
+    The wrapper has no layout box on desktop. Phones can pan the diagram
+    without making the lesson itself wider. Plot SVGs have their own renderer.
+    """
+    def adapt(match):
+        svg = match.group()
+        try:
+            root = ET.fromstring(svg)
+            if "ailab-plot" in root.get("class", "").split():
+                return svg
+            width = float(root.get("viewBox", "").replace(",", " ").split()[2])
+        except (ET.ParseError, ValueError, IndexError):
+            return svg
+        sizes = []
+
+        def text_sizes(element, inherited=16.):
+            # SVG font-size inherits through groups. Subscripts within a text
+            # node keep their deliberate relative size; scale the main label.
+            size = element.get("font-size", "")
+            style = re.search(r"(?:^|;)\s*font-size\s*:\s*([^;]+)", element.get("style", ""))
+            if style:
+                size = style[1].strip()
+            value = re.fullmatch(r"([\d.]+)(px|pt|em|%)?", size)
+            if value:
+                number, unit = float(value[1]), value[2]
+                inherited = number * ({"pt": 4 / 3, "em": inherited, "%": inherited / 100}.get(unit, 1))
+            if element.tag.rsplit("}", 1)[-1] == "text" and "".join(element.itertext()).strip():
+                if inherited > 0:
+                    sizes.append(inherited)
+                return
+            for child in element:
+                text_sizes(child, inherited)
+
+        text_sizes(root)
+        if not sizes or width <= 0:
+            return svg
+        minimum = math.ceil(width * 14 / min(sizes))
+        return (f'<div class="ailab-diagram" style="--ailab-diagram-width:{minimum}px">'
+                '<div class="ailab-diagram-scroll" role="region" tabindex="0" '
+                'aria-label="Lesson diagram; use left and right arrow keys to explore">'
+                f'{svg}</div><p class="ailab-diagram-hint">'
+                '↔ Swipe across the diagram to read every label.</p></div>')
+
+    return _SVG.sub(adapt, body)
+
+
 def _legend_rows(fig, legends, temporary):
     """Lay legends below all plot ink, wrapping into rows within figure width.
 
@@ -494,6 +542,7 @@ def install() -> None:
         def render(self, body, *args, **kwargs):
             if kwargs.get("unsafe_allow_html") and isinstance(body, str):
                 body = diagram_html(body, st.session_state.get("theme", "browser"))
+                body = responsive_diagrams(body)
             return original(self, body, *args, **kwargs)
         return render
 
