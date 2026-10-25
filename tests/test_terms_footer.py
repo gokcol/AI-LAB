@@ -20,12 +20,30 @@ def test_footer_does_not_navigate_through_streamlit_router():
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("button_key", ["_open_terms_en", "_open_terms_tr"])
-def test_footer_buttons_open_dialog_without_navigation_error(tmp_path, button_key):
-    from tests.test_pages_render import _run
+@pytest.mark.parametrize("requested_language", ["en", "tr"])
+def test_footer_buttons_open_dialog_without_navigation_error(tmp_path, monkeypatch, requested_language):
+    from streamlit.testing.v1 import AppTest
+    from gui import i18n, progress
 
-    app = _run(ROOT / "gui" / "views" / "home.py", tmp_path)
-    button = next(item for item in app.button if item.key == button_key)
-    app = button.click().run()
+    monkeypatch.syspath_prepend(str(ROOT / "gui"))
+    monkeypatch.setenv("AILAB_FEEDBACK_DIR", str(tmp_path))
+    monkeypatch.setattr(progress, "_component", None)
+    # Keep real navigation available on both the initial render and button rerun.
+    app = AppTest.from_file(str(ROOT / "gui" / "app.py"), default_timeout=60).run()
+    assert not app.exception
+    app.selectbox(key="app_language_dropdown").select(requested_language).run()
+    assert not app.exception
+
+    # Turkish selection currently keeps English content and explains the fallback.
+    assert "_open_terms_tr" not in {button.key for button in app.button}
+    if requested_language == "tr":
+        assert any(i18n.TURKISH_UNAVAILABLE_NOTICE in warning.value for warning in app.warning)
+
+    app.button(key="_open_terms_en").click().run()
 
     assert not app.exception
+    dialogs = app.get("dialog")
+    assert len(dialogs) == 1
+    assert dialogs[0].proto.dialog.is_open
+    assert dialogs[0].proto.dialog.title == "📜 Terms of use & privacy"
+    assert app.session_state["reader_lang"] == "en"
